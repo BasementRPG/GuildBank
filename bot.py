@@ -1,77 +1,17 @@
 import os
-import sqlite3
 import discord
 from discord.ext import commands
 from discord import app_commands
+import asyncpg
 
 # -------------------------------
-# Database setup
+# Bot setup
 # -------------------------------
-DB_PATH = "guild_bank.db"
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS inventory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            type TEXT NOT NULL,
-            subtype TEXT NOT NULL,
-            stats TEXT,
-            classes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-def add_item_db(name, type_, subtype, stats, classes):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO inventory (name, type, subtype, stats, classes)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (name, type_, subtype, stats, classes))
-    conn.commit()
-    conn.close()
-
-def update_item_db(item_id, name, type_, subtype, stats, classes):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        UPDATE inventory
-        SET name=?, type=?, subtype=?, stats=?, classes=?, updated_at=CURRENT_TIMESTAMP
-        WHERE id=?
-    ''', (name, type_, subtype, stats, classes, item_id))
-    conn.commit()
-    conn.close()
-
-def remove_item_db(item_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('DELETE FROM inventory WHERE id=?', (item_id,))
-    conn.commit()
-    conn.close()
-
-def get_all_items():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY name ASC')
-    rows = c.fetchall()
-    conn.close()
-    return rows
-
-def get_item_by_name(name):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('SELECT id, name, type, subtype, stats, classes FROM inventory WHERE name=?', (name,))
-    row = c.fetchone()
-    conn.close()
-    return row
+DATABASE_URL = os.getenv("DATABASE_URL")
+db_pool = None
 
 # -------------------------------
 # Constants
@@ -94,10 +34,51 @@ CLASSES = [
 ]
 
 # -------------------------------
-# Bot setup
+# PostgreSQL DB functions
 # -------------------------------
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
+async def init_db():
+    global db_pool
+    db_pool = await asyncpg.create_pool(DATABASE_URL)
+    async with db_pool.acquire() as conn:
+        await conn.execute('''
+            CREATE TABLE IF NOT EXISTS inventory (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                subtype TEXT NOT NULL,
+                stats TEXT,
+                classes TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+        ''')
+
+async def add_item_db(name, type_, subtype, stats, classes):
+    async with db_pool.acquire() as conn:
+        await conn.execute('''
+            INSERT INTO inventory (name, type, subtype, stats, classes)
+            VALUES ($1, $2, $3, $4, $5)
+        ''', name, type_, subtype, stats, classes)
+
+async def update_item_db(item_id, name, type_, subtype, stats, classes):
+    async with db_pool.acquire() as conn:
+        await conn.execute('''
+            UPDATE inventory
+            SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, updated_at=NOW()
+            WHERE id=$6
+        ''', name, type_, subtype, stats, classes, item_id)
+
+async def remove_item_db(item_id):
+    async with db_pool.acquire() as conn:
+        await conn.execute('DELETE FROM inventory WHERE id=$1', item_id)
+
+async def get_all_items():
+    async with db_pool.acquire() as conn:
+        return await conn.fetch('SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY name ASC')
+
+async def get_item_by_name(name):
+    async with db_pool.acquire() as conn:
+        return await conn.fetchrow('SELECT id, name, type, subtype, stats, classes FROM inventory WHERE name=$1', name)
 
 # -------------------------------
 # Modal: Item Details
@@ -128,6 +109,7 @@ class ItemEntryView(discord.ui.View):
         self.usable_classes = existing_item["classes"].split(", ") if existing_item else []
         self.item_name = existing_item["name"] if existing_item else ""
         self.stats = existing_item["stats"] if existing_item else ""
+        self.item_id = existing_item["id"] if existing_item else None
 
         # Subtype select
         options = [discord.SelectOption(label=o, default=(o==self.subtype)) for o in SUBTYPES.get(self.item_type, ["None"])]
@@ -164,9 +146,6 @@ class ItemEntryView(discord.ui.View):
         self.reset_button.callback = self.reset_entry
         self.add_item(self.reset_button)
 
-        # For editing
-        self.item_id = existing_item["id"] if existing_item else None
-
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.author:
             await interaction.response.send_message("You can't edit this entry.", ephemeral=True)
@@ -197,10 +176,10 @@ class ItemEntryView(discord.ui.View):
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
         if self.item_id:
-            update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
             msg = f"Item **{self.item_name}** updated in the Guild Bank."
         else:
-            add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
             msg = f"Item **{self.item_name}** added to the Guild Bank."
         await interaction.response.send_message(msg, ephemeral=True)
         self.stop()
@@ -225,41 +204,41 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
 
 @bot.tree.command(name="view_bank", description="View all items in the Guild Bank")
 async def view_bank(interaction: discord.Interaction):
-    rows = get_all_items()
+    rows = await get_all_items()
     if not rows:
         await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
         return
 
     lines = []
     for row in rows:
-        classes = row[5]
-        lines.append(f"{row[1]} | {row[2]}:{row[3]} | Stats: {row[4]} | Usable by: {classes}")
+        classes = row["classes"]
+        lines.append(f"{row['name']} | {row['type']}:{row['subtype']} | Stats: {row['stats']} | Usable by: {classes}")
     await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
 @bot.tree.command(name="remove_item", description="Remove an item from the Guild Bank")
 @app_commands.describe(item_name="Name of the item to remove")
 async def remove_item(interaction: discord.Interaction, item_name: str):
-    row = get_item_by_name(item_name)
+    row = await get_item_by_name(item_name)
     if not row:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
-    remove_item_db(row[0])
+    await remove_item_db(row["id"])
     await interaction.response.send_message(f"Removed **{item_name}** from the Guild Bank.", ephemeral=True)
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the Guild Bank")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
-    row = get_item_by_name(item_name)
+    row = await get_item_by_name(item_name)
     if not row:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
     existing_item = {
-        "id": row[0],
-        "name": row[1],
-        "type": row[2],
-        "subtype": row[3],
-        "stats": row[4],
-        "classes": row[5]
+        "id": row["id"],
+        "name": row["name"],
+        "type": row["type"],
+        "subtype": row["subtype"],
+        "stats": row["stats"],
+        "classes": row["classes"]
     }
     view = ItemEntryView(interaction.user, existing_item["type"], existing_item=existing_item)
     await interaction.response.send_message(f"Editing item **{item_name}**:", view=view, ephemeral=True)
@@ -269,7 +248,9 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
 # -------------------------------
 @bot.event
 async def on_ready():
+    global db_pool
     print(f"Logged in as {bot.user}")
+    await init_db()  # Connect to PostgreSQL
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands.")
