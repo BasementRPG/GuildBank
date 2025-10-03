@@ -77,15 +77,34 @@ class SubtypeSelect(discord.ui.Select):
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
-        options = [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
-        super().__init__(placeholder="Select usable classes (multi)", options=options, min_values=0, max_values=len(options))
+
+        # Add "All" as the first option
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
+
+        super().__init__(
+            placeholder="Select usable classes (multi)",
+            options=options,
+            min_values=0,
+            max_values=len(options)
+        )
+
+        # Pre-select if editing
         if self.parent_view.usable_classes:
-            # preselect if editing
-            self.default = True
+            if "All" in self.parent_view.usable_classes:
+                self.default = True
+                self.view.usable_classes = ["All"]
+            else:
+                self.default = True
+                self.view.usable_classes = self.parent_view.usable_classes
 
     async def callback(self, interaction: discord.Interaction):
-        self.parent_view.usable_classes = self.values
+        if "All" in self.values:
+            # If All is selected, ignore all other selections
+            self.view.usable_classes = ["All"]
+        else:
+            self.view.usable_classes = self.values
         await interaction.response.defer()
+
 
 
 
@@ -276,6 +295,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
