@@ -179,16 +179,30 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
     view = ItemEntryView(interaction.user, item_type=item_type.value)
     await interaction.response.send_message(f"Adding a new {item_type.value}:", view=view, ephemeral=True)
 
+#-------VIEW BANK --------
+
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
+
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
     for row in rows:
-        embed.add_field(name=row["name"], value=f"Type: {row['type']} | Subtype: {row['subtype']} | Stats:{row['stats']} | Classes: {row['classes']}", inline=False)
+        # Stats now on its own indented line
+        embed.add_field(
+            name=row["name"],
+            value=(
+                f"Type: {row['type']} | Subtype: {row['subtype']} | Classes: {row['classes']}\n"
+                f"  Stats: {row['stats']}"  # ← two em-spaces for indentation
+            ),
+            inline=False
+        )
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
+#----------
+
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
@@ -211,4 +225,5 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
