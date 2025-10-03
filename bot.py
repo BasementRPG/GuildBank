@@ -181,11 +181,11 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
 
         # The modal changes depending on the item type
         if view.item_type == "Weapon":
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.attack_delay = discord.ui.TextInput(label="Attack & Delay",placeholder="Format: Attack, Delay", style=discord.TextStyle.short, required=True)
+            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Short Sword of the Ykesha", default=view.item_name, required=True)
+            self.attack_delay = discord.ui.TextInput(label="Attack & Delay",placeholder="Format: Attack, Delay Example: 8, 24", style=discord.TextStyle.short, required=True)
 
-            self.attributes = discord.ui.TextInput(label="Attributes", default="", required=False, style=discord.TextStyle.paragraph)
-            self.effects = discord.ui.TextInput(label="Effects", default="", required=False, style=discord.TextStyle.paragraph)
+            self.attributes = discord.ui.TextInput(label="Attributes", default="", placeholder="+3 str, -1 cha, 5 sv fire" required=False, style=discord.TextStyle.paragraph)
+            self.effects = discord.ui.TextInput(label="Effects", default="", placeholder="Example: Ykesha: stun and 75 damage, lvl 37" required=False, style=discord.TextStyle.paragraph)
 
             self.add_item(self.item_name)
             self.add_item(self.attack_delay)
@@ -316,6 +316,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
