@@ -17,126 +17,121 @@ CLASSES = [
     "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"
 ]
 
-# Item types that require stats modal
-TYPES_WITH_STATS = {"Weapon", "Armor", "Potion"}
+TYPES_WITH_STATS = {"Weapon", "Armor", "Potion"}  # Types that require stats modal
 
-db_conn = None  # will initialize in on_ready
+db_conn = None  # initialized in on_ready
 
 # ---------------- STATS MODAL ----------------
 class ItemStatsModal(discord.ui.Modal):
-    def __init__(self, item_name, item_types, item_classes):
-        super().__init__(title=f"Enter Stats for {item_name}")
+    def __init__(self, item_name, item_type):
+        super().__init__(title=f"{item_type} Stats for {item_name}")
         self.item_name = item_name
-        self.item_types = item_types
-        self.item_classes = item_classes
+        self.item_type = item_type
 
-        # Add fields dynamically based on item type
-        if "Weapon" in item_types:
+        # Dynamic fields based on item type
+        if item_type == "Weapon":
             self.attack = discord.ui.TextInput(label="Attack", placeholder="Enter Attack value", required=True)
             self.delay = discord.ui.TextInput(label="Delay", placeholder="Enter Delay value", required=True)
+            self.usable_by = discord.ui.TextInput(
+                label="Usable By",
+                placeholder="Enter usable classes, comma-separated",
+                required=True
+            )
             self.add_item(self.attack)
             self.add_item(self.delay)
-        if "Armor" in item_types:
+            self.add_item(self.usable_by)
+        elif item_type == "Armor":
             self.defense = discord.ui.TextInput(label="Defense", placeholder="Enter Defense value", required=True)
             self.weight = discord.ui.TextInput(label="Weight", placeholder="Enter Weight value", required=True)
+            self.usable_by = discord.ui.TextInput(
+                label="Usable By",
+                placeholder="Enter usable classes, comma-separated",
+                required=True
+            )
             self.add_item(self.defense)
             self.add_item(self.weight)
-        if "Potion" in item_types:
+            self.add_item(self.usable_by)
+        elif item_type == "Potion":
             self.effect = discord.ui.TextInput(label="Effect", placeholder="Enter Effect", required=True)
             self.duration = discord.ui.TextInput(label="Duration", placeholder="Enter Duration value", required=True)
+            self.usable_by = discord.ui.TextInput(
+                label="Usable By",
+                placeholder="Enter usable classes, comma-separated",
+                required=True
+            )
             self.add_item(self.effect)
             self.add_item(self.duration)
-        # Add more types/stats as needed
+            self.add_item(self.usable_by)
+        else:
+            # For other types without stats
+            self.usable_by = discord.ui.TextInput(
+                label="Usable By",
+                placeholder="Enter usable classes, comma-separated",
+                required=True
+            )
+            self.add_item(self.usable_by)
 
     async def on_submit(self, interaction: discord.Interaction):
-        stats = {field.label: field.value for field in self.children}
-        stats_str = "; ".join([f"{k}: {v}" for k, v in stats.items()])
+        # Collect stats
+        stats = {field.label: field.value for field in self.children if field.label != "Usable By"}
+        stats_str = "; ".join([f"{k}: {v}" for k, v in stats.items()]) if stats else None
 
+        # Collect usable classes and validate
+        usable_classes_input = self.usable_by.value
+        usable_classes = [c.strip() for c in usable_classes_input.split(",") if c.strip() in CLASSES]
+        if not usable_classes:
+            await interaction.response.send_message(
+                f"❌ No valid classes entered. Allowed classes: {', '.join(CLASSES)}",
+                ephemeral=True
+            )
+            return
+
+        # Save to database
         await db_conn.execute(
             "INSERT INTO inventory(item_name,item_type,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5)",
             self.item_name,
-            ",".join(self.item_types),
-            ",".join(self.item_classes),
+            self.item_type,
+            ",".join(usable_classes),
             stats_str,
             None
         )
 
         await interaction.response.send_message(
-            f"✅ Added **{self.item_name}** ({', '.join(sorted(self.item_types))} - {', '.join(sorted(self.item_classes))}) with stats: {stats_str} to the Guild Bank.",
+            f"✅ Added **{self.item_name}** ({self.item_type} - {', '.join(usable_classes)}) with stats: {stats_str or 'None'} to the Guild Bank.",
             ephemeral=True
         )
 
-# ---------------- VIEW FOR MULTI-SELECT DROPDOWNS ----------------
+# ---------------- VIEW FOR ITEM TYPE SELECTION ----------------
 class AddItemView(discord.ui.View):
     def __init__(self, item_name, author):
         super().__init__(timeout=120)
         self.item_name = item_name
         self.author = author
-        self.item_types = []
-        self.item_classes = []
+        self.item_type = None  # single selection
 
-        # Multi-select for Item Types
+        # Single-select Item Type
         self.type_select = discord.ui.Select(
-            placeholder="Choose Item Type(s)",
+            placeholder="Choose Item Type",
             options=[discord.SelectOption(label=t) for t in ITEM_TYPES],
             min_values=1,
-            max_values=len(ITEM_TYPES)
+            max_values=1
         )
         self.type_select.callback = self.select_type
         self.add_item(self.type_select)
 
-        # Multi-select for Classes
-        self.class_select = discord.ui.Select(
-            placeholder="Choose Class(es)",
-            options=[discord.SelectOption(label=c) for c in CLASSES],
-            min_values=1,
-            max_values=len(CLASSES)
-        )
-        self.class_select.callback = self.select_class
-        self.add_item(self.class_select)
-
     async def select_type(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
-        self.item_types = interaction.data["values"]
-        await self.check_complete(interaction)
-
-    async def select_class(self, interaction: discord.Interaction):
-        if interaction.user != self.author:
-            return await interaction.response.send_message("This is not your selection!", ephemeral=True)
-        self.item_classes = interaction.data["values"]
-        await self.check_complete(interaction)
-
-    async def check_complete(self, interaction: discord.Interaction):
-        if not self.item_types or not self.item_classes:
-            return  # Wait until both are selected
-
-        # Only open stats modal if at least one selected type requires stats
-        if any(t in TYPES_WITH_STATS for t in self.item_types):
-            await interaction.response.send_modal(
-                ItemStatsModal(self.item_name, self.item_types, self.item_classes)
-            )
-        else:
-            # No stats needed; insert directly
-            await db_conn.execute(
-                "INSERT INTO inventory(item_name,item_type,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5)",
-                self.item_name,
-                ",".join(self.item_types),
-                ",".join(self.item_classes),
-                None,
-                None
-            )
-            await interaction.response.send_message(
-                f"✅ Added **{self.item_name}** ({', '.join(sorted(self.item_types))} - {', '.join(sorted(self.item_classes))}) to the Guild Bank.",
-                ephemeral=True
-            )
+        self.item_type = interaction.data["values"][0]
+        # Open modal based on selected type
+        await interaction.response.send_modal(ItemStatsModal(self.item_name, self.item_type))
         self.stop()
 
 # ---------------- COMMANDS ----------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
 async def add_item(interaction: discord.Interaction, name: str):
     view = AddItemView(name, interaction.user)
-    await interaction.response.send_message(f"Adding item: **{name}**. Choose type(s) and class(es):", view=view, ephemeral=True)
+    await interaction.response.send_message(f"Adding item: **{name}**. Choose item type:", view=view, ephemeral=True)
 
 @bot.tree.command(name="view_items", description="View the Guild Bank")
 async def view_items(interaction: discord.Interaction):
@@ -148,10 +143,9 @@ async def view_items(interaction: discord.Interaction):
     sorted_rows = sorted(rows, key=lambda r: r["item_name"].lower())
     desc_lines = []
     for r in sorted_rows:
-        types_sorted = sorted(r["item_type"].split(",")) if r["item_type"] else []
         classes_sorted = sorted(r["item_class"].split(",")) if r["item_class"] else []
         stats_display = f" | Stats: {r['stats']}" if r.get("stats") else ""
-        desc_lines.append(f"- {r['item_name']} ({', '.join(types_sorted)} - {', '.join(classes_sorted)}){stats_display}")
+        desc_lines.append(f"- {r['item_name']} ({r['item_type']} - {', '.join(classes_sorted)}){stats_display}")
 
     embed = discord.Embed(title="Guild Bank", description="\n".join(desc_lines))
     await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -162,22 +156,24 @@ async def delete_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 @bot.tree.command(name="update_item", description="Update an item in the Guild Bank")
-async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_types: str, new_classes: str, new_stats: str = None):
-    types_list = [t.strip() for t in new_types.split(",") if t.strip() in ITEM_TYPES]
-    classes_list = [c.strip() for c in new_classes.split(",") if c.strip() in CLASSES]
+async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_type: str, new_classes: str, new_stats: str = None):
+    if new_type not in ITEM_TYPES:
+        await interaction.response.send_message(f"Invalid item type. Allowed: {', '.join(ITEM_TYPES)}", ephemeral=True)
+        return
 
-    if not types_list or not classes_list:
-        await interaction.response.send_message("Invalid type(s) or class(es).", ephemeral=True)
+    classes_list = [c.strip() for c in new_classes.split(",") if c.strip() in CLASSES]
+    if not classes_list:
+        await interaction.response.send_message("Invalid classes entered.", ephemeral=True)
         return
 
     await db_conn.execute(
         """UPDATE inventory
            SET item_name=$1, item_type=$2, item_class=$3, stats=$4
            WHERE item_name=$5""",
-        new_name, ",".join(types_list), ",".join(classes_list), new_stats, old_name
+        new_name, new_type, ",".join(classes_list), new_stats, old_name
     )
     await interaction.response.send_message(
-        f"🔄 Updated **{old_name}** to **{new_name}** ({', '.join(types_list)} - {', '.join(classes_list)}) in the Guild Bank.",
+        f"🔄 Updated **{old_name}** to **{new_name}** ({new_type} - {', '.join(classes_list)}) in the Guild Bank.",
         ephemeral=True
     )
 
