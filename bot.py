@@ -188,8 +188,6 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
             self.effects = discord.ui.TextInput(label="Effects", default="", required=False, style=discord.TextStyle.paragraph)
 
             self.add_item(self.item_name)
-            self.add_item(self.attack)
-            self.add_item(self.delay)
             self.add_item(self.attributes)
             self.add_item(self.effects)
         
@@ -317,6 +315,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
