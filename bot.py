@@ -77,9 +77,13 @@ class SubtypeSelect(discord.ui.Select):
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
+        options = []
 
-        # Add "All" as the first option
-        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
+        # Decide what to show in the dropdown
+        if self.parent_view.usable_classes == ["All"]:
+            options = [discord.SelectOption(label="All")]
+        else:
+            options = [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
 
         super().__init__(
             placeholder="Select usable classes (multi)",
@@ -88,28 +92,26 @@ class ClassesSelect(discord.ui.Select):
             max_values=len(options)
         )
 
-        # Pre-select if editing
+        # Pre-select currently stored classes if not empty
         if self.parent_view.usable_classes:
-            if "All" in self.parent_view.usable_classes:
-                self.default = True
-                self.parent_view.usable_classes = ["All"]
-            else:
-                self.default = True
-                self.parent_view.usable_classes = self.parent_view.usable_classes
-        else:
-            # If nothing selected, default to All
             self.default = True
-            self.parent_view.usable_classes = ["All"]
 
     async def callback(self, interaction: discord.Interaction):
-        # If All is selected, deselect other classes
+        # If All selected, store only All
         if "All" in self.values:
             self.view.usable_classes = ["All"]
         else:
-            # If other classes are selected, deselect All
             self.view.usable_classes = self.values
-        await interaction.response.defer()
 
+        # Update dropdown options dynamically for next view
+        self.options.clear()
+        if self.view.usable_classes == ["All"]:
+            self.options.append(discord.SelectOption(label="All"))
+        else:
+            for c in CLASS_OPTIONS:
+                self.options.append(discord.SelectOption(label=c))
+
+        await interaction.response.edit_message(view=self.view)
 
 
 
@@ -300,6 +302,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
