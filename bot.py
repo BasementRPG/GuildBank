@@ -17,6 +17,9 @@ CLASSES = [
     "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"
 ]
 
+# Item types that require stats modal
+TYPES_WITH_STATS = {"Weapon", "Armor", "Potion"}
+
 db_conn = None  # will initialize in on_ready
 
 # ---------------- STATS MODAL ----------------
@@ -27,7 +30,7 @@ class ItemStatsModal(discord.ui.Modal):
         self.item_types = item_types
         self.item_classes = item_classes
 
-        # Dynamic fields based on item type
+        # Add fields dynamically based on item type
         if "Weapon" in item_types:
             self.attack = discord.ui.TextInput(label="Attack", placeholder="Enter Attack value", required=True)
             self.delay = discord.ui.TextInput(label="Delay", placeholder="Enter Delay value", required=True)
@@ -105,12 +108,29 @@ class AddItemView(discord.ui.View):
         await self.check_complete(interaction)
 
     async def check_complete(self, interaction: discord.Interaction):
-        if self.item_types and self.item_classes:
-            # Directly show the modal; no prior response sent
+        if not self.item_types or not self.item_classes:
+            return  # Wait until both are selected
+
+        # Only open stats modal if at least one selected type requires stats
+        if any(t in TYPES_WITH_STATS for t in self.item_types):
             await interaction.response.send_modal(
                 ItemStatsModal(self.item_name, self.item_types, self.item_classes)
             )
-            self.stop()
+        else:
+            # No stats needed; insert directly
+            await db_conn.execute(
+                "INSERT INTO inventory(item_name,item_type,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5)",
+                self.item_name,
+                ",".join(self.item_types),
+                ",".join(self.item_classes),
+                None,
+                None
+            )
+            await interaction.response.send_message(
+                f"✅ Added **{self.item_name}** ({', '.join(sorted(self.item_types))} - {', '.join(sorted(self.item_classes))}) to the Guild Bank.",
+                ephemeral=True
+            )
+        self.stop()
 
 # ---------------- COMMANDS ----------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
