@@ -1,7 +1,12 @@
 import os
 import discord
 from discord.ext import commands
+import asyncio
 import psycopg
+
+async def connect_db():
+    conn = await psycopg.AsyncConnection.connect(os.environ["DATABASE_URL"])
+    return conn
 
 # -------- CONFIG --------
 TOKEN = os.environ.get("DISCORD_TOKEN")
@@ -74,6 +79,7 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
