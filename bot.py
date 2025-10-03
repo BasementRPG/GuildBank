@@ -10,7 +10,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 DATABASE_URL = os.environ["DATABASE_URL"]
 
 # Connect once (blocking is fine for small bots)
-conn = psycopg.connect(DATABASE_URL, autocommit=True)
+conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=True)
 cur = conn.cursor()
 
 cur.execute("""
@@ -213,6 +213,7 @@ async def on_ready():
         print(e)
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
+
 
 
 
