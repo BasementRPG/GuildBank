@@ -188,6 +188,24 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
             self.add_item(self.attack)
             self.add_item(self.delay)
 
+        self.str_stat = discord.ui.TextInput(label="STR", default="", required=False)
+            self.sta_stat = discord.ui.TextInput(label="STA", default="", required=False)
+            self.agi_stat = discord.ui.TextInput(label="AGI", default="", required=False)
+            self.dex_stat = discord.ui.TextInput(label="DEX", default="", required=False)
+            self.int_stat = discord.ui.TextInput(label="INT", default="", required=False)
+            self.wis_stat = discord.ui.TextInput(label="WIS", default="", required=False)
+            self.cha_stat = discord.ui.TextInput(label="CHA", default="", required=False)
+
+            self.add_item(self.str_stat)
+            self.add_item(self.sta_stat)
+            self.add_item(self.agi_stat)
+            self.add_item(self.dex_stat)
+            self.add_item(self.int_stat)
+            self.add_item(self.wis_stat)
+            self.add_item(self.cha_stat)
+
+        
+
         elif view.item_type == "Armor":
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
             self.armor_class = discord.ui.TextInput(label="Armor Class", default="", required=True)
@@ -214,6 +232,21 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         # Save stats depending on type
         if self.view.item_type == "Weapon":
             self.view.stats = f"Attack: {self.attack.value}, Delay: {self.delay.value}"
+          
+            # Optional stats dictionary
+            self.view.stats_extra = {}
+            for label, value in [
+                ("STR", self.str_stat.value),
+                ("STA", self.sta_stat.value),
+                ("AGI", self.agi_stat.value),
+                ("DEX", self.dex_stat.value),
+                ("INT", self.int_stat.value),
+                ("WIS", self.wis_stat.value),
+                ("CHA", self.cha_stat.value),
+            ]:
+                if value.strip():  # only save if populated
+                    self.view.stats_extra[label] = value.strip()
+
         elif self.view.item_type == "Armor":
             self.view.stats = f"Armor Class: {self.armor_class.value}"
         elif self.view.item_type == "Potion":
@@ -296,6 +329,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
