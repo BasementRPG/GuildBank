@@ -8,12 +8,12 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 ITEM_TYPES = ["Weapon", "Armor", "Consumable", "Misc"]
-WEAPON_SUBTYPES = ["Sword", "Axe", "Bow", "Staff"]
-ARMOR_SUBTYPES = ["Plate", "Leather", "Cloth", "Shield"]
-CONSUMABLE_SUBTYPES = ["Potion", "Food", "Scroll"]
+WEAPON_SUBTYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
+ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
+CONSUMABLE_SUBTYPES = ["Drink", "Food", "Potion", "Scroll"]
 MISC_SUBTYPES = ["Quest Item", "Material"]
 
-CLASS_OPTIONS = ["Warrior", "Mage", "Rogue", "Priest", "Hunter"]
+CLASS_OPTIONS = ["Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist", "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"]
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -276,6 +276,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
