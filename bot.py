@@ -106,13 +106,23 @@ class ItemEntryView(discord.ui.View):
         self.item_id = item_id  # for editing
 
         # Subtype dropdown
-        self.subtype_select = discord.ui.Select(placeholder="Select Subtype", min_values=1, max_values=1, options=[])
+        self.subtype_select = discord.ui.Select(
+            placeholder="Select Subtype",
+            min_values=1,
+            max_values=1,
+            options=[]
+        )
         self.subtype_select.callback = self.select_subtype
         self.add_item(self.subtype_select)
 
         # Classes multi-select
         class_options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
-        self.classes_select = discord.ui.Select(placeholder="Select Usable Classes", min_values=1, max_values=len(class_options), options=class_options)
+        self.classes_select = discord.ui.Select(
+            placeholder="Select Usable Classes",
+            min_values=1,
+            max_values=len(class_options),
+            options=class_options
+        )
         self.classes_select.callback = self.select_classes
         self.add_item(self.classes_select)
 
@@ -129,12 +139,28 @@ class ItemEntryView(discord.ui.View):
         self.reset_button.callback = self.reset_entry
         self.add_item(self.reset_button)
 
+        # Initial message content
+        self.content = self.generate_content()
+
+    def generate_content(self):
+        classes_display = ", ".join(self.usable_classes) if self.usable_classes else "None"
+        stats_display = self.stats or "None"
+        subtype_display = self.subtype or "None"
+        name_display = self.item_name or "None"
+        return (
+            f"Adding item of type **{self.item_type}**\n"
+            f"Subtype: **{subtype_display}**\n"
+            f"Usable by: **{classes_display}**\n"
+            f"Stats: **{stats_display}**\n"
+            f"Item Name: **{name_display}**"
+        )
+
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
 
     async def select_subtype(self, interaction: discord.Interaction):
         self.subtype = interaction.data["values"][0]
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(content=self.generate_content(), view=self)
 
     async def select_classes(self, interaction: discord.Interaction):
         selected = interaction.data["values"]
@@ -142,7 +168,7 @@ class ItemEntryView(discord.ui.View):
             self.usable_classes = ["All"]
         else:
             self.usable_classes = selected
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(content=self.generate_content(), view=self)
 
     async def open_item_details(self, interaction: discord.Interaction):
         await interaction.response.send_modal(ItemDetailsModal(self))
@@ -165,6 +191,7 @@ class ItemEntryView(discord.ui.View):
     async def reset_entry(self, interaction: discord.Interaction):
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
+
 
 # -------------------------------
 # Slash Commands
@@ -262,3 +289,4 @@ async def on_ready():
 # -------------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
+
