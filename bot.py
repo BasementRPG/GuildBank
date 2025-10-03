@@ -9,9 +9,10 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # --- Postgres setup ---
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-# Connect once (blocking but fine for small bot)
+# Connect once (blocking is fine for small bots)
 conn = psycopg.connect(DATABASE_URL, autocommit=True)
 cur = conn.cursor()
+
 cur.execute("""
 CREATE TABLE IF NOT EXISTS inventory (
     user_id TEXT,
@@ -92,26 +93,24 @@ class UploadPhotoButton(discord.ui.Button):
 
         if self.view_parent.edit:
             # Update existing item
-            c.execute("""UPDATE inventory 
-                         SET item_name=?, item_type=?, item_class=?, photo_url=?
-                         WHERE user_id=? AND item_name=?""",
-                      (self.view_parent.item_name,
-                       self.view_parent.selected_type,
-                       self.view_parent.selected_class,
-                       photo_url,
-                       self.view_parent.user_id,
-                       self.view_parent.old_name))
-            conn.commit()
+            cur.execute("""UPDATE inventory 
+                           SET item_name=%s, item_type=%s, item_class=%s, photo_url=%s
+                           WHERE user_id=%s AND item_name=%s""",
+                        (self.view_parent.item_name,
+                         self.view_parent.selected_type,
+                         self.view_parent.selected_class,
+                         photo_url,
+                         self.view_parent.user_id,
+                         self.view_parent.old_name))
             await interaction.followup.send("Item updated successfully ✅", ephemeral=True)
         else:
             # Insert new item
-            c.execute("INSERT INTO inventory VALUES (?, ?, ?, ?, ?)",
-                      (self.view_parent.user_id,
-                       self.view_parent.item_name,
-                       self.view_parent.selected_type,
-                       self.view_parent.selected_class,
-                       photo_url))
-            conn.commit()
+            cur.execute("INSERT INTO inventory VALUES (%s,%s,%s,%s,%s)",
+                        (self.view_parent.user_id,
+                         self.view_parent.item_name,
+                         self.view_parent.selected_type,
+                         self.view_parent.selected_class,
+                         photo_url))
             await interaction.followup.send("Item saved to your inventory ✅", ephemeral=True)
 
 # --- Slash Commands ---
@@ -121,9 +120,9 @@ async def additem(interaction: discord.Interaction):
 
 @bot.tree.command(name="showinventory", description="Show your inventory")
 async def showinventory(interaction: discord.Interaction):
-    c.execute("SELECT item_name, item_type, item_class, photo_url FROM inventory WHERE user_id=?",
-              (interaction.user.id,))
-    items = c.fetchall()
+    cur.execute("SELECT item_name, item_type, item_class, photo_url FROM inventory WHERE user_id=%s",
+                (interaction.user.id,))
+    items = cur.fetchall()
     if not items:
         await interaction.response.send_message("Your inventory is empty.", ephemeral=True)
         return
@@ -139,8 +138,8 @@ async def showinventory(interaction: discord.Interaction):
 # --- Edit Item Flow ---
 @bot.tree.command(name="edititem", description="Edit an item in your inventory")
 async def edititem(interaction: discord.Interaction):
-    c.execute("SELECT item_name FROM inventory WHERE user_id=?", (interaction.user.id,))
-    items = [row[0] for row in c.fetchall()]
+    cur.execute("SELECT item_name FROM inventory WHERE user_id=%s", (interaction.user.id,))
+    items = [row[0] for row in cur.fetchall()]
     if not items:
         await interaction.response.send_message("You have no items to edit.", ephemeral=True)
         return
@@ -180,8 +179,8 @@ class EditItemModal(discord.ui.Modal, title="Edit Item"):
 # --- Remove Item Flow ---
 @bot.tree.command(name="removeitem", description="Remove an item from your inventory")
 async def removeitem(interaction: discord.Interaction):
-    c.execute("SELECT item_name FROM inventory WHERE user_id=?", (interaction.user.id,))
-    items = [row[0] for row in c.fetchall()]
+    cur.execute("SELECT item_name FROM inventory WHERE user_id=%s", (interaction.user.id,))
+    items = [row[0] for row in cur.fetchall()]
     if not items:
         await interaction.response.send_message("You have no items to remove.", ephemeral=True)
         return
@@ -200,8 +199,7 @@ class SelectItemToRemoveView(discord.ui.View):
 
     async def select_item(self, interaction: discord.Interaction):
         item_name = self.select.values[0]
-        c.execute("DELETE FROM inventory WHERE user_id=? AND item_name=?", (self.user_id, item_name))
-        conn.commit()
+        cur.execute("DELETE FROM inventory WHERE user_id=%s AND item_name=%s", (self.user_id, item_name))
         await interaction.response.send_message(f"Item **{item_name}** removed from your inventory ✅", ephemeral=True)
 
 # --- Bot Ready ---
@@ -214,8 +212,7 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# Replace with your bot token
-bot.run(os.getenv("DISCORD_TOKEN"))
+bot.run(os.environ.get("DISCORD_TOKEN"))
 
 
 
