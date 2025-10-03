@@ -10,7 +10,12 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 ITEM_TYPES = ["Weapon", "Armor", "Potion", "Misc"]
-CLASSES = ["Warrior", "Mage", "Rogue", "Cleric"]
+
+CLASSES = [
+    "Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist",
+    "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin",
+    "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"
+]
 
 db_conn = None  # will initialize in on_ready
 
@@ -71,33 +76,33 @@ class AddItemView(discord.ui.View):
             for child in self.children:
                 child.disabled = True
             await interaction.followup.send(
-                f"✅ Added **{self.item_name}** ({', '.join(self.item_types)} - {', '.join(self.item_classes)}) to the bot's inventory.",
+                f"✅ Added **{self.item_name}** ({', '.join(self.item_types)} - {', '.join(self.item_classes)}) to the Guild Bank.",
                 ephemeral=True
             )
             self.stop()
 
 # ---------------- COMMANDS ----------------
-@bot.tree.command(name="add_item", description="Add an item to the bot's inventory")
+@bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
 async def add_item(interaction: discord.Interaction, name: str):
     view = AddItemView(name, interaction.user)
     await interaction.response.send_message(f"Adding item: **{name}**. Choose type(s) and class(es):", view=view, ephemeral=True)
 
-@bot.tree.command(name="view_items", description="View the bot's inventory")
+@bot.tree.command(name="view_items", description="View the Guild Bank")
 async def view_items(interaction: discord.Interaction):
     rows = await db_conn.fetch("SELECT item_name,item_type,item_class FROM inventory")
     if not rows:
-        await interaction.response.send_message("The bot's inventory is empty.", ephemeral=True)
+        await interaction.response.send_message("The Guild Bank is empty.", ephemeral=True)
         return
     desc = "\n".join([f"- {r['item_name']} ({r['item_type']} - {r['item_class']})" for r in rows])
-    embed = discord.Embed(title="Bot Inventory", description=desc)
+    embed = discord.Embed(title="Guild Bank", description=desc)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="delete_item", description="Delete an item from the bot's inventory")
+@bot.tree.command(name="delete_item", description="Delete an item from the Guild Bank")
 async def delete_item(interaction: discord.Interaction, item_name: str):
     await db_conn.execute("DELETE FROM inventory WHERE item_name=$1", item_name)
-    await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the bot's inventory.", ephemeral=True)
+    await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
-@bot.tree.command(name="update_item", description="Update an item in the bot's inventory")
+@bot.tree.command(name="update_item", description="Update an item in the Guild Bank")
 async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_types: str, new_classes: str):
     # Accept comma-separated strings for multiple selections
     types_list = [t.strip() for t in new_types.split(",") if t.strip() in ITEM_TYPES]
@@ -114,7 +119,7 @@ async def update_item(interaction: discord.Interaction, old_name: str, new_name:
         new_name, ",".join(types_list), ",".join(classes_list), old_name
     )
     await interaction.response.send_message(
-        f"🔄 Updated **{old_name}** to **{new_name}** ({', '.join(types_list)} - {', '.join(classes_list)}) in the bot's inventory.",
+        f"🔄 Updated **{old_name}** to **{new_name}** ({', '.join(types_list)} - {', '.join(classes_list)}) in the Guild Bank.",
         ephemeral=True
     )
 
@@ -136,4 +141,3 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 
 bot.run(TOKEN)
-
