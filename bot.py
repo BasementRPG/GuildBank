@@ -1,10 +1,77 @@
 import os
+import sqlite3
 import discord
 from discord.ext import commands
 from discord import app_commands
 
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
+# -------------------------------
+# Database setup
+# -------------------------------
+DB_PATH = "guild_bank.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            subtype TEXT NOT NULL,
+            stats TEXT,
+            classes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def add_item_db(name, type_, subtype, stats, classes):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO inventory (name, type, subtype, stats, classes)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (name, type_, subtype, stats, classes))
+    conn.commit()
+    conn.close()
+
+def update_item_db(item_id, name, type_, subtype, stats, classes):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        UPDATE inventory
+        SET name=?, type=?, subtype=?, stats=?, classes=?, updated_at=CURRENT_TIMESTAMP
+        WHERE id=?
+    ''', (name, type_, subtype, stats, classes, item_id))
+    conn.commit()
+    conn.close()
+
+def remove_item_db(item_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('DELETE FROM inventory WHERE id=?', (item_id,))
+    conn.commit()
+    conn.close()
+
+def get_all_items():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY name ASC')
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def get_item_by_name(name):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT id, name, type, subtype, stats, classes FROM inventory WHERE name=?', (name,))
+    row = c.fetchone()
+    conn.close()
+    return row
 
 # -------------------------------
 # Constants
@@ -27,6 +94,12 @@ CLASSES = [
 ]
 
 # -------------------------------
+# Bot setup
+# -------------------------------
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# -------------------------------
 # Modal: Item Details
 # -------------------------------
 class ItemDetailsModal(discord.ui.Modal, title="Enter Item Details"):
@@ -47,19 +120,17 @@ class ItemDetailsModal(discord.ui.Modal, title="Enter Item Details"):
 # View: Item Entry
 # -------------------------------
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author, item_type):
+    def __init__(self, author, item_type, existing_item=None):
         super().__init__(timeout=None)
         self.author = author
         self.item_type = item_type
-        self.subtype = None
-        self.usable_classes = []
-        self.item_name = ""
-        self.stats = ""
+        self.subtype = existing_item["subtype"] if existing_item else None
+        self.usable_classes = existing_item["classes"].split(", ") if existing_item else []
+        self.item_name = existing_item["name"] if existing_item else ""
+        self.stats = existing_item["stats"] if existing_item else ""
 
-        # ------------------------
         # Subtype select
-        # ------------------------
-        options = [discord.SelectOption(label=o) for o in SUBTYPES.get(self.item_type, ["None"])]
+        options = [discord.SelectOption(label=o, default=(o==self.subtype)) for o in SUBTYPES.get(self.item_type, ["None"])]
         self.subtype_select = discord.ui.Select(
             placeholder="Select Subtype",
             min_values=1, max_values=1,
@@ -69,7 +140,8 @@ class ItemEntryView(discord.ui.View):
         self.add_item(self.subtype_select)
 
         # Classes multi-select + All
-        class_options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
+        class_options = [discord.SelectOption(label="All", default=("All" in self.usable_classes))] + \
+                        [discord.SelectOption(label=c, default=(c in self.usable_classes)) for c in CLASSES]
         self.classes_select = discord.ui.Select(
             placeholder="Select Usable Classes",
             min_values=1,
@@ -79,36 +151,30 @@ class ItemEntryView(discord.ui.View):
         self.classes_select.callback = self.select_classes
         self.add_item(self.classes_select)
 
-        # Item Details button
+        # Buttons
         self.details_button = discord.ui.Button(label="Add Item Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
-        # Submit button
         self.submit_button = discord.ui.Button(label="Submit", style=discord.ButtonStyle.success)
         self.submit_button.callback = self.submit_item
         self.add_item(self.submit_button)
 
-        # Reset button
         self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
         self.reset_button.callback = self.reset_entry
         self.add_item(self.reset_button)
 
-    # ---------------------------
-    # Interaction check
-    # ---------------------------
+        # For editing
+        self.item_id = existing_item["id"] if existing_item else None
+
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.author:
-            await interaction.response.send_message("You can’t edit this entry.", ephemeral=True)
+            await interaction.response.send_message("You can't edit this entry.", ephemeral=True)
             return False
         return True
 
-    # ---------------------------
-    # Callbacks
-    # ---------------------------
     async def select_subtype(self, interaction: discord.Interaction):
         self.subtype = interaction.data["values"][0]
-        # Keep the selected option highlighted
         for option in self.subtype_select.options:
             option.default = option.label == self.subtype
         await interaction.response.edit_message(view=self)
@@ -117,7 +183,6 @@ class ItemEntryView(discord.ui.View):
         selected = interaction.data["values"]
         if "All" in selected:
             self.usable_classes = ["All"]
-            # reset select menu to show only All selected
             options = [discord.SelectOption(label="All", default=True)] + [discord.SelectOption(label=c) for c in CLASSES]
             self.classes_select.options = options
         else:
@@ -131,13 +196,13 @@ class ItemEntryView(discord.ui.View):
 
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
-        msg = (
-            f"**Item Name:** {self.item_name}\n"
-            f"**Item Type:** {self.item_type} | **Subtype:** {self.subtype}\n"
-            f"**Stats:** {self.stats}\n"
-            f"**Usable by:** {classes_str}"
-        )
-        await interaction.response.send_message(f"Saved to Guild Bank:\n{msg}", ephemeral=True)
+        if self.item_id:
+            update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            msg = f"Item **{self.item_name}** updated in the Guild Bank."
+        else:
+            add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            msg = f"Item **{self.item_name}** added to the Guild Bank."
+        await interaction.response.send_message(msg, ephemeral=True)
         self.stop()
 
     async def reset_entry(self, interaction: discord.Interaction):
@@ -145,7 +210,7 @@ class ItemEntryView(discord.ui.View):
         self.stop()
 
 # -------------------------------
-# Command
+# Commands
 # -------------------------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
 @app_commands.describe(item_type="Choose the item type")
@@ -157,6 +222,47 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
         view=view,
         ephemeral=True
     )
+
+@bot.tree.command(name="view_bank", description="View all items in the Guild Bank")
+async def view_bank(interaction: discord.Interaction):
+    rows = get_all_items()
+    if not rows:
+        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
+        return
+
+    lines = []
+    for row in rows:
+        classes = row[5]
+        lines.append(f"{row[1]} | {row[2]}:{row[3]} | Stats: {row[4]} | Usable by: {classes}")
+    await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+@bot.tree.command(name="remove_item", description="Remove an item from the Guild Bank")
+@app_commands.describe(item_name="Name of the item to remove")
+async def remove_item(interaction: discord.Interaction, item_name: str):
+    row = get_item_by_name(item_name)
+    if not row:
+        await interaction.response.send_message("Item not found.", ephemeral=True)
+        return
+    remove_item_db(row[0])
+    await interaction.response.send_message(f"Removed **{item_name}** from the Guild Bank.", ephemeral=True)
+
+@bot.tree.command(name="edit_item", description="Edit an existing item in the Guild Bank")
+@app_commands.describe(item_name="Name of the item to edit")
+async def edit_item(interaction: discord.Interaction, item_name: str):
+    row = get_item_by_name(item_name)
+    if not row:
+        await interaction.response.send_message("Item not found.", ephemeral=True)
+        return
+    existing_item = {
+        "id": row[0],
+        "name": row[1],
+        "type": row[2],
+        "subtype": row[3],
+        "stats": row[4],
+        "classes": row[5]
+    }
+    view = ItemEntryView(interaction.user, existing_item["type"], existing_item=existing_item)
+    await interaction.response.send_message(f"Editing item **{item_name}**:", view=view, ephemeral=True)
 
 # -------------------------------
 # Events
