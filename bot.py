@@ -28,10 +28,10 @@ class AddItemView(discord.ui.View):
         options=[discord.SelectOption(label=t) for t in ITEM_TYPES],
         custom_id="select_type"
     )
-    async def select_type(self, select, interaction: discord.Interaction):
+    async def select_type(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
-        self.item_type = select.values[0]
+        self.item_type = interaction.data["values"][0]
         await interaction.response.send_message(f"Item type selected: {self.item_type}", ephemeral=True)
         await self.check_complete(interaction)
 
@@ -40,10 +40,10 @@ class AddItemView(discord.ui.View):
         options=[discord.SelectOption(label=c) for c in CLASSES],
         custom_id="select_class"
     )
-    async def select_class(self, select, interaction: discord.Interaction):
+    async def select_class(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
-        self.item_class = select.values[0]
+        self.item_class = interaction.data["values"][0]
         await interaction.response.send_message(f"Class selected: {self.item_class}", ephemeral=True)
         await self.check_complete(interaction)
 
@@ -54,7 +54,7 @@ class AddItemView(discord.ui.View):
                 "INSERT INTO inventory(item_name,item_type,item_class,photo_url) VALUES($1,$2,$3,$4)",
                 self.item_name, self.item_type, self.item_class, None
             )
-            # Disable dropdowns
+            # Disable all dropdowns
             for child in self.children:
                 child.disabled = True
             await interaction.followup.send(
@@ -66,6 +66,7 @@ class AddItemView(discord.ui.View):
 # ---------------- COMMANDS ----------------
 @bot.tree.command(name="add_item", description="Add an item to the bot's inventory")
 async def add_item(interaction: discord.Interaction, name: str):
+    """Starts a dropdown interaction to select type and class."""
     view = AddItemView(name, interaction.user)
     await interaction.response.send_message(f"Adding item: **{name}**. Choose type and class:", view=view, ephemeral=True)
 
