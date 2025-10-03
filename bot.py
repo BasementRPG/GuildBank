@@ -232,17 +232,24 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
+    # Sort items alphabetically by name
+    sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
+
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
-    for row in rows:
-        # Stats now on its own indented line
+    for row in sorted_rows:
+        # Sort classes alphabetically
+        classes_list = row['classes'].split(", ") if row['classes'] else []
+        classes_sorted = ", ".join(sorted(classes_list))
+
         embed.add_field(
             name=row["name"],
             value=(
-                f"Type: {row['type']} | Subtype: {row['subtype']} | Classes: {row['classes']}\n"
-                f"  Stats: {row['stats']}"  # ← two em-spaces for indentation
+                f"Type: {row['type']} | Subtype: {row['subtype']} | Classes: {classes_sorted}\n"
+                f"  Stats: {row['stats']}"
             ),
             inline=False
         )
+
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 #----------
@@ -269,6 +276,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
