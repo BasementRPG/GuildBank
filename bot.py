@@ -87,19 +87,60 @@ class ClassesSelect(discord.ui.Select):
         self.parent_view.usable_classes = self.values
         await interaction.response.defer()
 
+#------ITEM DETAILS ----
+
 class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
-    def __init__(self, parent_view):
-        super().__init__()
-        self.parent_view = parent_view
-        self.item_name = discord.ui.TextInput(label="Item Name", default=self.parent_view.item_name, required=True)
-        self.stats = discord.ui.TextInput(label="Stats", style=discord.TextStyle.paragraph, default=self.parent_view.stats, required=False)
-        self.add_item(self.item_name)
-        self.add_item(self.stats)
+    def __init__(self, view: ItemEntryView):
+        super().__init__(title=f"{view.item_type} Details")
+        self.view = view
+
+        # The modal changes depending on the item type
+        if view.item_type == "Weapon":
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.attack = discord.ui.TextInput(label="Attack", default="", required=True)
+            self.delay = discord.ui.TextInput(label="Delay", default="", required=True)
+            self.add_item(self.item_name)
+            self.add_item(self.attack)
+            self.add_item(self.delay)
+
+        elif view.item_type == "Armor":
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", required=True)
+            self.add_item(self.item_name)
+            self.add_item(self.armor_class)
+
+        elif view.item_type == "Potion":
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.effect = discord.ui.TextInput(label="Effect", default="", required=True)
+            self.duration = discord.ui.TextInput(label="Duration", default="", required=False)
+            self.add_item(self.item_name)
+            self.add_item(self.effect)
+            self.add_item(self.duration)
+
+        else:  # fallback generic modal
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.stats = discord.ui.TextInput(label="Stats", default=view.stats, style=discord.TextStyle.paragraph)
+            self.add_item(self.item_name)
+            self.add_item(self.stats)
 
     async def on_submit(self, interaction: discord.Interaction):
-        self.parent_view.item_name = self.item_name.value
-        self.parent_view.stats = self.stats.value
-        await interaction.response.send_message("✅ Details saved.", ephemeral=True)
+        self.view.item_name = self.item_name.value
+
+        # Save stats depending on type
+        if self.view.item_type == "Weapon":
+            self.view.stats = f"Attack: {self.attack.value}, Delay: {self.delay.value}"
+        elif self.view.item_type == "Armor":
+            self.view.stats = f"Armor Class: {self.armor_class.value}"
+        elif self.view.item_type == "Potion":
+            dur = f", Duration: {self.duration.value}" if self.duration.value else ""
+            self.view.stats = f"Effect: {self.effect.value}{dur}"
+        else:
+            self.view.stats = self.stats.value
+
+        await interaction.response.send_message("✅ Details saved. Click Submit when ready.", ephemeral=True)
+
+
+#----------
 
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
@@ -225,5 +266,6 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
