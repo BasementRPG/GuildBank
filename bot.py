@@ -24,6 +24,8 @@ async def add_item_db(name, type_, subtype, stats, classes):
         )
 
 # ─────────── CONFIG DATA ─────────────
+ITEM_TYPES = ["Weapon", "Armor", "Consumable"]  # top-level types shown in /add_item
+
 SUBTYPES = {
     "Weapon": ["Sword", "Axe", "Bow"],
     "Armor": ["Plate", "Leather", "Cloth"],
@@ -147,12 +149,11 @@ class ItemEntryView(discord.ui.View):
 
 # ─────────── COMMANDS ─────────────
 @bot.tree.command(name="add_item", description="Add an item to the guild bank.")
-@app_commands.describe(item_type="Enter the type (Weapon, Armor, Consumable...)")
-async def add_item(interaction: discord.Interaction, item_type: str):
-    if item_type not in SUBTYPES:
-        await interaction.response.send_message("Invalid item type. Try: " + ", ".join(SUBTYPES.keys()), ephemeral=True)
-        return
-    view = ItemEntryView(interaction.user, item_type=item_type)
+@app_commands.describe(item_type="Select the type of item")
+@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
+async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
+    chosen_type = item_type.value
+    view = ItemEntryView(interaction.user, item_type=chosen_type)
     await interaction.response.send_message("Fill out the item details:", view=view, ephemeral=True)
 
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
