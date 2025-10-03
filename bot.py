@@ -5,7 +5,7 @@ from discord import app_commands
 import asyncpg
 
 # -------------------------------
-# Bot setup
+# Bot Setup
 # -------------------------------
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -37,7 +37,6 @@ CLASSES = [
 # PostgreSQL DB functions
 # -------------------------------
 async def init_db():
-    """Initialize PostgreSQL connection and create table if needed."""
     global db_pool
     db_pool = await asyncpg.create_pool(DATABASE_URL)
     async with db_pool.acquire() as conn:
@@ -63,106 +62,190 @@ async def add_item_db(name, type_, subtype, stats, classes):
 
 async def get_all_items():
     async with db_pool.acquire() as conn:
-        return await conn.fetch('''
-            SELECT id, name, type, subtype, stats, classes
-            FROM inventory
-            ORDER BY name ASC
-        ''')
+        return await conn.fetch('SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY name ASC')
+
+async def remove_item_db(item_id):
+    async with db_pool.acquire() as conn:
+        await conn.execute('DELETE FROM inventory WHERE id=$1', item_id)
 
 # -------------------------------
-# Add Item Command
+# Modal for Item Details
+# -------------------------------
+class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
+    name = discord.ui.TextInput(label="Item Name", required=True)
+    attack = discord.ui.TextInput(label="Attack", required=False)
+    delay = discord.ui.TextInput(label="Delay", required=False)
+    defense = discord.ui.TextInput(label="Defense", required=False)
+
+    def __init__(self, parent_view):
+        super().__init__()
+        self.parent_view = parent_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.parent_view.item_name = self.name.value
+        stats_list = []
+        if self.attack.value or self.delay.value:
+            stats_list.append(f"Attack: {self.attack.value} | Delay: {self.delay.value}")
+        if self.defense.value:
+            stats_list.append(f"Defense: {self.defense.value}")
+        self.parent_view.stats = " | ".join(stats_list)
+        await interaction.response.send_message("Item details saved.", ephemeral=True)
+
+# -------------------------------
+# Item Entry View with Drop-downs and Buttons
+# -------------------------------
+class ItemEntryView(discord.ui.View):
+    def __init__(self, author, item_type=None, item_id=None):
+        super().__init__(timeout=None)
+        self.author = author
+        self.item_type = item_type
+        self.subtype = None
+        self.usable_classes = []
+        self.item_name = ""
+        self.stats = ""
+        self.item_id = item_id  # for editing
+
+        # Subtype dropdown
+        self.subtype_select = discord.ui.Select(placeholder="Select Subtype", min_values=1, max_values=1, options=[])
+        self.subtype_select.callback = self.select_subtype
+        self.add_item(self.subtype_select)
+
+        # Classes multi-select
+        class_options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
+        self.classes_select = discord.ui.Select(placeholder="Select Usable Classes", min_values=1, max_values=len(class_options), options=class_options)
+        self.classes_select.callback = self.select_classes
+        self.add_item(self.classes_select)
+
+        # Buttons
+        self.details_button = discord.ui.Button(label="Add Item Details", style=discord.ButtonStyle.secondary)
+        self.details_button.callback = self.open_item_details
+        self.add_item(self.details_button)
+
+        self.submit_button = discord.ui.Button(label="Submit", style=discord.ButtonStyle.success)
+        self.submit_button.callback = self.submit_item
+        self.add_item(self.submit_button)
+
+        self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
+        self.reset_button.callback = self.reset_entry
+        self.add_item(self.reset_button)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user == self.author
+
+    async def select_subtype(self, interaction: discord.Interaction):
+        self.subtype = interaction.data["values"][0]
+        await interaction.response.edit_message(view=self)
+
+    async def select_classes(self, interaction: discord.Interaction):
+        selected = interaction.data["values"]
+        if "All" in selected:
+            self.usable_classes = ["All"]
+        else:
+            self.usable_classes = selected
+        await interaction.response.edit_message(view=self)
+
+    async def open_item_details(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(ItemDetailsModal(self))
+
+    async def submit_item(self, interaction: discord.Interaction):
+        classes_str = ", ".join(self.usable_classes)
+        if self.item_id:  # Editing existing item
+            async with db_pool.acquire() as conn:
+                await conn.execute('''
+                    UPDATE inventory
+                    SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, updated_at=NOW()
+                    WHERE id=$6
+                ''', self.item_name, self.item_type, self.subtype, self.stats, classes_str, self.item_id)
+            await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
+        else:  # New item
+            await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
+        self.stop()
+
+    async def reset_entry(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
+        self.stop()
+
+# -------------------------------
+# Slash Commands
 # -------------------------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
 @app_commands.describe(item_type="Choose the item type")
 @app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
 async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
-    await interaction.response.send_message(f"Adding item of type **{item_type.value}**...", ephemeral=True)
-    
-    def check(m):
-        return m.author == interaction.user and isinstance(m.channel, discord.DMChannel)
-    
-    # Ask for item name
-    await interaction.user.send("Enter Item Name:")
-    try:
-        name_msg = await bot.wait_for("message", check=check, timeout=60)
-        item_name = name_msg.content
-    except:
-        await interaction.user.send("Timed out.")
-        return
-    
-    # Ask for subtype
-    subtypes = SUBTYPES[item_type.value]
-    await interaction.user.send(f"Choose Subtype ({', '.join(subtypes)}):")
-    try:
-        subtype_msg = await bot.wait_for("message", check=check, timeout=60)
-        item_subtype = subtype_msg.content
-        if item_subtype not in subtypes:
-            await interaction.user.send(f"Invalid subtype, defaulting to {subtypes[0]}")
-            item_subtype = subtypes[0]
-    except:
-        item_subtype = subtypes[0]
-    
-    # Ask for stats
-    stats_prompt = ""
-    if item_type.value == "Weapon":
-        stats_prompt = "Enter Attack:"
-        await interaction.user.send(stats_prompt)
-        try:
-            attack_msg = await bot.wait_for("message", check=check, timeout=60)
-            attack = attack_msg.content
-        except:
-            attack = "0"
-        await interaction.user.send("Enter Delay:")
-        try:
-            delay_msg = await bot.wait_for("message", check=check, timeout=60)
-            delay = delay_msg.content
-        except:
-            delay = "0"
-        stats = f"Attack: {attack} | Delay: {delay}"
-    elif item_type.value == "Armor":
-        await interaction.user.send("Enter Defense:")
-        try:
-            defense_msg = await bot.wait_for("message", check=check, timeout=60)
-            defense = defense_msg.content
-        except:
-            defense = "0"
-        stats = f"Defense: {defense}"
-    else:
-        stats = ""
-    
-    # Usable classes
-    await interaction.user.send(f"Enter usable classes separated by comma (or 'All'):\nOptions: {', '.join(CLASSES)}")
-    try:
-        classes_msg = await bot.wait_for("message", check=check, timeout=60)
-        classes_input = classes_msg.content
-        if classes_input.lower() == "all":
-            classes = "All"
-        else:
-            classes = ", ".join([c.strip() for c in classes_input.split(",") if c.strip() in CLASSES])
-    except:
-        classes = "All"
-    
-    # Save to DB
-    await add_item_db(item_name, item_type.value, item_subtype, stats, classes)
-    await interaction.user.send(f"✅ Added **{item_name}** | {item_type.value}:{item_subtype} | Stats: {stats} | Usable by: {classes}")
+    view = ItemEntryView(interaction.user, item_type.value)
+    # Populate subtype options
+    view.subtype_select.options = [discord.SelectOption(label=s) for s in SUBTYPES[item_type.value]]
+    await interaction.response.send_message(f"Adding item of type **{item_type.value}**:", view=view, ephemeral=True)
 
-# -------------------------------
-# View Bank Command
-# -------------------------------
 @bot.tree.command(name="view_bank", description="View all items in the Guild Bank")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
     if not rows:
         await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
         return
-    
-    lines = []
-    for row in rows:
-        lines.append(f"{row['name']} | {row['type']}:{row['subtype']} | Stats: {row['stats']} | Usable by: {row['classes']}")
+    lines = [f"{row['name']} | {row['type']}:{row['subtype']} | Stats: {row['stats']} | Usable by: {row['classes']}" for row in rows]
     await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
+@bot.tree.command(name="edit_item", description="Edit an existing item in the Guild Bank")
+async def edit_item(interaction: discord.Interaction):
+    rows = await get_all_items()
+    if not rows:
+        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
+        return
+
+    options = [discord.SelectOption(label=row["name"], value=str(row["id"])) for row in rows]
+
+    class EditSelect(discord.ui.Select):
+        def __init__(self):
+            super().__init__(placeholder="Select item to edit", min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            item_id = int(self.values[0])
+            item = next(r for r in rows if r["id"] == item_id)
+            view = ItemEntryView(interaction.user, item_type=item["type"], item_id=item_id)
+            view.item_name = item["name"]
+            view.subtype = item["subtype"]
+            view.usable_classes = item["classes"].split(", ")
+            view.stats = item["stats"]
+            view.subtype_select.options = [discord.SelectOption(label=s) for s in SUBTYPES[item["type"]]]
+            await interaction.response.edit_message(content=f"Editing **{item['name']}**:", view=view)
+
+    class EditView(discord.ui.View):
+        def __init__(self):
+            super().__init__()
+            self.add_item(EditSelect())
+
+    await interaction.response.send_message("Select an item to edit:", view=EditView(), ephemeral=True)
+
+@bot.tree.command(name="remove_item", description="Remove an item from the Guild Bank")
+async def remove_item(interaction: discord.Interaction):
+    rows = await get_all_items()
+    if not rows:
+        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
+        return
+
+    options = [discord.SelectOption(label=row["name"], value=str(row["id"])) for row in rows]
+
+    class RemoveSelect(discord.ui.Select):
+        def __init__(self):
+            super().__init__(placeholder="Select item to remove", min_values=1, max_values=1, options=options)
+
+        async def callback(self, interaction: discord.Interaction):
+            item_id = int(self.values[0])
+            await remove_item_db(item_id)
+            await interaction.response.send_message("✅ Item removed from Guild Bank.", ephemeral=True)
+            self.view.stop()
+
+    class RemoveView(discord.ui.View):
+        def __init__(self):
+            super().__init__()
+            self.add_item(RemoveSelect())
+
+    await interaction.response.send_message("Select an item to remove:", view=RemoveView(), ephemeral=True)
+
 # -------------------------------
-# Run Bot
+# Bot Ready Event
 # -------------------------------
 @bot.event
 async def on_ready():
@@ -174,5 +257,8 @@ async def on_ready():
     except Exception as e:
         print(e)
 
+# -------------------------------
+# Run Bot
+# -------------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
