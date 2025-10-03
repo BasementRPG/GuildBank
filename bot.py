@@ -9,8 +9,8 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-ITEM_TYPES = ["Weapon", "Armor", "Potion", "Misc"]
-
+# ---------------- CONFIG ----------------
+ITEM_TYPES = ["Armor", "Crafting", "Misc", "Quest", "Potion", "Weapon"]
 CLASSES = [
     "Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist",
     "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin",
@@ -18,6 +18,52 @@ CLASSES = [
 ]
 
 db_conn = None  # will initialize in on_ready
+
+# ---------------- STATS MODAL ----------------
+class ItemStatsModal(discord.ui.Modal):
+    def __init__(self, item_name, item_types, item_classes):
+        super().__init__(title=f"Enter Stats for {item_name}")
+        self.item_name = item_name
+        self.item_types = item_types
+        self.item_classes = item_classes
+
+        # Add fields dynamically based on item types
+        if "Weapon" in item_types:
+            self.attack = discord.ui.TextInput(label="Attack", placeholder="Enter Attack value", required=True)
+            self.delay = discord.ui.TextInput(label="Delay", placeholder="Enter Delay value", required=True)
+            self.add_item(self.attack)
+            self.add_item(self.delay)
+        if "Armor" in item_types:
+            self.defense = discord.ui.TextInput(label="Defense", placeholder="Enter Defense value", required=True)
+            self.weight = discord.ui.TextInput(label="Weight", placeholder="Enter Weight value", required=True)
+            self.add_item(self.defense)
+            self.add_item(self.weight)
+        if "Potion" in item_types:
+            self.effect = discord.ui.TextInput(label="Effect", placeholder="Enter Effect", required=True)
+            self.duration = discord.ui.TextInput(label="Duration", placeholder="Enter Duration value", required=True)
+            self.add_item(self.effect)
+            self.add_item(self.duration)
+        # Add other item type-specific fields as needed
+
+    async def on_submit(self, interaction: discord.Interaction):
+        stats = {}
+        for field in self.children:
+            stats[field.label] = field.value
+        stats_str = "; ".join([f"{k}: {v}" for k, v in stats.items()])
+
+        await db_conn.execute(
+            "INSERT INTO inventory(item_name,item_type,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5)",
+            self.item_name,
+            ",".join(self.item_types),
+            ",".join(self.item_classes),
+            stats_str,
+            None
+        )
+
+        await interaction.response.send_message(
+            f"✅ Added **{self.item_name}** ({', '.join(self.item_types)} - {', '.join(self.item_classes)}) with stats: {stats_str} to the Guild Bank.",
+            ephemeral=True
+        )
 
 # ---------------- VIEW FOR MULTI-SELECT DROPDOWNS ----------------
 class AddItemView(discord.ui.View):
@@ -52,33 +98,20 @@ class AddItemView(discord.ui.View):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_types = interaction.data["values"]
-        await interaction.response.send_message(f"Item types selected: {', '.join(self.item_types)}", ephemeral=True)
+        await interaction.response.send_message(f"Item types selected: {', '.join(sorted(self.item_types))}", ephemeral=True)
         await self.check_complete(interaction)
 
     async def select_class(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_classes = interaction.data["values"]
-        await interaction.response.send_message(f"Classes selected: {', '.join(self.item_classes)}", ephemeral=True)
+        await interaction.response.send_message(f"Classes selected: {', '.join(sorted(self.item_classes))}", ephemeral=True)
         await self.check_complete(interaction)
 
     async def check_complete(self, interaction):
         if self.item_types and self.item_classes:
-            # Save to database, store multi-select as comma-separated strings
-            await db_conn.execute(
-                "INSERT INTO inventory(item_name,item_type,item_class,photo_url) VALUES($1,$2,$3,$4)",
-                self.item_name,
-                ",".join(self.item_types),
-                ",".join(self.item_classes),
-                None
-            )
-            # Disable dropdowns
-            for child in self.children:
-                child.disabled = True
-            await interaction.followup.send(
-                f"✅ Added **{self.item_name}** ({', '.join(self.item_types)} - {', '.join(self.item_classes)}) to the Guild Bank.",
-                ephemeral=True
-            )
+            # Open the stats modal for further input
+            await interaction.response.send_modal(ItemStatsModal(self.item_name, self.item_types, self.item_classes))
             self.stop()
 
 # ---------------- COMMANDS ----------------
@@ -89,12 +122,22 @@ async def add_item(interaction: discord.Interaction, name: str):
 
 @bot.tree.command(name="view_items", description="View the Guild Bank")
 async def view_items(interaction: discord.Interaction):
-    rows = await db_conn.fetch("SELECT item_name,item_type,item_class FROM inventory")
+    rows = await db_conn.fetch("SELECT item_name,item_type,item_class,stats FROM inventory")
     if not rows:
         await interaction.response.send_message("The Guild Bank is empty.", ephemeral=True)
         return
-    desc = "\n".join([f"- {r['item_name']} ({r['item_type']} - {r['item_class']})" for r in rows])
-    embed = discord.Embed(title="Guild Bank", description=desc)
+
+    # Sort inventory items alphabetically by item_name
+    sorted_rows = sorted(rows, key=lambda r: r["item_name"].lower())
+
+    desc_lines = []
+    for r in sorted_rows:
+        types_sorted = sorted(r["item_type"].split(",")) if r["item_type"] else []
+        classes_sorted = sorted(r["item_class"].split(",")) if r["item_class"] else []
+        stats_display = f" | Stats: {r['stats']}" if r.get("stats") else ""
+        desc_lines.append(f"- {r['item_name']} ({', '.join(types_sorted)} - {', '.join(classes_sorted)}){stats_display}")
+
+    embed = discord.Embed(title="Guild Bank", description="\n".join(desc_lines))
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="delete_item", description="Delete an item from the Guild Bank")
@@ -103,8 +146,7 @@ async def delete_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 @bot.tree.command(name="update_item", description="Update an item in the Guild Bank")
-async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_types: str, new_classes: str):
-    # Accept comma-separated strings for multiple selections
+async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_types: str, new_classes: str, new_stats: str = None):
     types_list = [t.strip() for t in new_types.split(",") if t.strip() in ITEM_TYPES]
     classes_list = [c.strip() for c in new_classes.split(",") if c.strip() in CLASSES]
 
@@ -114,9 +156,9 @@ async def update_item(interaction: discord.Interaction, old_name: str, new_name:
 
     await db_conn.execute(
         """UPDATE inventory
-           SET item_name=$1, item_type=$2, item_class=$3
-           WHERE item_name=$4""",
-        new_name, ",".join(types_list), ",".join(classes_list), old_name
+           SET item_name=$1, item_type=$2, item_class=$3, stats=$4
+           WHERE item_name=$5""",
+        new_name, ",".join(types_list), ",".join(classes_list), new_stats, old_name
     )
     await interaction.response.send_message(
         f"🔄 Updated **{old_name}** to **{new_name}** ({', '.join(types_list)} - {', '.join(classes_list)}) in the Guild Bank.",
@@ -134,6 +176,7 @@ async def on_ready():
                 item_name TEXT,
                 item_type TEXT,
                 item_class TEXT,
+                stats TEXT,
                 photo_url TEXT
             )
         """)
