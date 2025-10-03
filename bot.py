@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -44,13 +45,12 @@ class ItemEntryView(discord.ui.View):
         super().__init__(timeout=None)
         self.author = author
 
-        # current selections
+        self.item_name = None
         self.item_type = None
         self.subtype = None
         self.usable_classes = []
         self.stats = ""
 
-        # build dropdowns
         self.type_select = discord.ui.Select(
             placeholder="Select Item Type",
             min_values=1, max_values=1,
@@ -75,7 +75,6 @@ class ItemEntryView(discord.ui.View):
         self.classes_select.callback = self.select_classes
         self.add_item(self.classes_select)
 
-        # buttons
         self.add_item(discord.ui.Button(label="Add Stats", style=discord.ButtonStyle.secondary, custom_id="addstats"))
         self.children[-1].callback = self.open_stats
 
@@ -90,7 +89,6 @@ class ItemEntryView(discord.ui.View):
 
     async def select_type(self, interaction: discord.Interaction):
         self.item_type = interaction.data["values"][0]
-        # update subtype options dynamically
         options = SUBTYPES.get(self.item_type, ["None"])
         self.subtype_select.options = [discord.SelectOption(label=o) for o in options]
         self.subtype = None
@@ -112,11 +110,6 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_modal(StatsModal(self))
 
     async def submit_item(self, interaction: discord.Interaction):
-        # Insert into DB here — you have self.item_type, self.subtype, self.usable_classes, self.stats
-        # Example:
-        # await db.execute("INSERT INTO inventory (item_type, subtype, classes, stats) VALUES ($1,$2,$3,$4)",
-        #                  self.item_type, self.subtype, self.usable_classes, self.stats)
-
         classes_str = ", ".join(self.usable_classes)
         msg = (
             f"**Item Type:** {self.item_type}\n"
@@ -128,7 +121,6 @@ class ItemEntryView(discord.ui.View):
         self.stop()
 
 
-# ── Command ─────────────────────────────────────────────────
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
 async def add_item(interaction: discord.Interaction):
     view = ItemEntryView(interaction.user)
@@ -145,4 +137,6 @@ async def on_ready():
         print(e)
 
 
-bot.run("YOUR_TOKEN_HERE")
+# read the token from environment variable (Railway style)
+TOKEN = os.getenv("DISCORD_TOKEN")
+bot.run(TOKEN)
