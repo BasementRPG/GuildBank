@@ -182,28 +182,16 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         # The modal changes depending on the item type
         if view.item_type == "Weapon":
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.attack = discord.ui.TextInput(label="Attack", default="", required=True)
+            self.attack = discord.ui.TextInput(label="Attack", default="", style=discord.TextStyle.short, required=True,)
             self.delay = discord.ui.TextInput(label="Delay", default="", required=True)
+            self.attributes = discord.ui.TextInput(label="Attributes", default="", required=False, style=discord.TextStyle.paragraph)
+           self.effects = discord.ui.TextInput(label="Effects", default="", required=False, style=discord.TextStyle.paragraph)
+
             self.add_item(self.item_name)
             self.add_item(self.attack)
             self.add_item(self.delay)
-
-            self.str_stat = discord.ui.TextInput(label="STR", default="", required=False)
-            self.sta_stat = discord.ui.TextInput(label="STA", default="", required=False)
-            self.agi_stat = discord.ui.TextInput(label="AGI", default="", required=False)
-            self.dex_stat = discord.ui.TextInput(label="DEX", default="", required=False)
-            self.int_stat = discord.ui.TextInput(label="INT", default="", required=False)
-            self.wis_stat = discord.ui.TextInput(label="WIS", default="", required=False)
-            self.cha_stat = discord.ui.TextInput(label="CHA", default="", required=False)
-
-            self.add_item(self.str_stat)
-            self.add_item(self.sta_stat)
-            self.add_item(self.agi_stat)
-            self.add_item(self.dex_stat)
-            self.add_item(self.int_stat)
-            self.add_item(self.wis_stat)
-            self.add_item(self.cha_stat)
-
+            self.add_item(self.attributes)
+            self.add_item(self.effects)
         
 
         elif view.item_type == "Armor":
@@ -329,6 +317,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
