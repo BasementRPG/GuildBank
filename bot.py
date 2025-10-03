@@ -47,36 +47,28 @@ class ItemDetailsModal(discord.ui.Modal, title="Enter Item Details"):
 # View: Item Entry
 # -------------------------------
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author):
+    def __init__(self, author, item_type):
         super().__init__(timeout=None)
         self.author = author
-
-        # Current state
-        self.item_type = None
+        self.item_type = item_type
         self.subtype = None
         self.usable_classes = []
         self.item_name = ""
         self.stats = ""
 
-        # 1️⃣ Item Type
-        self.type_select = discord.ui.Select(
-            placeholder="Select Item Type",
-            min_values=1, max_values=1,
-            options=[discord.SelectOption(label=t) for t in ITEM_TYPES]
-        )
-        self.type_select.callback = self.select_type
-        self.add_item(self.type_select)
-
-        # 2️⃣ Subtype
+        # ------------------------
+        # Subtype select
+        # ------------------------
+        options = [discord.SelectOption(label=o) for o in SUBTYPES.get(self.item_type, ["None"])]
         self.subtype_select = discord.ui.Select(
             placeholder="Select Subtype",
             min_values=1, max_values=1,
-            options=[discord.SelectOption(label="Select type first")]
+            options=options
         )
         self.subtype_select.callback = self.select_subtype
         self.add_item(self.subtype_select)
 
-        # 3️⃣ Classes (multi-select + All option)
+        # Classes multi-select + All
         class_options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
         self.classes_select = discord.ui.Select(
             placeholder="Select Usable Classes",
@@ -87,16 +79,24 @@ class ItemEntryView(discord.ui.View):
         self.classes_select.callback = self.select_classes
         self.add_item(self.classes_select)
 
-        # 4️⃣ Item Details button
+        # Item Details button
         self.details_button = discord.ui.Button(label="Add Item Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
-        # 5️⃣ Submit
+        # Submit button
         self.submit_button = discord.ui.Button(label="Submit", style=discord.ButtonStyle.success)
         self.submit_button.callback = self.submit_item
         self.add_item(self.submit_button)
 
+        # Reset button
+        self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
+        self.reset_button.callback = self.reset_entry
+        self.add_item(self.reset_button)
+
+    # ---------------------------
+    # Interaction check
+    # ---------------------------
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.author:
             await interaction.response.send_message("You can’t edit this entry.", ephemeral=True)
@@ -106,36 +106,24 @@ class ItemEntryView(discord.ui.View):
     # ---------------------------
     # Callbacks
     # ---------------------------
-    async def select_type(self, interaction: discord.Interaction):
-        new_type = interaction.data["values"][0]
-
-        # Reset form if type changed
-        if self.item_type and self.item_type != new_type:
-            self.item_name = ""
-            self.stats = ""
-            self.subtype = None
-            self.usable_classes = []
-
-        # Update subtype options
-        options = [discord.SelectOption(label=o) for o in SUBTYPES.get(new_type, ["None"])]
-        self.subtype_select.options = options
-        self.item_type = new_type
-
-        await interaction.response.edit_message(view=self)
-
     async def select_subtype(self, interaction: discord.Interaction):
         self.subtype = interaction.data["values"][0]
+        # Keep the selected option highlighted
+        for option in self.subtype_select.options:
+            option.default = option.label == self.subtype
         await interaction.response.edit_message(view=self)
 
     async def select_classes(self, interaction: discord.Interaction):
         selected = interaction.data["values"]
         if "All" in selected:
             self.usable_classes = ["All"]
-            # reset select menu to show only All as selected
+            # reset select menu to show only All selected
             options = [discord.SelectOption(label="All", default=True)] + [discord.SelectOption(label=c) for c in CLASSES]
             self.classes_select.options = options
         else:
             self.usable_classes = selected
+            for option in self.classes_select.options:
+                option.default = option.label in self.usable_classes
         await interaction.response.edit_message(view=self)
 
     async def open_item_details(self, interaction: discord.Interaction):
@@ -152,13 +140,23 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_message(f"Saved to Guild Bank:\n{msg}", ephemeral=True)
         self.stop()
 
+    async def reset_entry(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Entry reset and canceled.", ephemeral=True)
+        self.stop()
+
 # -------------------------------
 # Command
 # -------------------------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
-async def add_item(interaction: discord.Interaction):
-    view = ItemEntryView(interaction.user)
-    await interaction.response.send_message("Fill in the item details below:", view=view, ephemeral=True)
+@app_commands.describe(item_type="Choose the item type")
+@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
+async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
+    view = ItemEntryView(interaction.user, item_type.value)
+    await interaction.response.send_message(
+        f"Fill in the item details for **{item_type.value}** below:",
+        view=view,
+        ephemeral=True
+    )
 
 # -------------------------------
 # Events
