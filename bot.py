@@ -92,16 +92,21 @@ class ClassesSelect(discord.ui.Select):
         if self.parent_view.usable_classes:
             if "All" in self.parent_view.usable_classes:
                 self.default = True
-                self.view.usable_classes = ["All"]
+                self.parent_view.usable_classes = ["All"]
             else:
                 self.default = True
-                self.view.usable_classes = self.parent_view.usable_classes
+                self.parent_view.usable_classes = self.parent_view.usable_classes
+        else:
+            # If nothing selected, default to All
+            self.default = True
+            self.parent_view.usable_classes = ["All"]
 
     async def callback(self, interaction: discord.Interaction):
+        # If All is selected, deselect other classes
         if "All" in self.values:
-            # If All is selected, ignore all other selections
             self.view.usable_classes = ["All"]
         else:
+            # If other classes are selected, deselect All
             self.view.usable_classes = self.values
         await interaction.response.defer()
 
@@ -295,6 +300,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
