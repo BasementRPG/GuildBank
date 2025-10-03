@@ -1,87 +1,97 @@
 import discord
 from discord.ext import commands
-import json
-import os
 
 intents = discord.Intents.default()
-intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-ITEMS_FILE = "items.json"
+# In-memory inventory: {user_id: [items]}
+inventory = {}
 
-def load_items():
-    if not os.path.exists(ITEMS_FILE):
-        with open(ITEMS_FILE, "w") as f:
-            json.dump([], f)
-    with open(ITEMS_FILE, "r") as f:
-        return json.load(f)
+# Predefined dropdown choices
+ITEM_TYPES = ["Weapon", "Armor", "Potion", "Misc"]
+CLASSES = ["Warrior", "Mage", "Rogue", "Cleric"]
 
-def save_items(items):
-    with open(ITEMS_FILE, "w") as f:
-        json.dump(items, f, indent=4)
+class AddItemModal(discord.ui.Modal, title="Add Item"):
+    item_name = discord.ui.TextInput(label="Item Name", placeholder="Enter item name")
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # We’ll store the item type/class separately (selected in dropdown)
+        await interaction.response.send_message(
+            "Please select the item type and class from the dropdown below.",
+            view=TypeClassView(self.item_name.value),
+            ephemeral=True
+        )
+
+class TypeClassView(discord.ui.View):
+    def __init__(self, item_name):
+        super().__init__(timeout=60)
+        self.item_name = item_name
+        # Dropdown for item types
+        self.type_select = discord.ui.Select(
+            placeholder="Select Item Type",
+            options=[discord.SelectOption(label=t) for t in ITEM_TYPES]
+        )
+        self.type_select.callback = self.select_type
+        self.add_item(self.type_select)
+
+        # Dropdown for classes
+        self.class_select = discord.ui.Select(
+            placeholder="Select Class",
+            options=[discord.SelectOption(label=c) for c in CLASSES]
+        )
+        self.class_select.callback = self.select_class
+        self.add_item(self.class_select)
+
+        # Button for optional photo
+        self.add_item(UploadPhotoButton(item_name))
+
+    async def select_type(self, interaction: discord.Interaction):
+        self.selected_type = self.type_select.values[0]
+        await interaction.response.send_message(
+            f"Item type selected: {self.selected_type}", ephemeral=True)
+
+    async def select_class(self, interaction: discord.Interaction):
+        self.selected_class = self.class_select.values[0]
+        await interaction.response.send_message(
+            f"Class selected: {self.selected_class}", ephemeral=True)
+
+class UploadPhotoButton(discord.ui.Button):
+    def __init__(self, item_name):
+        super().__init__(label="Upload Photo (Optional)", style=discord.ButtonStyle.primary)
+        self.item_name = item_name
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            "Upload a photo of the item (optional). Just attach it in your next message.",
+            ephemeral=True)
+
+@bot.tree.command(name="additem", description="Add an item to your inventory")
+async def additem(interaction: discord.Interaction):
+    """Slash command entry point"""
+    await interaction.response.send_modal(AddItemModal())
+
+@bot.tree.command(name="showinventory", description="Show your inventory")
+async def showinventory(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    items = inventory.get(user_id, [])
+    if not items:
+        await interaction.response.send_message("Your inventory is empty.", ephemeral=True)
+    else:
+        formatted = "\n".join([f"- {item}" for item in items])
+        await interaction.response.send_message(f"Your inventory:\n{formatted}", ephemeral=True)
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-
-@bot.command()
-async def add_item(ctx):
-    def check(m):
-        return m.author == ctx.author and m.channel == ctx.channel
-
-    await ctx.send("Enter item name:")
-    name = (await bot.wait_for("message", check=check)).content
-
-    await ctx.send("Enter item type:")
-    item_type = (await bot.wait_for("message", check=check)).content
-
-    await ctx.send("Enter item stats as key:value (comma-separated), e.g., `attack:10,defense:5`")
-    stats_msg = (await bot.wait_for("message", check=check)).content
-    stats = dict(stat.split(":") for stat in stats_msg.split(","))
-
-    await ctx.send("Enter usable classes (comma-separated):")
-    classes = (await bot.wait_for("message", check=check)).content.split(",")
-
-    await ctx.send("Upload an image or provide a direct image URL:")
-
-    img_msg = await bot.wait_for("message", check=check)
-
-    if img_msg.attachments:
-        image_url = img_msg.attachments[0].url
-    else:
-        image_url = img_msg.content.strip()
-
-    item = {
-        "name": name,
-        "type": item_type,
-        "stats": stats,
-        "classes": classes,
-        "image": image_url
-    }
-
-    items = load_items()
-    items.append(item)
-    save_items(items)
-
-    await ctx.send(f"Item '{name}' added successfully!")
-
-@bot.command()
-async def view_bank(ctx):
-    items = load_items()
-    if not items:
-        await ctx.send("No items found.")
-        return
-
-    for item in items:
-        embed = discord.Embed(title=item["name"], description=f"Type: {item['type']}")
-        stats = "\n".join([f"**{k}**: {v}" for k, v in item["stats"].items()])
-        embed.add_field(name="Stats", value=stats, inline=False)
-        embed.add_field(name="Usable by", value=", ".join(item["classes"]), inline=False)
-        embed.set_image(url=item["image"])
-        await ctx.send(embed=embed)
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands.")
+    except Exception as e:
+        print(e)
 
 # Replace with your bot token
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
