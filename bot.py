@@ -17,97 +17,82 @@ CLASSES = [
     "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"
 ]
 
-TYPES_WITH_STATS = {"Weapon", "Armor", "Potion"}  # Types that require stats modal
+TYPES_WITH_STATS = {"Weapon", "Armor", "Potion"}  # Types that require stats
 
 db_conn = None  # initialized in on_ready
 
-# ---------------- STATS MODAL ----------------
-class ItemStatsModal(discord.ui.Modal):
-    def __init__(self, item_name, item_type):
-        super().__init__(title=f"{item_type} Stats for {item_name}")
+# ---------------- STATS VIEW ----------------
+class ItemStatsView(discord.ui.View):
+    def __init__(self, item_name, item_type, author):
+        super().__init__(timeout=180)
         self.item_name = item_name
         self.item_type = item_type
+        self.author = author
+        self.usable_classes = []
 
-        # Dynamic fields based on item type
+        # Multi-select for Usable Classes
+        self.class_select = discord.ui.Select(
+            placeholder="Select Usable Classes",
+            options=[discord.SelectOption(label=c) for c in CLASSES],
+            min_values=1,
+            max_values=len(CLASSES)
+        )
+        self.class_select.callback = self.select_classes
+        self.add_item(self.class_select)
+
+        # Add stats fields depending on type
         if item_type == "Weapon":
             self.attack = discord.ui.TextInput(label="Attack", placeholder="Enter Attack value", required=True)
             self.delay = discord.ui.TextInput(label="Delay", placeholder="Enter Delay value", required=True)
-            self.usable_by = discord.ui.TextInput(
-                label="Usable By",
-                placeholder="Enter usable classes, comma-separated",
-                required=True
-            )
             self.add_item(self.attack)
             self.add_item(self.delay)
-            self.add_item(self.usable_by)
         elif item_type == "Armor":
             self.defense = discord.ui.TextInput(label="Defense", placeholder="Enter Defense value", required=True)
             self.weight = discord.ui.TextInput(label="Weight", placeholder="Enter Weight value", required=True)
-            self.usable_by = discord.ui.TextInput(
-                label="Usable By",
-                placeholder="Enter usable classes, comma-separated",
-                required=True
-            )
             self.add_item(self.defense)
             self.add_item(self.weight)
-            self.add_item(self.usable_by)
         elif item_type == "Potion":
             self.effect = discord.ui.TextInput(label="Effect", placeholder="Enter Effect", required=True)
             self.duration = discord.ui.TextInput(label="Duration", placeholder="Enter Duration value", required=True)
-            self.usable_by = discord.ui.TextInput(
-                label="Usable By",
-                placeholder="Enter usable classes, comma-separated",
-                required=True
-            )
             self.add_item(self.effect)
             self.add_item(self.duration)
-            self.add_item(self.usable_by)
-        else:
-            # For other types without stats
-            self.usable_by = discord.ui.TextInput(
-                label="Usable By",
-                placeholder="Enter usable classes, comma-separated",
-                required=True
-            )
-            self.add_item(self.usable_by)
+        # Other types can be added here
 
-    async def on_submit(self, interaction: discord.Interaction):
-        # Collect stats
-        stats = {field.label: field.value for field in self.children if field.label != "Usable By"}
-        stats_str = "; ".join([f"{k}: {v}" for k, v in stats.items()]) if stats else None
+    async def select_classes(self, interaction: discord.Interaction):
+        if interaction.user != self.author:
+            return await interaction.response.send_message("This is not your selection!", ephemeral=True)
+        self.usable_classes = interaction.data["values"]
 
-        # Collect usable classes and validate
-        usable_classes_input = self.usable_by.value
-        usable_classes = [c.strip() for c in usable_classes_input.split(",") if c.strip() in CLASSES]
-        if not usable_classes:
-            await interaction.response.send_message(
-                f"❌ No valid classes entered. Allowed classes: {', '.join(CLASSES)}",
-                ephemeral=True
-            )
-            return
+        # Collect stats from text inputs
+        stats = {}
+        for child in self.children:
+            if isinstance(child, discord.ui.TextInput):
+                stats[child.label] = child.value
+        stats_str = "; ".join(f"{k}: {v}" for k, v in stats.items()) if stats else None
 
         # Save to database
         await db_conn.execute(
             "INSERT INTO inventory(item_name,item_type,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5)",
             self.item_name,
             self.item_type,
-            ",".join(usable_classes),
+            ",".join(self.usable_classes),
             stats_str,
             None
         )
 
         await interaction.response.send_message(
-            f"✅ Added **{self.item_name}** ({self.item_type} - {', '.join(usable_classes)}) with stats: {stats_str or 'None'} to the Guild Bank.",
+            f"✅ Added **{self.item_name}** ({self.item_type} - {', '.join(self.usable_classes)}) with stats: {stats_str or 'None'} to the Guild Bank.",
             ephemeral=True
         )
+        self.stop()
 
-# ---------------- VIEW FOR ITEM TYPE SELECTION ----------------
+# ---------------- VIEW FOR ITEM TYPE ----------------
 class AddItemView(discord.ui.View):
     def __init__(self, item_name, author):
         super().__init__(timeout=120)
         self.item_name = item_name
         self.author = author
-        self.item_type = None  # single selection
+        self.item_type = None
 
         # Single-select Item Type
         self.type_select = discord.ui.Select(
@@ -123,8 +108,14 @@ class AddItemView(discord.ui.View):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_type = interaction.data["values"][0]
-        # Open modal based on selected type
-        await interaction.response.send_modal(ItemStatsModal(self.item_name, self.item_type))
+
+        # Show ItemStatsView for stats + usable classes
+        view = ItemStatsView(self.item_name, self.item_type, self.author)
+        await interaction.response.send_message(
+            f"Enter stats and select usable classes for **{self.item_name}** ({self.item_type}):",
+            view=view,
+            ephemeral=True
+        )
         self.stop()
 
 # ---------------- COMMANDS ----------------
@@ -196,3 +187,4 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
