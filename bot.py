@@ -187,7 +187,7 @@ async def view_bank(interaction: discord.Interaction):
         return
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
     for row in rows:
-        embed.add_field(name=row["name"], value=f"Type: {row['type']} | Subtype: {row['subtype']} | Classes: {row['classes']}", inline=False)
+        embed.add_field(name=row["name"], value=f"Type: {row['type']} | Subtype: {row['subtype']} | Stats:{row['stats']} | Classes: {row['classes']}", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
@@ -211,3 +211,4 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
