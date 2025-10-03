@@ -1,22 +1,26 @@
 import discord
 from discord.ext import commands
-import sqlite3
 import os
+import psycopg
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- SQLite setup ---
-conn = sqlite3.connect("inventory.db")
-c = conn.cursor()
-c.execute("""CREATE TABLE IF NOT EXISTS inventory (
+# --- Postgres setup ---
+DATABASE_URL = os.environ["DATABASE_URL"]
+
+# Connect once (blocking but fine for small bot)
+conn = psycopg.connect(DATABASE_URL, autocommit=True)
+cur = conn.cursor()
+cur.execute("""
+CREATE TABLE IF NOT EXISTS inventory (
     user_id TEXT,
     item_name TEXT,
     item_type TEXT,
     item_class TEXT,
     photo_url TEXT
-)""")
-conn.commit()
+)
+""")
 
 ITEM_TYPES = ["Weapon", "Armor", "Potion", "Misc"]
 CLASSES = ["Warrior", "Mage", "Rogue", "Cleric"]
@@ -212,5 +216,6 @@ async def on_ready():
 
 # Replace with your bot token
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
