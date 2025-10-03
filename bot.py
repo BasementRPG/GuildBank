@@ -65,13 +65,12 @@ class ItemEntryView(discord.ui.View):
         self.item_name = item_name
         self.author = author
 
-        # Draft state
         self.item_type = None
         self.subtype = None
         self.stats = None
         self.usable_classes = []
 
-        # Item Type
+        # Item Type dropdown
         self.type_select = discord.ui.Select(
             placeholder="Select Item Type",
             options=[discord.SelectOption(label=t) for t in ITEM_TYPES],
@@ -81,17 +80,10 @@ class ItemEntryView(discord.ui.View):
         self.type_select.callback = self.select_type
         self.add_item(self.type_select)
 
-        # Subtype
-        self.subtype_select = discord.ui.Select(
-            placeholder="Select Subtype",
-            options=[],
-            min_values=1,
-            max_values=1
-        )
-        self.subtype_select.callback = self.select_subtype
-        self.add_item(self.subtype_select)
+        # Subtype dropdown: only add **after type is selected**
+        self.subtype_select = None
 
-        # Usable Classes
+        # Usable Classes multi-select
         self.classes_select = discord.ui.Select(
             placeholder="Select Usable Classes",
             options=[discord.SelectOption(label=c) for c in CLASSES],
@@ -114,42 +106,25 @@ class ItemEntryView(discord.ui.View):
     async def select_type(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("Not your entry!", ephemeral=True)
+
         self.item_type = interaction.data["values"][0]
-        # Update subtype options
+
+        # Create or update Subtype select
         options = SUBTYPES.get(self.item_type, ["None"])
-        self.subtype_select.options = [discord.SelectOption(label=o) for o in options]
+        if self.subtype_select is None:
+            self.subtype_select = discord.ui.Select(
+                placeholder="Select Subtype",
+                options=[discord.SelectOption(label=o) for o in options],
+                min_values=1,
+                max_values=1
+            )
+            self.subtype_select.callback = self.select_subtype
+            self.add_item(self.subtype_select)
+        else:
+            # Update options if already exists
+            self.subtype_select.options = [discord.SelectOption(label=o) for o in options]
+
         await interaction.response.edit_message(view=self)
-
-    async def select_subtype(self, interaction: discord.Interaction):
-        if interaction.user != self.author:
-            return await interaction.response.send_message("Not your entry!", ephemeral=True)
-        self.subtype = interaction.data["values"][0]
-        await interaction.response.edit_message(view=self)
-
-    async def select_classes(self, interaction: discord.Interaction):
-        if interaction.user != self.author:
-            return await interaction.response.send_message("Not your entry!", ephemeral=True)
-        self.usable_classes = interaction.data["values"]
-        await interaction.response.edit_message(view=self)
-
-    async def open_stats_modal(self, interaction: discord.Interaction):
-        if interaction.user != self.author:
-            return await interaction.response.send_message("Not your entry!", ephemeral=True)
-        if not self.item_type or not self.subtype:
-            return await interaction.response.send_message("Select Type and Subtype first!", ephemeral=True)
-        modal = StatsModalDraft(self)
-        await interaction.response.send_modal(modal)
-
-    async def submit_item(self, interaction: discord.Interaction):
-        if not all([self.item_type, self.subtype, self.usable_classes]):
-            return await interaction.response.send_message("Complete all fields first!", ephemeral=True)
-        stats_str = "; ".join([f"{k}: {v}" for k,v in (self.stats or {}).items()]) if self.stats else None
-        await db_conn.execute(
-            "INSERT INTO inventory(item_name,item_type,subtype,item_class,stats,photo_url) VALUES($1,$2,$3,$4,$5,$6)",
-            self.item_name, self.item_type, self.subtype, ",".join(self.usable_classes), stats_str, None
-        )
-        await interaction.response.send_message(f"✅ **{self.item_name}** added to the Guild Bank!", ephemeral=True)
-        self.stop()
 
 # ---------------- COMMANDS ----------------
 @bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
@@ -199,3 +174,4 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
