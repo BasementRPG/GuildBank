@@ -1,7 +1,6 @@
 import os
 import discord
 from discord.ext import commands
-import asyncio
 import asyncpg
 
 # -------- CONFIG --------
@@ -31,6 +30,7 @@ async def init_db():
 
 loop = asyncio.get_event_loop()
 db_conn = loop.run_until_complete(init_db())
+
 
 
 
