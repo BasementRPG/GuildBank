@@ -1,3 +1,60 @@
+import os
+import discord
+from discord.ext import commands
+import asyncpg
+
+TOKEN = os.environ.get("DISCORD_TOKEN")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ---------------- CONFIG ----------------
+ITEM_TYPES = ["Armor", "Crafting", "Misc", "Quest", "Potion", "Weapon"]
+CLASSES = [
+    "Archer","Bard","Beastmaster","Cleric","Druid","Elementalist",
+    "Enchanter","Fighter","Inquisitor","Monk","Necromancer","Paladin",
+    "Ranger","Rogue","Shadow Knight","Shaman","Spellblade","Wizard"
+]
+SUBTYPES = {
+    "Armor": ["Plate", "Leather", "Chain"],
+    "Weapon": ["Sword", "Axe", "Bow", "Dagger"],
+    "Potion": ["Healing", "Mana", "Buff"],
+    "Crafting": ["Materials"],
+    "Misc": ["Misc"],
+    "Quest": ["Quest"]
+}
+
+db_conn = None
+
+# ---------------- STATS MODAL ----------------
+class StatsModal(discord.ui.Modal):
+    def __init__(self, view_ref):
+        super().__init__(title=f"{view_ref.item_type}: {view_ref.subtype} Stats")
+        self.view_ref = view_ref
+        stats = view_ref.stats or {}
+
+        if view_ref.item_type == "Weapon":
+            self.attack = discord.ui.TextInput(label="Attack", default=stats.get("Attack",""))
+            self.delay = discord.ui.TextInput(label="Delay", default=stats.get("Delay",""))
+            self.add_item(self.attack)
+            self.add_item(self.delay)
+        elif view_ref.item_type == "Armor":
+            self.defense = discord.ui.TextInput(label="Defense", default=stats.get("Defense",""))
+            self.weight = discord.ui.TextInput(label="Weight", default=stats.get("Weight",""))
+            self.add_item(self.defense)
+            self.add_item(self.weight)
+        elif view_ref.item_type == "Potion":
+            self.effect = discord.ui.TextInput(label="Effect", default=stats.get("Effect",""))
+            self.duration = discord.ui.TextInput(label="Duration", default=stats.get("Duration",""))
+            self.add_item(self.effect)
+            self.add_item(self.duration)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.view_ref.stats = {child.label: child.value for child in self.children}
+        await interaction.response.send_message("✅ Stats updated! You can continue editing or click Submit.", ephemeral=True)
+
+# ---------------- ITEM ENTRY VIEW ----------------
 class ItemEntryView(discord.ui.View):
     def __init__(self, item_name, author):
         super().__init__(timeout=300)
@@ -57,11 +114,11 @@ class ItemEntryView(discord.ui.View):
 
         self.item_type = interaction.data["values"][0]
 
-        # Update Subtype options based on selected type
+        # Update Subtype options
         options = SUBTYPES.get(self.item_type, ["None"])
         self.subtype_select.options = [discord.SelectOption(label=o) for o in options]
 
-        # Keep current subtype if it exists in new options, else reset
+        # Reset subtype if current selection is invalid
         if self.subtype not in options:
             self.subtype = None
             self.subtype_select.placeholder = "Select Subtype"
@@ -81,10 +138,13 @@ class ItemEntryView(discord.ui.View):
         selected = interaction.data["values"]
         if "All" in selected:
             self.usable_classes = ["All"]
-            # Deselect other classes visually
             self.classes_select.values = ["All"]
         else:
+            # Remove "All" if other classes selected
             self.usable_classes = selected
+            if "All" in self.classes_select.values:
+                self.classes_select.values.remove("All")
+
         await interaction.response.edit_message(view=self)
 
     async def open_stats_modal(self, interaction: discord.Interaction):
@@ -111,3 +171,51 @@ class ItemEntryView(discord.ui.View):
         )
         await interaction.response.send_message(f"✅ **{self.item_name}** added to the Guild Bank!", ephemeral=True)
         self.stop()
+
+# ---------------- COMMANDS ----------------
+@bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
+async def add_item(interaction: discord.Interaction, name: str):
+    view = ItemEntryView(name, interaction.user)
+    await interaction.response.send_message(f"Adding item: **{name}**", view=view, ephemeral=True)
+
+@bot.tree.command(name="view_items", description="View the Guild Bank")
+async def view_items(interaction: discord.Interaction):
+    rows = await db_conn.fetch("SELECT item_name,item_type,subtype,item_class,stats FROM inventory")
+    if not rows:
+        return await interaction.response.send_message("The Guild Bank is empty.", ephemeral=True)
+    sorted_rows = sorted(rows, key=lambda r: r["item_name"].lower())
+    desc_lines = []
+    for r in sorted_rows:
+        classes_sorted = sorted(r["item_class"].split(",")) if r["item_class"] else []
+        stats_str = r["stats"] or "None"
+        subtype_str = r["subtype"] or ""
+        line = f"{r['item_name']} | {r['item_type']}: {subtype_str} | Stats: {stats_str} | Usable By: {', '.join(classes_sorted)}"
+        desc_lines.append(line)
+    embed = discord.Embed(title="Guild Bank", description="\n".join(desc_lines))
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="delete_item", description="Delete an item from the Guild Bank")
+async def delete_item(interaction: discord.Interaction, item_name: str):
+    await db_conn.execute("DELETE FROM inventory WHERE item_name=$1", item_name)
+    await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
+
+# ---------------- READY ----------------
+@bot.event
+async def on_ready():
+    global db_conn
+    if db_conn is None:
+        db_conn = await asyncpg.connect(DATABASE_URL)
+        await db_conn.execute("""
+            CREATE TABLE IF NOT EXISTS inventory (
+                item_name TEXT,
+                item_type TEXT,
+                subtype TEXT,
+                item_class TEXT,
+                stats TEXT,
+                photo_url TEXT
+            )
+        """)
+    await bot.tree.sync()
+    print(f"✅ Logged in as {bot.user}")
+
+bot.run(TOKEN)
