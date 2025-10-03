@@ -87,7 +87,7 @@ class ClassesSelect(discord.ui.Select):
         self.parent_view.usable_classes = self.values
         await interaction.response.defer()
 
-#------ITEM DETAILS ----
+# ------ITEM DETAILS ----
 
 class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
     def __init__(self, view: ItemEntryView):
@@ -140,7 +140,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         await interaction.response.send_message("✅ Details saved. Click Submit when ready.", ephemeral=True)
 
 
-#----------
+# ----------
 
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
@@ -266,6 +266,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
