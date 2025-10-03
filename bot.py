@@ -81,4 +81,5 @@ async def view_items(ctx):
         await ctx.send(embed=embed)
 
 # Replace with your bot token
-bot.run("")
+bot.run("YMTQyMzYwNTU5MjgxMTExMDQxMA.G1LePs.34i7FTUYHl1R2eKAhuuEk6tWWpciidAmrNwT9Y")
+
