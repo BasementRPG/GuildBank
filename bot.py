@@ -16,23 +16,56 @@ CLASSES = ["Warrior", "Mage", "Rogue", "Cleric"]
 
 db_conn = None  # Will be initialized in on_ready
 
-# ---------------- COMMANDS ----------------
+# ---------------- ITEM ADD VIEW ----------------
+class AddItemView(discord.ui.View):
+    def __init__(self, name):
+        super().__init__(timeout=60)  # User has 60s to interact
+        self.name = name
+        self.type_selected = None
+        self.class_selected = None
 
-@bot.tree.command(name="add_item", description="Add an item to your inventory")
-async def add_item(interaction: discord.Interaction, name: str, type: str, cls: str):
-    global db_conn
-    if type not in ITEM_TYPES or cls not in CLASSES:
-        await interaction.response.send_message("Invalid type or class.", ephemeral=True)
-        return
-    await db_conn.execute(
-        "INSERT INTO inventory(user_id,item_name,item_type,item_class,photo_url) VALUES($1,$2,$3,$4,$5)",
-        str(interaction.user.id), name, type, cls, None
+    @discord.ui.select(
+        placeholder="Choose Item Type",
+        options=[discord.SelectOption(label=t) for t in ITEM_TYPES]
     )
-    await interaction.response.send_message(f"✅ Added **{name}** to your inventory.", ephemeral=True)
+    async def select_type(self, select, interaction: discord.Interaction):
+        self.type_selected = select.values[0]
+        await interaction.response.send_message(f"Item type selected: {self.type_selected}", ephemeral=True)
+        self.check_complete(interaction)
+
+    @discord.ui.select(
+        placeholder="Choose Class",
+        options=[discord.SelectOption(label=c) for c in CLASSES]
+    )
+    async def select_class(self, select, interaction: discord.Interaction):
+        self.class_selected = select.values[0]
+        await interaction.response.send_message(f"Class selected: {self.class_selected}", ephemeral=True)
+        self.check_complete(interaction)
+
+    def check_complete(self, interaction):
+        if self.type_selected and self.class_selected:
+            # Save to database
+            async def save():
+                await db_conn.execute(
+                    "INSERT INTO inventory(user_id,item_name,item_type,item_class,photo_url) VALUES($1,$2,$3,$4,$5)",
+                    str(interaction.user.id), self.name, self.type_selected, self.class_selected, None
+                )
+            bot.loop.create_task(save())
+            # Disable view
+            for child in self.children:
+                child.disabled = True
+            bot.loop.create_task(interaction.followup.send(f"✅ Added **{self.name}** ({self.type_selected} - {self.class_selected}) to your inventory.", ephemeral=True))
+            self.stop()
+
+# ---------------- COMMANDS ----------------
+@bot.tree.command(name="add_item", description="Add an item to your inventory")
+async def add_item(interaction: discord.Interaction, name: str):
+    """Starts a dropdown interaction to select type and class."""
+    view = AddItemView(name)
+    await interaction.response.send_message(f"Adding item: **{name}**. Choose type and class:", view=view, ephemeral=True)
 
 @bot.tree.command(name="view_items", description="View your inventory")
 async def view_items(interaction: discord.Interaction):
-    global db_conn
     rows = await db_conn.fetch(
         "SELECT item_name,item_type,item_class FROM inventory WHERE user_id=$1",
         str(interaction.user.id)
@@ -46,7 +79,6 @@ async def view_items(interaction: discord.Interaction):
 
 @bot.tree.command(name="delete_item", description="Delete an item from your inventory")
 async def delete_item(interaction: discord.Interaction, item_name: str):
-    global db_conn
     await db_conn.execute(
         "DELETE FROM inventory WHERE user_id=$1 AND item_name=$2",
         str(interaction.user.id), item_name
@@ -55,7 +87,6 @@ async def delete_item(interaction: discord.Interaction, item_name: str):
 
 @bot.tree.command(name="update_item", description="Update an item")
 async def update_item(interaction: discord.Interaction, old_name: str, new_name: str, new_type: str, new_class: str):
-    global db_conn
     if new_type not in ITEM_TYPES or new_class not in CLASSES:
         await interaction.response.send_message("Invalid type or class.", ephemeral=True)
         return
