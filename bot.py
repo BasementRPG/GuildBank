@@ -1,122 +1,99 @@
-import os
 import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncpg
+import os
 
-# -------------------------------
-# Bot Setup
-# -------------------------------
+TOKEN = os.getenv("DISCORD_TOKEN")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-db_pool = None
-
-# -------------------------------
-# Constants
-# -------------------------------
-ITEM_TYPES = ["Armor", "Crafting", "Misc", "Quest", "Potion", "Weapon"]
-
-SUBTYPES = {
-    "Armor": ["Cloth", "Leather", "Chain", "Plate"],
-    "Crafting": ["Alchemy", "Smithing", "Tailoring"],
-    "Misc": ["General", "Other"],
-    "Quest": ["Quest Item"],
-    "Potion": ["Health", "Mana"],
-    "Weapon": ["Sword", "Axe", "Bow", "Dagger"],
-}
-
-CLASSES = [
-    "Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist",
-    "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin",
-    "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"
-]
-
-# -------------------------------
-# PostgreSQL DB functions
-# -------------------------------
-async def init_db():
-    global db_pool
-    db_pool = await asyncpg.create_pool(DATABASE_URL)
-    async with db_pool.acquire() as conn:
-        await conn.execute('''
-            CREATE TABLE IF NOT EXISTS inventory (
-                id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                type TEXT NOT NULL,
-                subtype TEXT NOT NULL,
-                stats TEXT,
-                classes TEXT,
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        ''')
+# ─────────── DB POOL ─────────────
+db_pool: asyncpg.Pool = None
 
 async def add_item_db(name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
-        await conn.execute('''
+        await conn.execute(
+            '''
             INSERT INTO inventory (name, type, subtype, stats, classes)
             VALUES ($1, $2, $3, $4, $5)
-        ''', name, type_, subtype, stats, classes)
+            ''',
+            name, type_, subtype, stats, classes
+        )
 
-async def get_all_items():
-    async with db_pool.acquire() as conn:
-        return await conn.fetch('SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY name ASC')
+# ─────────── CONFIG DATA ─────────────
+SUBTYPES = {
+    "Weapon": ["Sword", "Axe", "Bow"],
+    "Armor": ["Plate", "Leather", "Cloth"],
+    "Consumable": ["Potion", "Food"],
+}
 
-async def remove_item_db(item_id):
-    async with db_pool.acquire() as conn:
-        await conn.execute('DELETE FROM inventory WHERE id=$1', item_id)
+CLASSES = ["Fighter", "Paladin", "Mage", "Rogue"]
 
-# -------------------------------
-# Modal for Item Details
-# -------------------------------
-class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
-    name = discord.ui.TextInput(label="Item Name", required=True)
-    attack = discord.ui.TextInput(label="Attack", required=False)
-    delay = discord.ui.TextInput(label="Delay", required=False)
-    defense = discord.ui.TextInput(label="Defense", required=False)
-
-    def __init__(self, parent_view):
-        super().__init__()
-        self.parent_view = parent_view
-
-    async def on_submit(self, interaction: discord.Interaction):
-        self.parent_view.item_name = self.name.value
-        stats_list = []
-        if self.attack.value or self.delay.value:
-            stats_list.append(f"Attack: {self.attack.value} | Delay: {self.delay.value}")
-        if self.defense.value:
-            stats_list.append(f"Defense: {self.defense.value}")
-        self.parent_view.stats = " | ".join(stats_list)
-        await interaction.response.send_message("Item details saved.", ephemeral=True)
-
-# -------------------------------
-# Item Entry View with Drop-downs and Buttons
-# -------------------------------
+# ─────────── UI COMPONENTS ─────────────
 class SubtypeSelect(discord.ui.Select):
     def __init__(self, view):
-        options = [discord.SelectOption(label=s) for s in SUBTYPES[view.item_type]]
-        super().__init__(placeholder="Select Subtype", min_values=1, max_values=1, options=options)
         self.view_ref = view
+        options = [
+            discord.SelectOption(label=s, default=(s == view.subtype))
+            for s in SUBTYPES.get(view.item_type, [])
+        ]
+        super().__init__(
+            placeholder="Select Subtype",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
 
     async def callback(self, interaction: discord.Interaction):
-        self.view_ref.subtype = self.values[0]  # store in view
+        self.view_ref.subtype = self.values[0]
+        self.options = [
+            discord.SelectOption(label=s, default=(s == self.view_ref.subtype))
+            for s in SUBTYPES.get(self.view_ref.item_type, [])
+        ]
         await interaction.response.edit_message(view=self.view_ref)
 
 
 class ClassesSelect(discord.ui.Select):
     def __init__(self, view):
-        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
-        super().__init__(placeholder="Select Usable Classes", min_values=1, max_values=len(options), options=options)
         self.view_ref = view
+        options = [
+            discord.SelectOption(label=c, default=(c in view.usable_classes))
+            for c in ["All"] + CLASSES
+        ]
+        super().__init__(
+            placeholder="Select Usable Classes",
+            min_values=1,
+            max_values=len(options),
+            options=options,
+        )
 
     async def callback(self, interaction: discord.Interaction):
         if "All" in self.values:
             self.view_ref.usable_classes = ["All"]
         else:
             self.view_ref.usable_classes = self.values
+        self.options = [
+            discord.SelectOption(label=c, default=(c in self.view_ref.usable_classes))
+            for c in ["All"] + CLASSES
+        ]
         await interaction.response.edit_message(view=self.view_ref)
+
+
+class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
+    item_name = discord.ui.TextInput(label="Item Name", placeholder="Enter item name")
+    stats = discord.ui.TextInput(label="Stats", placeholder="Example: Attack:10, Delay:2")
+
+    def __init__(self, view):
+        super().__init__()
+        self.view_ref = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.view_ref.item_name = self.item_name.value
+        self.view_ref.stats = self.stats.value
+        await interaction.response.send_message("✅ Details saved.", ephemeral=True)
 
 
 class ItemEntryView(discord.ui.View):
@@ -128,18 +105,15 @@ class ItemEntryView(discord.ui.View):
         self.usable_classes = []
         self.item_name = ""
         self.stats = ""
-        self.item_id = item_id  # for editing
+        self.item_id = item_id
 
-        # Add subtype dropdown
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
 
-        # Add classes multi-select
         self.classes_select = ClassesSelect(self)
         self.add_item(self.classes_select)
 
-        # Buttons
-        self.details_button = discord.ui.Button(label="Add Item Details", style=discord.ButtonStyle.secondary)
+        self.details_button = discord.ui.Button(label="Item Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
@@ -159,121 +133,46 @@ class ItemEntryView(discord.ui.View):
 
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
-        if self.item_id:  # Editing existing item
-            async with db_pool.acquire() as conn:
-                await conn.execute('''
-                    UPDATE inventory
-                    SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, updated_at=NOW()
-                    WHERE id=$6
-                ''', self.item_name, self.item_type, self.subtype, self.stats, classes_str, self.item_id)
-            await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
-        else:  # New item
-            await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
-            await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
+        await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+        await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
     async def reset_entry(self, interaction: discord.Interaction):
+        self.subtype = None
+        self.usable_classes = []
+        self.item_name = ""
+        self.stats = ""
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
 
+# ─────────── COMMANDS ─────────────
+@bot.tree.command(name="add_item", description="Add an item to the guild bank.")
+@app_commands.describe(item_type="Enter the type (Weapon, Armor, Consumable...)")
+async def add_item(interaction: discord.Interaction, item_type: str):
+    if item_type not in SUBTYPES:
+        await interaction.response.send_message("Invalid item type. Try: " + ", ".join(SUBTYPES.keys()), ephemeral=True)
+        return
+    view = ItemEntryView(interaction.user, item_type=item_type)
+    await interaction.response.send_message("Fill out the item details:", view=view, ephemeral=True)
 
-# -------------------------------
-# Slash Commands
-# -------------------------------
-@bot.tree.command(name="add_item", description="Add an item to the Guild Bank")
-@app_commands.describe(item_type="Choose the item type")
-@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
-async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
-    view = ItemEntryView(interaction.user, item_type.value)
-    # Populate subtype options
-    view.subtype_select.options = [discord.SelectOption(label=s) for s in SUBTYPES[item_type.value]]
-    await interaction.response.send_message(f"Adding item of type **{item_type.value}**:", view=view, ephemeral=True)
-
-@bot.tree.command(name="view_bank", description="View all items in the Guild Bank")
+@bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    rows = await get_all_items()
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT name, type, subtype, stats, classes FROM inventory")
     if not rows:
-        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
+        await interaction.response.send_message("The bank is empty.", ephemeral=True)
         return
-    lines = [f"{row['name']} | {row['type']}:{row['subtype']} | Stats: {row['stats']} | Usable by: {row['classes']}" for row in rows]
-    await interaction.response.send_message("\n".join(lines), ephemeral=True)
+    msg = ""
+    for r in rows:
+        msg += f"**{r['name']}** | {r['type']}: {r['subtype']} | Stats: {r['stats']} | Usable by: {r['classes']}\n"
+    await interaction.response.send_message(msg, ephemeral=True)
 
-@bot.tree.command(name="edit_item", description="Edit an existing item in the Guild Bank")
-async def edit_item(interaction: discord.Interaction):
-    rows = await get_all_items()
-    if not rows:
-        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
-        return
-
-    options = [discord.SelectOption(label=row["name"], value=str(row["id"])) for row in rows]
-
-    class EditSelect(discord.ui.Select):
-        def __init__(self):
-            super().__init__(placeholder="Select item to edit", min_values=1, max_values=1, options=options)
-
-        async def callback(self, interaction: discord.Interaction):
-            item_id = int(self.values[0])
-            item = next(r for r in rows if r["id"] == item_id)
-            view = ItemEntryView(interaction.user, item_type=item["type"], item_id=item_id)
-            view.item_name = item["name"]
-            view.subtype = item["subtype"]
-            view.usable_classes = item["classes"].split(", ")
-            view.stats = item["stats"]
-            view.subtype_select.options = [discord.SelectOption(label=s) for s in SUBTYPES[item["type"]]]
-            await interaction.response.edit_message(content=f"Editing **{item['name']}**:", view=view)
-
-    class EditView(discord.ui.View):
-        def __init__(self):
-            super().__init__()
-            self.add_item(EditSelect())
-
-    await interaction.response.send_message("Select an item to edit:", view=EditView(), ephemeral=True)
-
-@bot.tree.command(name="remove_item", description="Remove an item from the Guild Bank")
-async def remove_item(interaction: discord.Interaction):
-    rows = await get_all_items()
-    if not rows:
-        await interaction.response.send_message("Guild Bank is empty.", ephemeral=True)
-        return
-
-    options = [discord.SelectOption(label=row["name"], value=str(row["id"])) for row in rows]
-
-    class RemoveSelect(discord.ui.Select):
-        def __init__(self):
-            super().__init__(placeholder="Select item to remove", min_values=1, max_values=1, options=options)
-
-        async def callback(self, interaction: discord.Interaction):
-            item_id = int(self.values[0])
-            await remove_item_db(item_id)
-            await interaction.response.send_message("✅ Item removed from Guild Bank.", ephemeral=True)
-            self.view.stop()
-
-    class RemoveView(discord.ui.View):
-        def __init__(self):
-            super().__init__()
-            self.add_item(RemoveSelect())
-
-    await interaction.response.send_message("Select an item to remove:", view=RemoveView(), ephemeral=True)
-
-# -------------------------------
-# Bot Ready Event
-# -------------------------------
+# ─────────── SETUP ─────────────
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
-    await init_db()
-    try:
-        await bot.tree.sync()
-        print("Commands synced!")
-    except Exception as e:
-        print(e)
+    global db_pool
+    db_pool = await asyncpg.create_pool(DATABASE_URL)
+    await bot.tree.sync()
+    print(f"Logged in as {bot.user} and synced {len(bot.tree.get_commands())} commands.")
 
-# -------------------------------
-# Run Bot
-# -------------------------------
-TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
-
-
-
-
