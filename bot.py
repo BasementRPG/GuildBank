@@ -94,6 +94,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
 # -------------------------------
 # Item Entry View with Drop-downs and Buttons
 # -------------------------------
+
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None):
         super().__init__(timeout=None)
@@ -103,7 +104,7 @@ class ItemEntryView(discord.ui.View):
         self.usable_classes = []
         self.item_name = ""
         self.stats = ""
-        self.item_id = item_id  # For editing
+        self.item_id = item_id  # for editing
 
         # Subtype dropdown (single select)
         self.subtype_select = discord.ui.Select(
@@ -145,17 +146,17 @@ class ItemEntryView(discord.ui.View):
 
     # Subtype selection
     async def select_subtype(self, interaction: discord.Interaction):
-        self.subtype = interaction.values[0]  # store selection
-        await interaction.response.edit_message(view=self)  # keep dropdowns active
+        self.view.subtype = self.values[0]  # correct: values from Select
+        await interaction.response.edit_message(view=self.view)
 
     # Classes multi-select
     async def select_classes(self, interaction: discord.Interaction):
-        selected = interaction.values
+        selected = self.values  # correct: values from Select
         if "All" in selected:
-            self.usable_classes = ["All"]
+            self.view.usable_classes = ["All"]
         else:
-            self.usable_classes = selected
-        await interaction.response.edit_message(view=self)  # keep dropdowns active
+            self.view.usable_classes = selected
+        await interaction.response.edit_message(view=self.view)
 
     # Open modal for item name and stats
     async def open_item_details(self, interaction: discord.Interaction):
@@ -181,7 +182,6 @@ class ItemEntryView(discord.ui.View):
     async def reset_entry(self, interaction: discord.Interaction):
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
-
 
 
 # -------------------------------
@@ -280,5 +280,6 @@ async def on_ready():
 # -------------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
+
 
 
