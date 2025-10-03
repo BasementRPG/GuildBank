@@ -77,13 +77,9 @@ class SubtypeSelect(discord.ui.Select):
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
-        options = []
 
-        # Decide what to show in the dropdown
-        if self.parent_view.usable_classes == ["All"]:
-            options = [discord.SelectOption(label="All")]
-        else:
-            options = [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
+        # Always show all options
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
 
         super().__init__(
             placeholder="Select usable classes (multi)",
@@ -92,26 +88,24 @@ class ClassesSelect(discord.ui.Select):
             max_values=len(options)
         )
 
-        # Pre-select currently stored classes if not empty
+        # Preselect current classes
         if self.parent_view.usable_classes:
             self.default = True
 
     async def callback(self, interaction: discord.Interaction):
-        # If All selected, store only All
+        # If All is selected, ignore other selections
         if "All" in self.values:
             self.view.usable_classes = ["All"]
         else:
+            # If other classes selected while All is in previous selection, remove All
             self.view.usable_classes = self.values
 
-        # Update dropdown options dynamically for next view
-        self.options.clear()
-        if self.view.usable_classes == ["All"]:
-            self.options.append(discord.SelectOption(label="All"))
-        else:
-            for c in CLASS_OPTIONS:
-                self.options.append(discord.SelectOption(label=c))
+        # Update the dropdown so selections are visible
+        for option in self.options:
+            option.default = option.label in self.view.usable_classes
 
         await interaction.response.edit_message(view=self.view)
+
 
 
 
@@ -302,6 +296,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
