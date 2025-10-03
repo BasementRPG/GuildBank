@@ -12,13 +12,14 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 ITEM_TYPES = ["Weapon", "Armor", "Potion", "Misc"]
 CLASSES = ["Warrior", "Mage", "Rogue", "Cleric"]
 
-db_conn = None  # Will initialize in on_ready
+db_conn = None  # Will be initialized in on_ready
 
 # ---------------- VIEW FOR DROPDOWNS ----------------
 class AddItemView(discord.ui.View):
-    def __init__(self, item_name):
+    def __init__(self, item_name, author):
         super().__init__(timeout=60)
         self.item_name = item_name
+        self.author = author
         self.item_type = None
         self.item_class = None
 
@@ -28,6 +29,8 @@ class AddItemView(discord.ui.View):
         custom_id="select_type"
     )
     async def select_type(self, select, interaction: discord.Interaction):
+        if interaction.user != self.author:
+            return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_type = select.values[0]
         await interaction.response.send_message(f"Item type selected: {self.item_type}", ephemeral=True)
         await self.check_complete(interaction)
@@ -38,18 +41,20 @@ class AddItemView(discord.ui.View):
         custom_id="select_class"
     )
     async def select_class(self, select, interaction: discord.Interaction):
+        if interaction.user != self.author:
+            return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_class = select.values[0]
         await interaction.response.send_message(f"Class selected: {self.item_class}", ephemeral=True)
         await self.check_complete(interaction)
 
     async def check_complete(self, interaction):
         if self.item_type and self.item_class:
-            # Save to database as bot-owned item (no user_id)
+            # Save to database as bot-owned item
             await db_conn.execute(
                 "INSERT INTO inventory(item_name,item_type,item_class,photo_url) VALUES($1,$2,$3,$4)",
                 self.item_name, self.item_type, self.item_class, None
             )
-            # Disable all dropdowns
+            # Disable dropdowns
             for child in self.children:
                 child.disabled = True
             await interaction.followup.send(
@@ -61,8 +66,7 @@ class AddItemView(discord.ui.View):
 # ---------------- COMMANDS ----------------
 @bot.tree.command(name="add_item", description="Add an item to the bot's inventory")
 async def add_item(interaction: discord.Interaction, name: str):
-    """Starts a dropdown interaction to select type and class."""
-    view = AddItemView(name)
+    view = AddItemView(name, interaction.user)
     await interaction.response.send_message(f"Adding item: **{name}**. Choose type and class:", view=view, ephemeral=True)
 
 @bot.tree.command(name="view_items", description="View the bot's inventory")
@@ -116,4 +120,3 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user}")
 
 bot.run(TOKEN)
-
