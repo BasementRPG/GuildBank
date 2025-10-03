@@ -27,7 +27,7 @@ class ItemStatsModal(discord.ui.Modal):
         self.item_types = item_types
         self.item_classes = item_classes
 
-        # Add fields dynamically based on item types
+        # Dynamic fields based on item type
         if "Weapon" in item_types:
             self.attack = discord.ui.TextInput(label="Attack", placeholder="Enter Attack value", required=True)
             self.delay = discord.ui.TextInput(label="Delay", placeholder="Enter Delay value", required=True)
@@ -43,12 +43,10 @@ class ItemStatsModal(discord.ui.Modal):
             self.duration = discord.ui.TextInput(label="Duration", placeholder="Enter Duration value", required=True)
             self.add_item(self.effect)
             self.add_item(self.duration)
-        # Add other item type-specific fields as needed
+        # Add more types/stats as needed
 
     async def on_submit(self, interaction: discord.Interaction):
-        stats = {}
-        for field in self.children:
-            stats[field.label] = field.value
+        stats = {field.label: field.value for field in self.children}
         stats_str = "; ".join([f"{k}: {v}" for k, v in stats.items()])
 
         await db_conn.execute(
@@ -61,7 +59,7 @@ class ItemStatsModal(discord.ui.Modal):
         )
 
         await interaction.response.send_message(
-            f"✅ Added **{self.item_name}** ({', '.join(self.item_types)} - {', '.join(self.item_classes)}) with stats: {stats_str} to the Guild Bank.",
+            f"✅ Added **{self.item_name}** ({', '.join(sorted(self.item_types))} - {', '.join(sorted(self.item_classes))}) with stats: {stats_str} to the Guild Bank.",
             ephemeral=True
         )
 
@@ -98,20 +96,20 @@ class AddItemView(discord.ui.View):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_types = interaction.data["values"]
-        await interaction.response.send_message(f"Item types selected: {', '.join(sorted(self.item_types))}", ephemeral=True)
         await self.check_complete(interaction)
 
     async def select_class(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return await interaction.response.send_message("This is not your selection!", ephemeral=True)
         self.item_classes = interaction.data["values"]
-        await interaction.response.send_message(f"Classes selected: {', '.join(sorted(self.item_classes))}", ephemeral=True)
         await self.check_complete(interaction)
 
-    async def check_complete(self, interaction):
+    async def check_complete(self, interaction: discord.Interaction):
         if self.item_types and self.item_classes:
-            # Open the stats modal for further input
-            await interaction.response.send_modal(ItemStatsModal(self.item_name, self.item_types, self.item_classes))
+            # Directly show the modal; no prior response sent
+            await interaction.response.send_modal(
+                ItemStatsModal(self.item_name, self.item_types, self.item_classes)
+            )
             self.stop()
 
 # ---------------- COMMANDS ----------------
@@ -127,9 +125,7 @@ async def view_items(interaction: discord.Interaction):
         await interaction.response.send_message("The Guild Bank is empty.", ephemeral=True)
         return
 
-    # Sort inventory items alphabetically by item_name
     sorted_rows = sorted(rows, key=lambda r: r["item_name"].lower())
-
     desc_lines = []
     for r in sorted_rows:
         types_sorted = sorted(r["item_type"].split(",")) if r["item_type"] else []
