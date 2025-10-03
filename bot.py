@@ -94,6 +94,30 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
 # -------------------------------
 # Item Entry View with Drop-downs and Buttons
 # -------------------------------
+class SubtypeSelect(discord.ui.Select):
+    def __init__(self, view):
+        options = [discord.SelectOption(label=s) for s in SUBTYPES[view.item_type]]
+        super().__init__(placeholder="Select Subtype", min_values=1, max_values=1, options=options)
+        self.view_ref = view
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view_ref.subtype = self.values[0]  # store in view
+        await interaction.response.edit_message(view=self.view_ref)
+
+
+class ClassesSelect(discord.ui.Select):
+    def __init__(self, view):
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
+        super().__init__(placeholder="Select Usable Classes", min_values=1, max_values=len(options), options=options)
+        self.view_ref = view
+
+    async def callback(self, interaction: discord.Interaction):
+        if "All" in self.values:
+            self.view_ref.usable_classes = ["All"]
+        else:
+            self.view_ref.usable_classes = self.values
+        await interaction.response.edit_message(view=self.view_ref)
+
 
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None):
@@ -106,25 +130,12 @@ class ItemEntryView(discord.ui.View):
         self.stats = ""
         self.item_id = item_id  # for editing
 
-        # Subtype dropdown (single select)
-        self.subtype_select = discord.ui.Select(
-            placeholder="Select Subtype",
-            min_values=1,
-            max_values=1,
-            options=[]
-        )
-        self.subtype_select.callback = self.select_subtype
+        # Add subtype dropdown
+        self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
 
-        # Classes multi-select
-        class_options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASSES]
-        self.classes_select = discord.ui.Select(
-            placeholder="Select Usable Classes",
-            min_values=1,
-            max_values=len(class_options),
-            options=class_options
-        )
-        self.classes_select.callback = self.select_classes
+        # Add classes multi-select
+        self.classes_select = ClassesSelect(self)
         self.add_item(self.classes_select)
 
         # Buttons
@@ -140,29 +151,12 @@ class ItemEntryView(discord.ui.View):
         self.reset_button.callback = self.reset_entry
         self.add_item(self.reset_button)
 
-    # Only allow the original author to interact
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
 
-    # Subtype selection
-    async def select_subtype(self, interaction: discord.Interaction):
-        self.view.subtype = self.values[0]  # correct: values from Select
-        await interaction.response.edit_message(view=self.view)
-
-    # Classes multi-select
-    async def select_classes(self, interaction: discord.Interaction):
-        selected = self.values  # correct: values from Select
-        if "All" in selected:
-            self.view.usable_classes = ["All"]
-        else:
-            self.view.usable_classes = selected
-        await interaction.response.edit_message(view=self.view)
-
-    # Open modal for item name and stats
     async def open_item_details(self, interaction: discord.Interaction):
         await interaction.response.send_modal(ItemDetailsModal(self))
 
-    # Submit the item to the database
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
         if self.item_id:  # Editing existing item
@@ -178,7 +172,6 @@ class ItemEntryView(discord.ui.View):
             await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
-    # Reset entry
     async def reset_entry(self, interaction: discord.Interaction):
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
@@ -280,6 +273,7 @@ async def on_ready():
 # -------------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
+
 
 
 
