@@ -66,7 +66,7 @@ async def add_item(ctx):
     await ctx.send(f"Item '{name}' added successfully!")
 
 @bot.command()
-async def view_items(ctx):
+async def view_bank(ctx):
     items = load_items()
     if not items:
         await ctx.send("No items found.")
@@ -82,5 +82,6 @@ async def view_items(ctx):
 
 # Replace with your bot token
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
