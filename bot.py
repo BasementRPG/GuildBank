@@ -286,7 +286,7 @@ async def view_bank(interaction: discord.Interaction):
         stats_lines = row['stats'].split("\n") if row.get('stats') else []
 
         # Indent each line
-        indented_stats = "\n".join([f"\u200B  {line}" for line in stats_lines])
+        indented_stats = "\n".join([f"{line}" for line in stats_lines])
 
         embed.add_field(
             name=row["name"],  # Item name stays unindented
@@ -325,6 +325,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
