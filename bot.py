@@ -187,22 +187,20 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
 
         if view.item_type == "Weapon":
             # Required fields
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.attack = discord.ui.TextInput(label="Attack", default="", required=True)
-            self.delay = discord.ui.TextInput(label="Delay", default="", required=True)
-
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
+            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay Example:8/24" , required=True)
+           
             # Optional fields
             self.attributes = discord.ui.TextInput(
-                label="Attributes", default="", required=False, style=discord.TextStyle.paragraph
+                label="Attributes", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
             )
             self.effects = discord.ui.TextInput(
-                label="Effects", default="", required=False, style=discord.TextStyle.paragraph
+                label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
             )
 
             # Add fields to modal
             self.add_item(self.item_name)
-            self.add_item(self.attack)
-            self.add_item(self.delay)
+            self.add_item(self.attack_delay)
             self.add_item(self.attributes)
             self.add_item(self.effects)
 
@@ -315,6 +313,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
