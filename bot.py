@@ -15,7 +15,7 @@ ITEM_TYPE_EMOJIS = {
     "Crafting": "⚒️",
     "Armor": "🛡️",
     "Consumable": "🧪",
-    "Misc": "🏺"
+    "Misc": "🏺",
     "Funds": "💰"
 }
 
