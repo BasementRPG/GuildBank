@@ -217,47 +217,38 @@ class ViewDetailsButton(discord.ui.Button):
 # ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    # Make sure the database pool exists
-    global db_pool
-    if db_pool is None:
-        await interaction.response.send_message("Database not initialized.", ephemeral=True)
-        return
-
     rows = await get_all_items()
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort items alphabetically
+    # Sort alphabetically
     sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
     view = discord.ui.View()
 
-    for row in sorted_rows:
-        # Prepare stats and classes with indentation
-        classes_list = row['classes'].split(", ") if row['classes'] else []
+    for r in sorted_rows:
+        classes_list = r['classes'].split(", ") if r['classes'] else []
         classes_sorted = ", ".join(sorted(classes_list))
-        stats_lines = row['stats'].split("\n") if row['stats'] else []
+
+        # Stats indented for readability
+        stats_lines = r['stats'].split("\n") if r['stats'] else []
         indented_stats = "\n".join([f"  {line}" for line in stats_lines])
 
         embed.add_field(
-            name=row["name"],
-            value=(
-                f"  Type: {row['type']} | Subtype: {row['subtype']}\n"
-                f"  Classes: {classes_sorted}\n"
-                f"{indented_stats}"
-            ),
+            name=r["name"],
+            value=f"  Type: {r['type']} | Subtype: {r['subtype']}\n"
+                  f"  Classes: {classes_sorted}\n"
+                  f"{indented_stats}",
             inline=False
         )
 
-        # Add a button for this item
-        view = discord.ui.View()
-        view.add_item(ViewDetailsButton(row))  # make sure ViewDetailsButton uses db_row internally
-
-        await interaction.channel.send(embed=embed, view=view)
+        # 🔹 Critical: create a new button instance per row
+        view.add_item(ViewDetailsButton(row=r))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 
 #----------
 
@@ -295,6 +286,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
