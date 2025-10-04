@@ -287,9 +287,7 @@ async def view_bank(interaction: discord.Interaction):
 
         # Build the display lines with uniform indentation
         display_lines = []
-        display_lines.append(f"  {row['type']} | {row['subtype']}")
-        for line in stats_lines:
-            display_lines.append(f"  {line}")  # indent stats
+        display_lines.append(f"  {row['type']} | {row['subtype']} | {line}")
         display_lines.append(f"  Classes: {classes_sorted}")  # indent classes
 
         embed.add_field(
@@ -327,6 +325,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
