@@ -312,7 +312,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
 
         # Read-only field for Stats
         self.stats_field = discord.ui.TextInput(
-            label="Stats",
+            label="Details",
             style=discord.TextStyle.paragraph,
             default=item_row['stats'],
             required=False
