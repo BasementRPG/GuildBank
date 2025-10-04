@@ -297,9 +297,30 @@ class ItemDetailsModal(discord.ui.Modal):
     
         elif self.view.item_type == "Armor":
             self.view.stats = f"Armor Class: {self.armor_class.value}"
+            
+            # Add optional fields if filled
+            if self.attributes.value.strip():
+                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+            if self.effects.value.strip():
+                stats_parts.append(f"Effects: {self.effects.value.strip()}")
+    
+            # Combine into one stats string
+            self.view.stats = "\n  ".join(stats_parts)
+
         
         elif self.view.item_type == "Crafting":
             self.view.stats = f"Info: {self.info.value}"
+
+        elif self.view.item_type == "Consumable":
+            
+            # Add optional fields if filled
+            if self.attributes.value.strip():
+                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+            if self.effects.value.strip():
+                stats_parts.append(f"Effects: {self.effects.value.strip()}")
+    
+            # Combine into one stats string
+            self.view.stats = "\n  ".join(stats_parts)
     
         else:
             self.view.stats = self.stats.value
