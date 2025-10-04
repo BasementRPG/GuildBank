@@ -268,31 +268,21 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
 
 # ---------- MODAL FOR READ-ONLY DETAILS ----------
 # ---------- Read-Only Details Modal ----------
-class ItemDetailsReadOnlyModal(discord.ui.Modal):
-    def __init__(self, db_row):
-        super().__init__(title=f"{db_row['name']} Details")
-        self.db_row = db_row
-
-        # Use a single TextInput for display
-        details_text = (
-            f"Type: {db_row['type']} | {db_row['subtype']}\n"
-            f"Classes: {db_row['classes']}\n"
-            f"Stats:\n{db_row['stats']}"
-        )
-
-        self.details_display = discord.ui.TextInput(
-            label="",
-            default=details_text,
-            required=False,
+class ReadOnlyDetailsModal(discord.ui.Modal, title="Item Details"):
+    def __init__(self, title_text, body_text):
+        super().__init__(title=title_text)
+        self.details = discord.ui.TextInput(
+            label="Details",
+            default=body_text,
             style=discord.TextStyle.paragraph,
+            required=False,
             max_length=4000
         )
-
-        self.add_item(self.details_display)
+        self.add_item(self.details)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Modal will automatically close after submission
-        await interaction.response.send_message("✅ Closed details.", ephemeral=True)
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
 
 
 # ---------- Button to open modal ----------
@@ -302,8 +292,12 @@ class ViewDetailsButton(discord.ui.Button):
         self.db_row = db_row
 
     async def callback(self, interaction: discord.Interaction):
-        modal = ItemDetailsReadOnlyModal(self.db_row)
+        details_text = f"Type: {self.row['type']} | Subtype: {self.row['subtype']}\n" \
+                       f"Classes: {self.row['classes']}\n" \
+                       f"Stats:\n{self.row['stats']}"
+        modal = ReadOnlyDetailsModal(title_text=self.row['name'], body_text=details_text)
         await interaction.response.send_modal(modal)
+
 
 
 
@@ -353,6 +347,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
