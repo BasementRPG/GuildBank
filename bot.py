@@ -386,8 +386,22 @@ async def on_ready():
     global db_pool
     if db_pool is None:
         db_pool = await asyncpg.create_pool(DATABASE_URL)
-    await bot.tree.sync()
-    print(f"Logged in as {bot.user}")
+    
+    try:
+        synced = await bot.tree.sync()
+        print(f"Logged in as {bot.user}")
+        print(f"Synced {len(synced)} command(s)")
+        for cmd in synced:
+            print(f"  - {cmd.name}")
+    except Exception as e:
+        print(f"Error syncing commands: {e}")
+        import traceback
+        traceback.print_exc()
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    import traceback
+    traceback.print_exc()
 
 bot.run(TOKEN)
 
