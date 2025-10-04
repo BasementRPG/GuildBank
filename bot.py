@@ -317,7 +317,7 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
              if self.donatedby.value.strip():
-                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             # Combine into one stats string
             self.view.stats = "\n".join(stats_parts)
@@ -331,7 +331,7 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
              if self.donatedby.value.strip():
-                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
     
             # Combine into one stats string
@@ -341,7 +341,7 @@ class ItemDetailsModal(discord.ui.Modal):
         elif self.view.item_type == "Crafting":
             self.view.stats = f"Info: {self.info.value}"
              if self.donatedby.value.strip():
-                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             self.view.stats = "\n".join(stats_parts)
 
@@ -353,7 +353,7 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
             if self.donatedby.value.strip():
-                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             
             self.view.stats = "\n".join(stats_parts)
@@ -362,7 +362,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.view.stats = f"Info: {self.stats.value}"
 
             if self.donatedby.value.strip():
-                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             
             self.view.stats = "\n".join(stats_parts)
