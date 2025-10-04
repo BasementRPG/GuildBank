@@ -229,12 +229,14 @@ class ItemDetailsModal(discord.ui.Modal):
             self.effects = discord.ui.TextInput(
                 label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
             )
+            self.donatedby = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
 
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.attack_delay)
             self.add_item(self.attributes)
             self.add_item(self.effects)
+            self.add_item(self.donatedby)
 
         elif view.item_type == "Armor":
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Fungus Covered Scale Tunic", default=view.item_name, required=True)
@@ -248,21 +250,26 @@ class ItemDetailsModal(discord.ui.Modal):
             self.effects = discord.ui.TextInput(
                 label="Effects", default="", placeholder="Example: +15 HP Regen", required=False, style=discord.TextStyle.paragraph
             )
-
+            self.donatedby = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
+            
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.armor_class)
             self.add_item(self.attributes)
             self.add_item(self.effects)
-            
+            self.add_item(self.donatedby)
+
+        
         elif view.item_type == "Crafting":
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Cloth Scraps", default=view.item_name, required=True)
             self.info = discord.ui.TextInput(label="Info", default="", placeholder="Example: Used primarily for tailor and sub-compoints for other tradeskills", required=False)
             
-
+            self.donatedby = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
+            
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.info)
+            self.add_item(self.donatedby)
 
         elif view.item_type == "Consumable":
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Dinner Gift Basket", default=view.item_name, required=True)
@@ -276,18 +283,25 @@ class ItemDetailsModal(discord.ui.Modal):
                 label="Effects", default="", placeholder="Example: This is a miraculous meal", required=False, style=discord.TextStyle.paragraph
             )
 
+            self.donatedby = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
+            
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.attributes)
             self.add_item(self.effects)
+            self.add_item(self.donatedby)
 
         else:
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Deathfist Slashed Belt", default=view.item_name, required=True)
             self.stats = discord.ui.TextInput(
                 label="Info", placeholder="Example: Can be turned in for xp", default=view.stats, style=discord.TextStyle.paragraph
             )
+
+            self.donatedby = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
+            
             self.add_item(self.item_name)
             self.add_item(self.stats)
+            self.add_item(self.donatedby)
 
     async def on_submit(self, interaction: discord.Interaction):
         self.view.item_name = self.item_name.value
@@ -302,7 +316,9 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-    
+             if self.donatedby.value.strip():
+                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                 
             # Combine into one stats string
             self.view.stats = "\n".join(stats_parts)
     
@@ -314,6 +330,9 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
+             if self.donatedby.value.strip():
+                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                 
     
             # Combine into one stats string
             self.view.stats = "\n".join(stats_parts)
@@ -321,6 +340,10 @@ class ItemDetailsModal(discord.ui.Modal):
         
         elif self.view.item_type == "Crafting":
             self.view.stats = f"Info: {self.info.value}"
+             if self.donatedby.value.strip():
+                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                 
+            self.view.stats = "\n".join(stats_parts)
 
         elif self.view.item_type == "Consumable":
             stats_parts = [""]
@@ -329,11 +352,20 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
+            if self.donatedby.value.strip():
+                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                 
             
             self.view.stats = "\n".join(stats_parts)
     
         else:
-            self.view.stats = self.stats.value
+            self.view.stats = f"Info: {self.stats.value}"
+
+            if self.donatedby.value.strip():
+                stats_parts.append(f"Donated By: {self.effects.value.strip()}")
+                 
+            
+            self.view.stats = "\n".join(stats_parts)
     
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
