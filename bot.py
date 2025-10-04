@@ -319,10 +319,10 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
             
-            if stats_parts ==[""] ():
+            if stats_parts == " " ():
                self.view.stats = " "
                 
-            if stats_part !=[""]():
+            if stats_part != " " ():
                 self.view.stats = "\n  ".join(stats_parts)
     
         else:
