@@ -222,7 +222,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         self.view.item_name = self.item_name.value
 
         if self.view.item_type == "Weapon":
-            self.view.stats = f"Attack/Delay: {self.attack_delay.value}"
+            stats = [f"Attack/Delay: {self.attack_delay.value}"]
             
             if self.attributes.value.strip():
                 stats.append(f"Attributes: {self.attributes.value.strip()}")
@@ -313,6 +313,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
