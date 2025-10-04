@@ -340,7 +340,8 @@ class ItemDetailsModal(discord.ui.Modal):
         
         elif self.view.item_type == "Crafting":
             self.view.stats = f"Info: {self.info.value}"
-             if self.donatedby.value.strip():
+            
+            if self.donatedby.value.strip():
                 stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             self.view.stats = "\n".join(stats_parts)
