@@ -218,11 +218,12 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
             self.add_item(self.item_name)
             self.add_item(self.stats)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        self.view.item_name = self.item_name.value
+async def on_submit(self, interaction: discord.Interaction):
+    self.view.item_name = self.item_name.value
 
-        if self.view.item_type == "Weapon":
-            stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
+    if self.view.item_type == "Weapon":
+        # Start with Attack/Delay
+        stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
 
         # Add optional fields if filled
         if self.attributes.value.strip():
@@ -232,18 +233,17 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
 
         # Combine into one stats string
         self.view.stats = "\n  ".join(stats_parts)
-                
-        elif self.view.item_type == "Armor":
-            self.view.stats = f"Armor Class: {self.armor_class.value}"
-            self.view.stats_extra = {}
 
-        else:
-            self.view.stats = self.stats.value
-            self.view.stats_extra = {}
-        
-        await interaction.response.send_message(
-            "✅ Details saved. Click Submit when ready.", ephemeral=True
-        )
+    elif self.view.item_type == "Armor":
+        self.view.stats = f"Armor Class: {self.armor_class.value}"
+
+    else:
+        self.view.stats = self.stats.value
+
+    await interaction.response.send_message(
+        "✅ Details saved. Click Submit when ready.", ephemeral=True
+    )
+
 
 
 # ----------
@@ -317,6 +317,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
