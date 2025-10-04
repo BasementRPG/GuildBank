@@ -16,6 +16,7 @@ ITEM_TYPE_EMOJIS = {
     "Armor": "🛡️",
     "Consumable": "🧪",
     "Misc": "🏺"
+    "Funds": "💰"
 }
 
 
@@ -418,7 +419,7 @@ async def view_bank(interaction: discord.Interaction):
         
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
-            title=f"{emoji} {row["name"]}",
+            title=f"{emoji} {row['name']}",
             description=f"{row['type']} | {row['subtype']}",
             color=discord.Color.blue()
         )
