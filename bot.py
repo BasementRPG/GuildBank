@@ -186,7 +186,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         super().__init__(title=title_text)
 
         self.details_test = discord.ui.TextInput(
-            label="Test",               # Label is required
+            label=body_text,               # Label is required
             style=discord.TextStyle.paragraph,
             default=body_text,
             required=False,
