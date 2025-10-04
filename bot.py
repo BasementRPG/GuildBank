@@ -350,10 +350,11 @@ async def view_bank(interaction: discord.Interaction):
 # ---------- /add_item Command ----------
 
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
-async def add_item(interaction: discord.Interaction):
-    # Open the ItemEntryView for the user
-    view = ItemEntryView(interaction.user)
-    await interaction.response.send_message("Add a new item:", view=view, ephemeral=True)
+@app_commands.describe(item_type="Type of the item")
+@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
+async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
+    view = ItemEntryView(interaction.user, item_type=item_type.value)
+    await interaction.response.send_message(f"Adding a new {item_type.value}:", view=view, ephemeral=True)
 
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
