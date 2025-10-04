@@ -183,7 +183,7 @@ class ItemEntryView(discord.ui.View):
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
-        super().__init__(title=title_text)
+        super().__init__(title=item_row['name'])
 
         
         # Hard text display (read-only)
