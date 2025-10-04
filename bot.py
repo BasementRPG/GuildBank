@@ -285,7 +285,7 @@ async def view_bank(interaction: discord.Interaction):
         embed.add_field(
             name=row["name"],
             value=(
-                f"Type: {row['type']} | {row['subtype']} | Attack/Delay: {row['stats']}
+                f"Type: {row['type']} | {row['subtype']} | Attack/Delay: {row['stats']}"
                 f"  {row['stats']}"
                 f" Classes: {classes_sorted}\n"
             ),
@@ -318,6 +318,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
