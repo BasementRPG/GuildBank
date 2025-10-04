@@ -323,7 +323,8 @@ class ItemDetailsModal(discord.ui.Modal):
             self.view.stats = "\n".join(stats_parts)
     
         elif self.view.item_type == "Armor":
-            self.view.stats = f"Armor Class: {self.armor_class.value}"
+            
+            stats_parts = [f"Armor Class: {self.armor_class.value}"]
             
             # Add optional fields if filled
             if self.attributes.value.strip():
