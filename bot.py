@@ -180,7 +180,7 @@ class ItemEntryView(discord.ui.View):
 
 # ------ITEM DETAILS ----
 
-class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
+class ItemDetailsModal(discord.ui.Modal):
     def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
