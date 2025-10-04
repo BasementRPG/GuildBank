@@ -192,7 +192,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
            
             # Optional fields
             self.attributes = discord.ui.TextInput(
-                label="Attributes", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
+                label="Stats", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
             )
             self.effects = discord.ui.TextInput(
                 label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
@@ -227,7 +227,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
     
             # Add optional fields if filled
             if self.attributes.value.strip():
-                stats_parts.append(f"Attributes: {self.attributes.value.strip()}")
+                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
     
@@ -286,7 +286,7 @@ async def view_bank(interaction: discord.Interaction):
             name=row["name"],
             value=(
                 f"Type: {row['type']} | Subtype: {row['subtype']} | Classes: {classes_sorted}\n"
-                f"  Stats: {row['stats']}"
+                f"  {row['stats']}"
             ),
             inline=False
         )
@@ -317,6 +317,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
