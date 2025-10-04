@@ -275,12 +275,18 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
 
 import asyncio
 
-async def main():
-    global db_pool
-    db_pool = await asyncpg.create_pool(DATABASE_URL)
-    await bot.start(TOKEN)
 
-asyncio.run(main())
+
+@bot.event
+async def on_ready():
+    global db_pool
+    if db_pool is None:
+        db_pool = await asyncpg.create_pool(DATABASE_URL)
+    await bot.tree.sync()
+    print(f"Logged in as {bot.user}")
+
+bot.run(TOKEN)
+
 
 
 
