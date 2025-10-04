@@ -267,7 +267,7 @@ class ItemDetailsModal(discord.ui.Modal):
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
-        super().__init__(title=item_row['name'])
+        super().__init__(title=item_row['name'], submit_button_label="Close")
 
         
         # Hard text display (read-only)
