@@ -351,10 +351,29 @@ async def view_bank(interaction: discord.Interaction):
 
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 @app_commands.describe(item_type="Type of the item")
-@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
+@app_commands.choices(item_type=[
+    app_commands.Choice(name="Weapon", value="Weapon"),
+    app_commands.Choice(name="Armor", value="Armor"),
+    app_commands.Choice(name="Consumable", value="Consumable"),
+    app_commands.Choice(name="Misc", value="Misc")
+])
 async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
-    view = ItemEntryView(interaction.user, item_type=item_type.value)
-    await interaction.response.send_message(f"Adding a new {item_type.value}:", view=view, ephemeral=True)
+    try:
+        view = ItemEntryView(interaction.user, item_type=item_type.value)
+        await interaction.response.send_message(
+            f"Adding a new {item_type.value}:", 
+            view=view, 
+            ephemeral=True
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Try to respond if we haven't already
+        try:
+            await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
+        except:
+            pass
 
 
 
