@@ -208,7 +208,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         # Just close the modal; no need to process input
-        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+        await interaction.response.send_message("✅ Closed.", ephemeral=false)
 
 
 # ---------- Button ----------
