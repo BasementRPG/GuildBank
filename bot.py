@@ -328,15 +328,6 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.classes_field.disabled = True
         self.add_item(self.classes_field)
 
-        # Single-line input field at bottom (does nothing)
-        self.fake_input = discord.ui.TextInput(
-            label="Input (ignored)", 
-            style=discord.TextStyle.short,
-            required=False,
-            placeholder="Type here if you want...",
-            max_length=100
-        )
-        self.add_item(self.fake_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         # Just close the modal; no need to process input
