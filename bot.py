@@ -272,9 +272,9 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.effects)
 
         else:
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Deathfist Slashed Belt", default=view.item_name, required=True)
             self.stats = discord.ui.TextInput(
-                label="Stats", default=view.stats, style=discord.TextStyle.paragraph
+                label="Info", placeholder="Example: Can be turned in for xp", default=view.stats, style=discord.TextStyle.paragraph
             )
             self.add_item(self.item_name)
             self.add_item(self.stats)
