@@ -4,6 +4,9 @@ from discord import app_commands
 from discord.ext import commands
 import asyncpg
 
+print("discord.py version:", discord.__version__)
+
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
