@@ -277,27 +277,39 @@ async def view_bank(interaction: discord.Interaction):
     sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
+
     for row in sorted_rows:
-        # Sort classes alphabetically
         classes_list = row['classes'].split(", ") if row['classes'] else []
         classes_sorted = ", ".join(sorted(classes_list))
 
-        # Split stats by line if multiple lines exist (Attack/Delay + Attributes + Effects)
-        stats_lines = row['stats'].split("\n") if row['stats'] else []
+        # Build a list of lines for the stats section
+        stats_lines = []
 
-        # Indent every line under item name
-        indented_stats = "\n".join([f"{line}" for line in stats_lines])
+        if row.get('stats'):
+            stats_lines.extend(row['stats'].split("\n"))
+
+        # Optional: if you store Attributes/Effects separately, append them too
+        # Example: row['attributes'], row['effects']
+        # if row.get('attributes'):
+        #     stats_lines.append(f"Attributes: {row['attributes']}")
+        # if row.get('effects'):
+        #     stats_lines.append(f"Effects: {row['effects']}")
+
+        # Indent each line with zero-width space + em-spaces
+        indented_stats = "\n".join([f"\u200B  {line}" for line in stats_lines])
 
         embed.add_field(
             name=row["name"],  # Item name stays unindented
             value=(
-                f"  Type: {row['type']} | Subtype: {row['subtype']} | {indented_stats}\n"
-                f"  Classes: {classes_sorted}\n"
+                f"\u200B  Type: {row['type']} | Subtype: {row['subtype']}\n"
+                f"\u200B  Classes: {classes_sorted}\n"
+                f"{indented_stats}"
             ),
             inline=False
         )
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 
 #----------
@@ -324,6 +336,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
