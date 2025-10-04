@@ -273,7 +273,16 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await delete_item_db(item['id'])
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
-bot.run(TOKEN)
+import asyncio
+
+async def main():
+    global db_pool
+    db_pool = await asyncpg.create_pool(DATABASE_URL)
+    await bot.start(TOKEN)
+
+asyncio.run(main())
+
+
 
 
 
