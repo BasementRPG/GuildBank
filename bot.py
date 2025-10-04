@@ -273,7 +273,7 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort items alphabetically by name
+    # Sort items alphabetically
     sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
@@ -285,19 +285,19 @@ async def view_bank(interaction: discord.Interaction):
         # Split stats into lines
         stats_lines = row['stats'].split("\n") if row.get('stats') else []
 
-        # Build the display lines with uniform indentation
-        display_lines = []
-        display_lines.append(f"  {row['type']} | {row['subtype']} | {line}")
-        display_lines.append(f"  Classes: {classes_sorted}")  # indent classes
+        # Indent each line
+        indented_stats = "\n".join([f"\u200B  {line}" for line in stats_lines])
 
         embed.add_field(
-            name=row["name"],  # Item name unindented
-            value="\n".join(display_lines),
+            name=row["name"],  # Item name stays unindented
+            value=(
+                f"\u200B  Type: {row['type']} | {row['subtype']} | {indented_stats}\n"
+                f"\u200B  Classes: {classes_sorted}\n"
+            ),
             inline=False
         )
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 
 
