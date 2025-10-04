@@ -10,6 +10,15 @@ print("discord.py version:", discord.__version__)
 TOKEN = os.getenv("DISCORD_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+ITEM_TYPE_EMOJIS = {
+    "Weapon": "⚔️",
+    "Crafting": "⚒️",
+    "Armor": "🛡️",
+    "Consumable": "🧪",
+    "Misc": "🏺"
+}
+
+
 ITEM_TYPES = ["Armor", "Crafting", "Consumable", "Misc", "Weapon"]
 WEAPON_SUBTYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
 ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
@@ -283,6 +292,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.view.item_name = self.item_name.value
     
         if self.view.item_type == "Weapon":
+             
             # Start with Attack/Delay
             stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
     
@@ -405,8 +415,10 @@ async def view_bank(interaction: discord.Interaction):
 
     # Send one message per item
     for row in sorted_rows:
+        
+        emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
-            title=row["name"],
+            title=f"{emoji} {row["name"]}",
             description=f"{row['type']} | {row['subtype']}",
             color=discord.Color.blue()
         )
