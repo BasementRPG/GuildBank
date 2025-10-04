@@ -185,25 +185,36 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, title_text: str, body_text: str):
         super().__init__(title=title_text)
 
-        self.details_test = discord.ui.TextInput(
-            label=body_text,               # Label is required
-            style=discord.TextStyle.paragraph,
-            default=body_text,
-            required=False,
-            max_length=4000
-        )
-        self.add_item(self.details_test)
         
         # Hard text display (read-only)
-        self.details_display = discord.ui.TextInput(
-            label="Details",               # Label is required
-            style=discord.TextStyle.paragraph,
-            default=body_text,
-            required=False,
-            max_length=4000
+        self.type_field = discord.ui.TextInput(
+            label="Type | Subtype",
+            style=discord.TextStyle.short,
+            default=f"{item_row['type']} | {item_row['subtype']}",
+            required=False
         )
-        self.details_display.disabled = True  # make it read-only
-        self.add_item(self.details_display)
+        self.type_field.disabled = True
+        self.add_item(self.type_field)
+
+        # Read-only field for Stats
+        self.stats_field = discord.ui.TextInput(
+            label="Stats",
+            style=discord.TextStyle.paragraph,
+            default=item_row['stats'],
+            required=False
+        )
+        self.stats_field.disabled = True
+        self.add_item(self.stats_field)
+
+        # Read-only field for Classes
+        self.classes_field = discord.ui.TextInput(
+            label="Classes",
+            style=discord.TextStyle.short,
+            default=item_row['classes'],
+            required=False
+        )
+        self.classes_field.disabled = True
+        self.add_item(self.classes_field)
 
         # Single-line input field at bottom (does nothing)
         self.fake_input = discord.ui.TextInput(
