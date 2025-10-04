@@ -357,11 +357,12 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Consumable", value="Consumable"),
     app_commands.Choice(name="Misc", value="Misc")
 ])
-async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
+async def add_item(interaction: discord.Interaction, item_type: str):  # Change this line
     try:
-        view = ItemEntryView(interaction.user, item_type=item_type.value)
+        # Now item_type is already a string, no need for .value
+        view = ItemEntryView(interaction.user, item_type=item_type)
         await interaction.response.send_message(
-            f"Adding a new {item_type.value}:", 
+            f"Adding a new {item_type}:", 
             view=view, 
             ephemeral=True
         )
@@ -369,7 +370,6 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
         print(f"Error: {e}")
         import traceback
         traceback.print_exc()
-        # Try to respond if we haven't already
         try:
             await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
         except:
