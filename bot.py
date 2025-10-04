@@ -213,34 +213,28 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
             self.add_item(self.item_name)
             self.add_item(self.stats)
 
-    async def on_submit(self, interaction: discord.Interaction):
+ async def on_submit(self, interaction: discord.Interaction):
         self.view.item_name = self.item_name.value
 
-        # Save stats depending on type
-if self.view.item_type == "Weapon":
-    # Parse Attack & Delay from the single input
-    parts = [p.strip() for p in self.attack_delay.value.split(",")]
-    attack = parts[0] if len(parts) > 0 else ""
-    delay = parts[1] if len(parts) > 1 else ""
-    self.view.stats = f"Attack: {attack}, Delay: {delay}"
-
-    # Optional fields
-    self.view.stats_extra = {}
-    if self.attributes.value.strip():
-        self.view.stats_extra["Attributes"] = self.attributes.value.strip()
-    if self.effects.value.strip():
-        self.view.stats_extra["Effects"] = self.effects.value.strip()
+        if self.view.item_type == "Weapon":
+            self.view.stats = f"Attack: {self.attack.value}, Delay: {self.delay.value}"
+            self.view.stats_extra = {}
+            if self.attributes.value.strip():
+                self.view.stats_extra["Attributes"] = self.attributes.value.strip()
+            if self.effects.value.strip():
+                self.view.stats_extra["Effects"] = self.effects.value.strip()
 
         elif self.view.item_type == "Armor":
             self.view.stats = f"Armor Class: {self.armor_class.value}"
-        elif self.view.item_type == "Potion":
-            dur = f", Duration: {self.duration.value}" if self.duration.value else ""
-            self.view.stats = f"Effect: {self.effect.value}{dur}"
+            self.view.stats_extra = {}
+
         else:
             self.view.stats = self.stats.value
-
-        await interaction.response.send_message("✅ Details saved. Click Submit when ready.", ephemeral=True)
-
+            self.view.stats_extra = {}
+        
+        await interaction.response.send_message(
+            "✅ Details saved. Click Submit when ready.", ephemeral=True
+        )
 
 # ----------
 
@@ -313,6 +307,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
