@@ -163,10 +163,10 @@ class ItemEntryView(discord.ui.View):
         classes_str = ", ".join(self.usable_classes)
         if self.item_id:  # editing
             await update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
-            await interaction.followup.send(f"✅ Updated **{self.item_name}**.", ephemeral=True)
+            await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
         else:  # adding
             await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
-            await interaction.followup.send(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
+            await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
     async def reset_entry(self, interaction: discord.Interaction):
