@@ -97,34 +97,6 @@ class SubtypeSelect(discord.ui.Select):
                 pass
 
 
-"""  class SubtypeSelect(discord.ui.Select):
-    def __init__(self, parent_view):
-        self.parent_view = parent_view
-
-        if self.parent_view.item_type == "Weapon":
-            options = [discord.SelectOption(label=s) for s in WEAPON_SUBTYPES]
-        elif self.parent_view.item_type == "Armor":
-            options = [discord.SelectOption(label=s) for s in ARMOR_SUBTYPES]
-        elif self.parent_view.item_type == "Consumable":
-            options = [discord.SelectOption(label=s) for s in CONSUMABLE_SUBTYPES]
-        else:
-            options = [discord.SelectOption(label=s) for s in MISC_SUBTYPES]
-
-        # ✅ Mark selected subtype as default
-        for opt in options:
-            if opt.label == self.parent_view.subtype:
-                opt.default = True
-
-        super().__init__(placeholder="Select Subtype", options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        self.parent_view.subtype = self.values[0]
-        # update which option is default so it stays highlighted
-        for opt in self.options:
-            opt.default = (opt.label == self.values[0])
-        await interaction.response.edit_message(view=self.parent_view)
-"""        
-
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
