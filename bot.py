@@ -185,13 +185,14 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, title_text: str, body_text: str):
         super().__init__(title=title_text)
 
-        self.details_display = discord.ui.TextInput(
+        self.details_test = discord.ui.TextInput(
             label="Test",               # Label is required
             style=discord.TextStyle.paragraph,
             default=body_text,
             required=False,
             max_length=4000
         )
+        self.add_item(self.details_test)
         
         # Hard text display (read-only)
         self.details_display = discord.ui.TextInput(
