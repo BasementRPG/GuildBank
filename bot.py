@@ -13,7 +13,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 ITEM_TYPES = ["Armor", "Crafting", "Consumable", "Misc", "Weapon"]
 WEAPON_SUBTYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
 ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
-CONSUMABLE_SUBTYPES = ["Drink", "Food", "Potion", "Scroll"]
+CONSUMABLE_SUBTYPES = ["Drink", "Food", "Other", "Potion", "Scroll"]
 CRAFTING_SUBTYPES = ["Unknown", "Raw", "Refined"]
 MISC_SUBTYPES = ["Quest Item", "Unknown"]
 
@@ -253,6 +253,23 @@ class ItemDetailsModal(discord.ui.Modal):
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.info)
+
+        elif view.item_type == "Consumable":
+            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Dinner Gift Basket", default=view.item_name, required=True)
+                    
+           
+            # Optional fields
+            self.attributes = discord.ui.TextInput(
+                label="Stats", default="", placeholder="Example: +5 str, +5 dex, +5 sta, + 5 agi, +30 hp, +30 mana ", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default="", placeholder="Example: This is a miraculous meal", required=False, style=discord.TextStyle.paragraph
+            )
+
+            # Add fields to modal
+            self.add_item(self.item_name)
+            self.add_item(self.attributes)
+            self.add_item(self.effects)
 
         else:
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
