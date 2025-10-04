@@ -182,7 +182,7 @@ class ItemEntryView(discord.ui.View):
 
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
-    def __init__(self, title_text: str, body_text: str):
+    def __init__(self, title_text: str, body_text: str, item_row1):
         super().__init__(title=title_text)
 
         
@@ -190,7 +190,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.type_field = discord.ui.TextInput(
             label="Type | Subtype",
             style=discord.TextStyle.short,
-            default=f"{item_row1['type']} | {item_row['subtype']}",
+            default=f"{item_row1['type']} | {item_row1['subtype']}",
             required=False
         )
         self.type_field.disabled = True
