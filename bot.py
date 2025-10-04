@@ -316,7 +316,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-             if self.donatedby.value.strip():
+            if self.donatedby.value.strip():
                 stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
             # Combine into one stats string
@@ -330,7 +330,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-             if self.donatedby.value.strip():
+            if self.donatedby.value.strip():
                 stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
                  
     
