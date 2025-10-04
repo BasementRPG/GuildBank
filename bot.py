@@ -197,24 +197,23 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
 
 # ---------- ViewDetailsButton ----------
 class ViewDetailsButton(discord.ui.Button):
-    def __init__(self, row):
+    def __init__(self, db_row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.row = row  # store the DB row
+        self.db_row = db_row  # store the DB row safely
 
     async def callback(self, interaction: discord.Interaction):
-        if self.row is None:
+        if self.db_row is None:
             await interaction.response.send_message("Error: no data available.", ephemeral=True)
             return
 
         details_text = (
-            f"Type: {self.row['type']} | Subtype: {self.row['subtype']}\n"
-            f"Classes: {self.row['classes']}\n"
-            f"Stats:\n{self.row['stats']}"
+            f"Type: {self.db_row['type']} | Subtype: {self.db_row['subtype']}\n"
+            f"Classes: {self.db_row['classes']}\n"
+            f"Stats:\n{self.db_row['stats']}"
         )
-        modal = ReadOnlyDetailsModal(title_text=self.row['name'], body_text=details_text)
+        modal = ReadOnlyDetailsModal(title_text=self.db_row['name'], body_text=details_text)
         await interaction.response.send_modal(modal)
 
-# ---------- /view_bank Command ----------
 # ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
@@ -293,6 +292,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
