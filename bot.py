@@ -184,16 +184,32 @@ class ItemEntryView(discord.ui.View):
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, title_text: str, body_text: str):
         super().__init__(title=title_text)
-        # Text input is required in a modal, we disable it for read-only
-        self.details = discord.ui.TextInput(
-            label="Details",
+
+        # Hard text display (read-only)
+        self.details_display = discord.ui.TextInput(
+            label="Details",               # Label is required
             style=discord.TextStyle.paragraph,
             default=body_text,
             required=False,
             max_length=4000
         )
-        self.details.disabled = True  # make it read-only
-        self.add_item(self.details)
+        self.details_display.disabled = True  # make it read-only
+        self.add_item(self.details_display)
+
+        # Single-line input field at bottom (does nothing)
+        self.fake_input = discord.ui.TextInput(
+            label="Input (ignored)", 
+            style=discord.TextStyle.short,
+            required=False,
+            placeholder="Type here if you want...",
+            max_length=100
+        )
+        self.add_item(self.fake_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Just close the modal; no need to process input
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
 
 # ---------- Button ----------
 class ViewDetailsButton(discord.ui.Button):
