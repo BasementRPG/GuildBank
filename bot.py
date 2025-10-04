@@ -215,40 +215,47 @@ class ViewDetailsButton(discord.ui.Button):
         await interaction.response.send_modal(modal)
 
 # ---------- /view_bank Command ----------
+# ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
+    # Make sure the database pool exists
+    global db_pool
+    if db_pool is None:
+        await interaction.response.send_message("Database not initialized.", ephemeral=True)
+        return
+
     rows = await get_all_items()
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort alphabetically
+    # Sort items alphabetically
     sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
     embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
     view = discord.ui.View()
 
     for row in sorted_rows:
+        # Prepare stats and classes with indentation
         classes_list = row['classes'].split(", ") if row['classes'] else []
         classes_sorted = ", ".join(sorted(classes_list))
-
-        # Stats indented for readability
         stats_lines = row['stats'].split("\n") if row['stats'] else []
         indented_stats = "\n".join([f"  {line}" for line in stats_lines])
 
         embed.add_field(
             name=row["name"],
-            value=f"  Type: {row['type']} | Subtype: {row['subtype']}\n"
-                  f"  Classes: {classes_sorted}\n"
-                  f"{indented_stats}",
+            value=(
+                f"  Type: {row['type']} | Subtype: {row['subtype']}\n"
+                f"  Classes: {classes_sorted}\n"
+                f"{indented_stats}"
+            ),
             inline=False
         )
 
-        # Add the View Details button directly under the item
+        # Add a button for this item
         view.add_item(ViewDetailsButton(row))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-
 
 #----------
 
@@ -286,6 +293,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
