@@ -10,11 +10,12 @@ print("discord.py version:", discord.__version__)
 TOKEN = os.getenv("DISCORD_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-ITEM_TYPES = ["Weapon", "Armor", "Consumable", "Misc"]
+ITEM_TYPES = ["Armor", "Crafting", "Consumable", "Misc", "Weapon"]
 WEAPON_SUBTYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
 ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
 CONSUMABLE_SUBTYPES = ["Drink", "Food", "Potion", "Scroll"]
-MISC_SUBTYPES = ["Quest Item", "Material"]
+CRAFTING_SUBTYPES = ["Unknown", "Raw", "Refined"]
+MISC_SUBTYPES = ["Quest Item", "Unknown"]
 
 CLASS_OPTIONS = ["Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist", "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"]
 
@@ -70,7 +71,9 @@ class SubtypeSelect(discord.ui.Select):
             options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
         elif self.parent_view.item_type == "Armor":
             options = [discord.SelectOption(label=s, value=s) for s in ARMOR_SUBTYPES]
-        elif self.parent_view.item_type == "Consumable":
+        elif self.parent_view.item_type == "Crafting":
+            options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
+         elif self.parent_view.item_type == "Consumable":
             options = [discord.SelectOption(label=s, value=s) for s in CONSUMABLE_SUBTYPES]
         else:
             options = [discord.SelectOption(label=s, value=s) for s in MISC_SUBTYPES]
@@ -241,7 +244,15 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.armor_class)
             self.add_item(self.attributes)
             self.add_item(self.effects)
+            
+        elif view.item_type == "Crafting":
+            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Cloth Scraps", default=view.item_name, required=True)
+            self.info = discord.ui.TextInput(label="Info", default="", placeholder="Example: Used primarily for tailor and sub-compoints for other tradeskills", required=False)
+            
 
+            # Add fields to modal
+            self.add_item(self.item_name)
+            self.add_item(self.info)
 
         else:
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
@@ -269,6 +280,9 @@ class ItemDetailsModal(discord.ui.Modal):
     
         elif self.view.item_type == "Armor":
             self.view.stats = f"Armor Class: {self.armor_class.value}"
+        
+        elif self.view.item_type == "Crafting":
+            self.view.stats = f"Info: {self.info.value}"
     
         else:
             self.view.stats = self.stats.value
