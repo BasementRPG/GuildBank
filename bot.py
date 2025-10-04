@@ -180,6 +180,73 @@ class ItemEntryView(discord.ui.View):
 
 # ------ITEM DETAILS ----
 
+class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
+    def __init__(self, view: ItemEntryView):
+        super().__init__(title=f"{view.item_type} Details")
+        self.view = view
+
+        if view.item_type == "Weapon":
+            # Required fields
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
+            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
+           
+            # Optional fields
+            self.attributes = discord.ui.TextInput(
+                label="Stats", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
+            )
+
+            # Add fields to modal
+            self.add_item(self.item_name)
+            self.add_item(self.attack_delay)
+            self.add_item(self.attributes)
+            self.add_item(self.effects)
+
+        elif view.item_type == "Armor":
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", required=True)
+            self.add_item(self.item_name)
+            self.add_item(self.armor_class)
+
+        else:
+            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=view.stats, style=discord.TextStyle.paragraph
+            )
+            self.add_item(self.item_name)
+            self.add_item(self.stats)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.view.item_name = self.item_name.value
+    
+        if self.view.item_type == "Weapon":
+            # Start with Attack/Delay
+            stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
+    
+            # Add optional fields if filled
+            if self.attributes.value.strip():
+                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+            if self.effects.value.strip():
+                stats_parts.append(f"Effects: {self.effects.value.strip()}")
+    
+            # Combine into one stats string
+            self.view.stats = "\n  ".join(stats_parts)
+    
+        elif self.view.item_type == "Armor":
+            self.view.stats = f"Armor Class: {self.armor_class.value}"
+    
+        else:
+            self.view.stats = self.stats.value
+    
+        await interaction.response.send_message(
+            "✅ Details saved. Click Submit when ready.", ephemeral=True
+        )
+
+
+
+
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
@@ -281,6 +348,7 @@ async def view_bank(interaction: discord.Interaction):
 #----------
 
 # ---------- /add_item Command ----------
+
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 async def add_item(interaction: discord.Interaction):
     # Open the ItemEntryView for the user
