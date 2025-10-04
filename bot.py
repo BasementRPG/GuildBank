@@ -78,12 +78,7 @@ class SubtypeSelect(discord.ui.Select):
         for opt in self.options:
             opt.default = (opt.label == self.values[0])
         await interaction.response.edit_message(view=self.parent_view)
-
-            self.default = True
-
-    async def callback(self, interaction: discord.Interaction):
-        self.parent_view.subtype = self.values[0]
-        await interaction.response.defer()
+        
 
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
@@ -320,6 +315,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
