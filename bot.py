@@ -360,7 +360,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.view.stats = "\n".join(stats_parts)
     
         else:
-            self.view.stats = f"Info: {self.stats.value}"
+            stats_parts = [f"Info: {self.stats.value}"]
 
             if self.donatedby.value.strip():
                 stats_parts.append(f"Donated By: {self.donatedby.value.strip()}")
