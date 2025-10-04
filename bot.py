@@ -266,6 +266,27 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
 
 #-------VIEW BANK --------
 
+class ViewDetailsButton(discord.ui.Button):
+    def __init__(self, item):
+        super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
+        self.item = item
+
+    async def callback(self, interaction: discord.Interaction):
+        # Build a modal or new embed showing full stats
+        stats = self.item.get('stats') or 'No stats available'
+        classes = self.item.get('classes') or 'All'
+        # Make an embed with full details
+        details_embed = discord.Embed(
+            title=f"{self.item['name']} Details",
+            color=discord.Color.green()
+        )
+        details_embed.add_field(name="Type", value=f"{self.item['type']} | {self.item['subtype']}", inline=False)
+        details_embed.add_field(name="Classes", value=classes, inline=False)
+        details_embed.add_field(name="Stats", value=stats, inline=False)
+
+        await interaction.response.send_message(embed=details_embed, ephemeral=True)
+
+
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
@@ -273,32 +294,16 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort items alphabetically
-    sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
+    for row in rows:
+        embed = discord.Embed(title=row["name"], color=discord.Color.blue())
+        embed.add_field(name="Type", value=f"{row['type']} | {row['subtype']}", inline=False)
+        embed.add_field(name="Classes", value=row['classes'] or "All", inline=False)
 
-    embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
+        # one button per item, right under its embed
+        view = discord.ui.View()
+        view.add_item(ViewDetailsButton(row))
 
-    for row in sorted_rows:
-        classes_list = row['classes'].split(", ") if row['classes'] else []
-        classes_sorted = ", ".join(sorted(classes_list))
-
-        # Split stats into lines
-        stats_lines = row['stats'].split("\n") if row.get('stats') else []
-
-        # Indent each line
-        indented_stats = "\n".join([f"{line}" for line in stats_lines])
-
-        embed.add_field(
-            name=row["name"],  # Item name stays unindented
-            value=(
-                f"\u200B  Type: {row['type']} | {row['subtype']} | {indented_stats}\n"
-                f"\u200B  Classes: {classes_sorted}\n"
-            ),
-            inline=False
-        )
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 
 #----------
@@ -325,6 +330,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
