@@ -180,116 +180,26 @@ class ItemEntryView(discord.ui.View):
 
 # ------ITEM DETAILS ----
 
-class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
-    def __init__(self, view: ItemEntryView):
-        super().__init__(title=f"{view.item_type} Details")
-        self.view = view
-
-        if view.item_type == "Weapon":
-            # Required fields
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
-            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
-           
-            # Optional fields
-            self.attributes = discord.ui.TextInput(
-                label="Stats", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
-            )
-
-            # Add fields to modal
-            self.add_item(self.item_name)
-            self.add_item(self.attack_delay)
-            self.add_item(self.attributes)
-            self.add_item(self.effects)
-
-        elif view.item_type == "Armor":
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", required=True)
-            self.add_item(self.item_name)
-            self.add_item(self.armor_class)
-
-        else:
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.stats = discord.ui.TextInput(
-                label="Stats", default=view.stats, style=discord.TextStyle.paragraph
-            )
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        self.view.item_name = self.item_name.value
-    
-        if self.view.item_type == "Weapon":
-            # Start with Attack/Delay
-            stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
-    
-            # Add optional fields if filled
-            if self.attributes.value.strip():
-                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
-            if self.effects.value.strip():
-                stats_parts.append(f"Effects: {self.effects.value.strip()}")
-    
-            # Combine into one stats string
-            self.view.stats = "\n  ".join(stats_parts)
-    
-        elif self.view.item_type == "Armor":
-            self.view.stats = f"Armor Class: {self.armor_class.value}"
-    
-        else:
-            self.view.stats = self.stats.value
-    
-        await interaction.response.send_message(
-            "✅ Details saved. Click Submit when ready.", ephemeral=True
-        )
-
-
-
-# ----------
-
-# ---------- Commands ----------
-
-@bot.event
-async def on_ready():
-    global db_pool
-    db_pool = await asyncpg.create_pool(DATABASE_URL)
-    await bot.tree.sync()
-    print(f"Logged in as {bot.user}")
-
-@bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
-@app_commands.describe(item_type="Type of the item")
-@app_commands.choices(item_type=[app_commands.Choice(name=t, value=t) for t in ITEM_TYPES])
-async def add_item(interaction: discord.Interaction, item_type: app_commands.Choice[str]):
-    view = ItemEntryView(interaction.user, item_type=item_type.value)
-    await interaction.response.send_message(f"Adding a new {item_type.value}:", view=view, ephemeral=True)
-
-#-------VIEW BANK --------
-
-# ---------- MODAL FOR READ-ONLY DETAILS ----------
-# ---------- Read-Only Details Modal ----------
-class ReadOnlyDetailsModal(discord.ui.Modal, title="Item Details"):
-    def __init__(self, title_text, body_text):
+# ---------- Read-Only Modal for Item Details ----------
+class ReadOnlyDetailsModal(discord.ui.Modal):
+    def __init__(self, title_text: str, body_text: str):
         super().__init__(title=title_text)
+        # Text input in a modal must have a label; using "Details"
         self.details = discord.ui.TextInput(
             label="Details",
-            default=body_text,
             style=discord.TextStyle.paragraph,
+            default=body_text,
             required=False,
             max_length=4000
         )
+        self.details.disabled = True  # make it read-only
         self.add_item(self.details)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message("✅ Closed.", ephemeral=True)
-
-
-
-# ---------- Button to open modal ----------
+# ---------- ViewDetailsButton ----------
 class ViewDetailsButton(discord.ui.Button):
     def __init__(self, row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.row = row  # store the database row for later
+        self.row = row  # store the DB row
 
     async def callback(self, interaction: discord.Interaction):
         if self.row is None:
@@ -304,10 +214,7 @@ class ViewDetailsButton(discord.ui.Button):
         modal = ReadOnlyDetailsModal(title_text=self.row['name'], body_text=details_text)
         await interaction.response.send_modal(modal)
 
-
-
-
-
+# ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
@@ -315,26 +222,33 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    await interaction.response.defer(ephemeral=True)
+    # Sort alphabetically
+    sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
-    for db_row in rows:
-        embed = discord.Embed(title=db_row['name'], color=discord.Color.blue())
-        embed.add_field(name="Type", value=f"{db_row['type']} | {db_row['subtype']}", inline=False)
-        embed.add_field(name="Classes", value=db_row['classes'] or "All", inline=False)
+    embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
+    view = discord.ui.View()
 
-        view = discord.ui.View()
-        for row in sorted_rows:
-            # add your embed field for the item
-            embed.add_field(
-                name=row["name"],
-                value=f"Type: {row['type']} | Subtype: {row['subtype']}",
-                inline=False
-            )
-        
-            # add the button underneath the item
-            view.add_item(ViewDetailsButton(row))
-        
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    for row in sorted_rows:
+        classes_list = row['classes'].split(", ") if row['classes'] else []
+        classes_sorted = ", ".join(sorted(classes_list))
+
+        # Stats indented for readability
+        stats_lines = row['stats'].split("\n") if row['stats'] else []
+        indented_stats = "\n".join([f"  {line}" for line in stats_lines])
+
+        embed.add_field(
+            name=row["name"],
+            value=f"  Type: {row['type']} | Subtype: {row['subtype']}\n"
+                  f"  Classes: {classes_sorted}\n"
+                  f"{indented_stats}",
+            inline=False
+        )
+
+        # Add the View Details button directly under the item
+        view.add_item(ViewDetailsButton(row))
+
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 
 #----------
 
@@ -360,6 +274,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
