@@ -304,7 +304,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
     
             # Combine into one stats string
-            self.view.stats = "\n  ".join(stats_parts)
+            self.view.stats = "\n".join(stats_parts)
     
         elif self.view.item_type == "Armor":
             self.view.stats = f"Armor Class: {self.armor_class.value}"
@@ -316,7 +316,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
     
             # Combine into one stats string
-            self.view.stats = "\n  ".join(stats_parts)
+            self.view.stats = "\n".join(stats_parts)
 
         
         elif self.view.item_type == "Crafting":
@@ -330,7 +330,7 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
             
-            self.view.stats = "\n  ".join(stats_parts)
+            self.view.stats = "\n".join(stats_parts)
     
         else:
             self.view.stats = self.stats.value
