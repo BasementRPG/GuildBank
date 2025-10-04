@@ -303,16 +303,25 @@ class ItemDetailsModal(discord.ui.Modal):
 
 # ---------- BUTTON ----------
 class ViewDetailsButton(discord.ui.Button):
-    def __init__(self, item):
+    def __init__(self, row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.item = item
+        self.row = row  # keep a copy of the DB row
 
     async def callback(self, interaction: discord.Interaction):
-        modal = ItemDetailsModal(self.item)
+        # Build a read-only modal
+        modal = discord.ui.Modal(title=f"{self.row['name']} Details")
+
+        # Add read-only TextInputs for each stat
+        # Each text input disabled=True makes it read-only
+        modal.add_item(discord.ui.TextInput(
+            label="Stats",
+            default=self.row['stats'] or "None",
+            style=discord.TextStyle.paragraph,
+            required=False
+        ))
+
         await interaction.response.send_modal(modal)
 
-
-# ---------- COMMAND ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
@@ -320,20 +329,17 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # create a single view containing all buttons
-    view = discord.ui.View()
-    embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
+    await interaction.response.defer(ephemeral=True)  # open the hook for followups
 
-    for idx, row in enumerate(rows, start=1):
-        embed.add_field(
-            name=f"{idx}. {row['name']}",
-            value=f"Type: {row['type']} | {row['subtype']}\nClasses: {row['classes'] or 'All'}",
-            inline=False
-        )
-        # add a button per item to the view
+    for row in rows:
+        embed = discord.Embed(title=row['name'], color=discord.Color.blue())
+        embed.add_field(name="Type", value=f"{row['type']} | {row['subtype']}", inline=False)
+        embed.add_field(name="Classes", value=row['classes'] or "All", inline=False)
+
+        view = discord.ui.View()
         view.add_item(ViewDetailsButton(row))
 
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 
 #----------
@@ -360,6 +366,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
