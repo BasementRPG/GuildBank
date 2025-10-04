@@ -247,7 +247,7 @@ class ViewDetailsButton(discord.ui.Button):
             f"Classes: {self.item_row['classes']}\n"
             f"Stats:\n{self.item_row['stats']}"
         )
-        modal = ReadOnlyDetailsModal(title_text=self.item_row['name'], body_text=details_text)
+        modal = ReadOnlyDetailsModal(title_text=self.item_row['name'], body_text=details_text, item_row=self.item_row)
         await interaction.response.send_modal(modal)
 
 # ---------- /view_bank Command ----------
