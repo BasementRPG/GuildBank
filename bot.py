@@ -182,7 +182,7 @@ class ItemEntryView(discord.ui.View):
 
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
-    def __init__(self, title_text: str, body_text: str, item_row1):
+    def __init__(self, item_row):
         super().__init__(title=title_text)
 
         
@@ -190,7 +190,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.type_field = discord.ui.TextInput(
             label="Type | Subtype",
             style=discord.TextStyle.short,
-            default=f"{item_row1['type']} | {item_row1['subtype']}",
+            default=f"{item_row['type']} | {item_row['subtype']}",
             required=False
         )
         self.type_field.disabled = True
@@ -200,7 +200,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.stats_field = discord.ui.TextInput(
             label="Stats",
             style=discord.TextStyle.paragraph,
-            default=item_row1['stats'],
+            default=item_row['stats'],
             required=False
         )
         self.stats_field.disabled = True
@@ -210,7 +210,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.classes_field = discord.ui.TextInput(
             label="Classes",
             style=discord.TextStyle.short,
-            default=item_row1['classes'],
+            default=item_row['classes'],
             required=False
         )
         self.classes_field.disabled = True
@@ -247,7 +247,7 @@ class ViewDetailsButton(discord.ui.Button):
             f"Classes: {self.item_row['classes']}\n"
             f"Stats:\n{self.item_row['stats']}"
         )
-        modal = ReadOnlyDetailsModal(title_text=self.item_row['name'], body_text=details_text, item_row1=self.item_row)
+        modal = ReadOnlyDetailsModal(item_row1=self.item_row)
         await interaction.response.send_modal(modal)
 
 # ---------- /view_bank Command ----------
