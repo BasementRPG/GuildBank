@@ -318,7 +318,8 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-    
+            if stats_parts == null():
+               stats_parts = [f" "]
             # Combine into one stats string
             self.view.stats = "\n  ".join(stats_parts)
     
