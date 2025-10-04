@@ -224,10 +224,24 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.effects)
 
         elif view.item_type == "Armor":
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
-            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", required=True)
+            self.item_name = discord.ui.TextInput(label="Item Name", placehold="Example: Fungus Covered Scale Tunic", default=view.item_name, required=True)
+            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", placehold="Example: 21", required=True)
+            
+           
+            # Optional fields
+            self.attributes = discord.ui.TextInput(
+                label="Stats", default="", placeholder="Example: +2 str, -10 dex, +2 int, -10 int ", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default="", placeholder="Example: +15 HP Regen", required=False, style=discord.TextStyle.paragraph
+            )
+
+            # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.armor_class)
+            self.add_item(self.attributes)
+            self.add_item(self.effects)
+
 
         else:
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, required=True)
