@@ -188,7 +188,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         if view.item_type == "Weapon":
             # Required fields
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
-            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay Example:8/24" , required=True)
+            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
            
             # Optional fields
             self.attributes = discord.ui.TextInput(
@@ -222,7 +222,7 @@ class ItemDetailsModal(discord.ui.Modal, title="Item Details"):
         self.view.item_name = self.item_name.value
 
         if self.view.item_type == "Weapon":
-            self.view.stats = f"Attack: {self.attack.value}, Delay: {self.delay.value}"
+            self.view.stats = f"Attack/Delay: {self.attack_delay.value}"
             self.view.stats_extra = {}
             if self.attributes.value.strip():
                 self.view.stats_extra["Attributes"] = self.attributes.value.strip()
@@ -313,6 +313,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
