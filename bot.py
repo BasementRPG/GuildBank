@@ -282,16 +282,24 @@ async def view_bank(interaction: discord.Interaction):
         classes_list = row['classes'].split(", ") if row['classes'] else []
         classes_sorted = ", ".join(sorted(classes_list))
 
+        # Split stats by line if multiple lines exist (Attack/Delay + Attributes + Effects)
+        stats_lines = row['stats'].split("\n") if row['stats'] else []
+
+        # Indent every line under item name
+        indented_stats = "\n".join([f"  {line}" for line in stats_lines])
+
         embed.add_field(
-            name=row["name"],
+            name=row["name"],  # Item name stays unindented
             value=(
-                f"  Type: {row['type']} | {row['subtype']} | {row['stats']}\n"
+                f"  Type: {row['type']} | Subtype: {row['subtype']} | {indented_stats}\n"
                 f"  Classes: {classes_sorted}\n"
+                f"{indented_stats}"
             ),
             inline=False
         )
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 #----------
 
@@ -317,6 +325,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
