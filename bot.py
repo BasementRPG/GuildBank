@@ -524,6 +524,126 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
 import asyncio
 
 
+# ---- Funds DB Helpers ----
+
+async def add_funds_db(platinum, gold, silver, copper, donor):
+    async with db_pool.acquire() as conn:
+        await conn.execute('''
+            INSERT INTO funds (platinum, gold, silver, copper, donor)
+            VALUES ($1, $2, $3, $4, $5)
+        ''', platinum, gold, silver, copper, donor)
+
+async def remove_funds_db(platinum, gold, silver, copper, donor):
+    # store as negative entry for history
+    async with db_pool.acquire() as conn:
+        await conn.execute('''
+            INSERT INTO funds (platinum, gold, silver, copper, donor)
+            VALUES ($1, $2, $3, $4, $5)
+        ''', -platinum, -gold, -silver, -copper, donor)
+
+async def get_total_funds():
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow('''
+            SELECT 
+                COALESCE(SUM(platinum),0) as platinum,
+                COALESCE(SUM(gold),0) as gold,
+                COALESCE(SUM(silver),0) as silver,
+                COALESCE(SUM(copper),0) as copper
+            FROM funds
+        ''')
+    return row
+
+async def get_funds_breakdown():
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch('''
+            SELECT donor, platinum, gold, silver, copper, created_at
+            FROM funds
+            ORDER BY created_at DESC
+        ''')
+    return rows
+
+@bot.tree.command(name="add_funds", description="Add funds to the guild bank.")
+@app_commands.describe(
+    platinum="Platinum amount",
+    gold="Gold amount",
+    silver="Silver amount",
+    copper="Copper amount",
+    donor="Optional name of the donor"
+)
+async def add_funds(interaction: discord.Interaction,
+                    platinum: int = 0,
+                    gold: int = 0,
+                    silver: int = 0,
+                    copper: int = 0,
+                    donor: str = None):
+    await add_funds_db(platinum, gold, silver, copper, donor)
+    await interaction.response.send_message(
+        f"💰 Added {platinum}p {gold}g {silver}s {copper}c to the guild funds.", ephemeral=True
+    )
+
+@bot.tree.command(name="remove_funds", description="Remove funds from the guild bank.")
+@app_commands.describe(
+    platinum="Platinum amount",
+    gold="Gold amount",
+    silver="Silver amount",
+    copper="Copper amount",
+    donor="Optional name of who is receiving the funds"
+)
+async def remove_funds(interaction: discord.Interaction,
+                       platinum: int = 0,
+                       gold: int = 0,
+                       silver: int = 0,
+                       copper: int = 0,
+                       donor: str = None):
+    await remove_funds_db(platinum, gold, silver, copper, donor)
+    await interaction.response.send_message(
+        f"💸 Removed {platinum}p {gold}g {silver}s {copper}c from the guild funds.", ephemeral=True
+    )
+
+
+class ViewDonorsButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="View Donor Breakdown", style=discord.ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        rows = await get_funds_breakdown()
+        if not rows:
+            await interaction.response.send_message("No donations recorded yet.", ephemeral=True)
+            return
+
+        text = ""
+        for row in rows:
+            text += (f"**{row['donor'] or 'Unknown'}**: "
+                     f"{row['platinum']}p {row['gold']}g {row['silver']}s {row['copper']}c "
+                     f"({row['created_at'].strftime('%Y-%m-%d')})\n")
+
+        # Break into chunks if too long
+        for chunk in [text[i:i+1900] for i in range(0, len(text), 1900)]:
+            await interaction.user.send(chunk)  # DM it
+        await interaction.response.send_message("📨 Sent donor breakdown to your DMs.", ephemeral=True)
+
+
+@bot.tree.command(name="view_funds", description="View the total funds in the guild bank.")
+async def view_funds(interaction: discord.Interaction):
+    totals = await get_total_funds()
+    embed = discord.Embed(
+        title="Guild Bank Funds",
+        description=(
+            f"**Platinum:** {totals['platinum']}p\n"
+            f"**Gold:** {totals['gold']}g\n"
+            f"**Silver:** {totals['silver']}s\n"
+            f"**Copper:** {totals['copper']}c"
+        ),
+        color=discord.Color.gold()
+    )
+    view = discord.ui.View()
+    view.add_item(ViewDonorsButton())
+    await interaction.response.send_message(embed=embed, view=view)
+
+
+
+
+
 
 @bot.event
 async def on_ready():
