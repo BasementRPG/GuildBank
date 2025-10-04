@@ -64,7 +64,7 @@ class SubtypeSelect(discord.ui.Select):
             options = [discord.SelectOption(label=s) for s in CONSUMABLE_SUBTYPES]
         else:
             options = [discord.SelectOption(label=s) for s in MISC_SUBTYPES]
-
+        for opt
         # preselect if editing
         super().__init__(placeholder="Select Subtype", options=options)
         if self.parent_view.subtype:
@@ -309,6 +309,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
