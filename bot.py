@@ -267,58 +267,45 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
 #-------VIEW BANK --------
 
 # ---------- MODAL FOR READ-ONLY DETAILS ----------
-class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, item):
-        super().__init__(title=f"{item['name']} Details")
+# ---------- Read-Only Details Modal ----------
+class ItemDetailsReadOnlyModal(discord.ui.Modal):
+    def __init__(self, db_row):
+        super().__init__(title=f"{db_row['name']} Details")
+        self.db_row = db_row
 
-        # Add read-only text fields by disabling them
-        self.add_item(discord.ui.TextInput(
-            label="Type / Subtype",
-            default=f"{item['type']} | {item['subtype']}",
-            style=discord.TextStyle.short,
+        # Use a single TextInput for display
+        details_text = (
+            f"Type: {db_row['type']} | {db_row['subtype']}\n"
+            f"Classes: {db_row['classes']}\n"
+            f"Stats:\n{db_row['stats']}"
+        )
+
+        self.details_display = discord.ui.TextInput(
+            label="",
+            default=details_text,
             required=False,
-            disabled=True  # disables editing
-        ))
-
-        self.add_item(discord.ui.TextInput(
-            label="Classes",
-            default=item['classes'] or "All",
             style=discord.TextStyle.paragraph,
-            required=False,
-            disabled=True
-        ))
+            max_length=4000
+        )
 
-        self.add_item(discord.ui.TextInput(
-            label="Stats",
-            default=item['stats'] or "No stats available",
-            style=discord.TextStyle.paragraph,
-            required=False,
-            disabled=True
-        ))
+        self.add_item(self.details_display)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Since it's read-only, just acknowledge
-        await interaction.response.send_message("Closed.", ephemeral=True)
+        # Modal will automatically close after submission
+        await interaction.response.send_message("✅ Closed details.", ephemeral=True)
 
 
-# ---------- BUTTON ----------
+# ---------- Button to open modal ----------
 class ViewDetailsButton(discord.ui.Button):
     def __init__(self, db_row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.item_row = db_row  # renamed
+        self.db_row = db_row
 
     async def callback(self, interaction: discord.Interaction):
-        # Build a read-only modal
-        modal = discord.ui.Modal(title=f"{self.item_row['name']} Details")
-
-        modal.add_item(discord.ui.TextInput(
-            label="Stats",
-            default=self.item_row['stats'] or "None",
-            style=discord.TextStyle.paragraph,
-            required=False
-        ))
-
+        modal = ItemDetailsReadOnlyModal(self.db_row)
         await interaction.response.send_modal(modal)
+
+
 
 
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
@@ -366,6 +353,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
