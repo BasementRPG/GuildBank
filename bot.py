@@ -180,11 +180,11 @@ class ItemEntryView(discord.ui.View):
 
 # ------ITEM DETAILS ----
 
-# ---------- Read-Only Modal for Item Details ----------
+# ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, title_text: str, body_text: str):
         super().__init__(title=title_text)
-        # Text input in a modal must have a label; using "Details"
+        # Text input is required in a modal, we disable it for read-only
         self.details = discord.ui.TextInput(
             label="Details",
             style=discord.TextStyle.paragraph,
@@ -195,23 +195,23 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.details.disabled = True  # make it read-only
         self.add_item(self.details)
 
-# ---------- ViewDetailsButton ----------
+# ---------- Button ----------
 class ViewDetailsButton(discord.ui.Button):
-    def __init__(self, db_row):
+    def __init__(self, item_row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.db_row = db_row  # store the DB row safely
+        self.item_row = item_row  # store the DB row
 
     async def callback(self, interaction: discord.Interaction):
-        if self.db_row is None:
+        if not self.item_row:
             await interaction.response.send_message("Error: no data available.", ephemeral=True)
             return
 
         details_text = (
-            f"Type: {self.db_row['type']} | Subtype: {self.db_row['subtype']}\n"
-            f"Classes: {self.db_row['classes']}\n"
-            f"Stats:\n{self.db_row['stats']}"
+            f"Type: {self.item_row['type']} | Subtype: {self.item_row['subtype']}\n"
+            f"Classes: {self.item_row['classes']}\n"
+            f"Stats:\n{self.item_row['stats']}"
         )
-        modal = ReadOnlyDetailsModal(title_text=self.db_row['name'], body_text=details_text)
+        modal = ReadOnlyDetailsModal(title_text=self.item_row['name'], body_text=details_text)
         await interaction.response.send_modal(modal)
 
 # ---------- /view_bank Command ----------
@@ -222,32 +222,24 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort alphabetically
+    # Sort items alphabetically
     sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
 
-    embed = discord.Embed(title="Guild Bank", color=discord.Color.blue())
-    view = discord.ui.View()
-
-    for r in sorted_rows:
-        classes_list = r['classes'].split(", ") if r['classes'] else []
-        classes_sorted = ", ".join(sorted(classes_list))
-
-        # Stats indented for readability
-        stats_lines = r['stats'].split("\n") if r['stats'] else []
-        indented_stats = "\n".join([f"  {line}" for line in stats_lines])
-
-        embed.add_field(
-            name=r["name"],
-            value=f"  Type: {r['type']} | Subtype: {r['subtype']}\n"
-                  f"  Classes: {classes_sorted}\n"
-                  f"{indented_stats}",
-            inline=False
+    # Send one message per item
+    for row in sorted_rows:
+        embed = discord.Embed(
+            title=row["name"],
+            description=f"{row['type']} | {row['subtype']}",
+            color=discord.Color.blue()
         )
+        view = discord.ui.View()
+        view.add_item(ViewDetailsButton(item_row=row))
 
-        # 🔹 Critical: create a new button instance per row
-        view.add_item(ViewDetailsButton(db_row=r))
+        await interaction.channel.send(embed=embed, view=view)
+    
+    # Optionally, acknowledge the command ephemerally
+    await interaction.response.send_message(f"✅ Sent {len(sorted_rows)} items.", ephemeral=True)
 
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 #----------
@@ -286,6 +278,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
