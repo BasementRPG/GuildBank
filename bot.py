@@ -245,7 +245,7 @@ async def view_bank(interaction: discord.Interaction):
         )
 
         # 🔹 Critical: create a new button instance per row
-        view.add_item(ViewDetailsButton(row=r))
+        view.add_item(ViewDetailsButton(db_row=r))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -286,6 +286,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
