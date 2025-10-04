@@ -287,14 +287,20 @@ class ReadOnlyDetailsModal(discord.ui.Modal, title="Item Details"):
 
 # ---------- Button to open modal ----------
 class ViewDetailsButton(discord.ui.Button):
-    def __init__(self, db_row):
+    def __init__(self, row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.db_row = db_row
+        self.row = row  # store the database row for later
 
     async def callback(self, interaction: discord.Interaction):
-        details_text = f"Type: {self.row['type']} | Subtype: {self.row['subtype']}\n" \
-                       f"Classes: {self.row['classes']}\n" \
-                       f"Stats:\n{self.row['stats']}"
+        if self.row is None:
+            await interaction.response.send_message("Error: no data available.", ephemeral=True)
+            return
+
+        details_text = (
+            f"Type: {self.row['type']} | Subtype: {self.row['subtype']}\n"
+            f"Classes: {self.row['classes']}\n"
+            f"Stats:\n{self.row['stats']}"
+        )
         modal = ReadOnlyDetailsModal(title_text=self.row['name'], body_text=details_text)
         await interaction.response.send_modal(modal)
 
@@ -317,11 +323,18 @@ async def view_bank(interaction: discord.Interaction):
         embed.add_field(name="Classes", value=db_row['classes'] or "All", inline=False)
 
         view = discord.ui.View()
-        view.add_item(ViewDetailsButton(db_row))
-
-        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
-
-
+        for row in sorted_rows:
+            # add your embed field for the item
+            embed.add_field(
+                name=row["name"],
+                value=f"Type: {row['type']} | Subtype: {row['subtype']}",
+                inline=False
+            )
+        
+            # add the button underneath the item
+            view.add_item(ViewDetailsButton(row))
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 #----------
 
@@ -347,6 +360,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
