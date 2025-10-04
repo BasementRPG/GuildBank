@@ -73,7 +73,7 @@ class SubtypeSelect(discord.ui.Select):
             options = [discord.SelectOption(label=s, value=s) for s in ARMOR_SUBTYPES]
         elif self.parent_view.item_type == "Crafting":
             options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
-         elif self.parent_view.item_type == "Consumable":
+        elif self.parent_view.item_type == "Consumable":
             options = [discord.SelectOption(label=s, value=s) for s in CONSUMABLE_SUBTYPES]
         else:
             options = [discord.SelectOption(label=s, value=s) for s in MISC_SUBTYPES]
