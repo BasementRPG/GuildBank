@@ -266,27 +266,53 @@ async def add_item(interaction: discord.Interaction, item_type: app_commands.Cho
 
 #-------VIEW BANK --------
 
+# ---------- MODAL FOR READ-ONLY DETAILS ----------
+class ItemDetailsModal(discord.ui.Modal):
+    def __init__(self, item):
+        super().__init__(title=f"{item['name']} Details")
+
+        # Add read-only text fields by disabling them
+        self.add_item(discord.ui.TextInput(
+            label="Type / Subtype",
+            default=f"{item['type']} | {item['subtype']}",
+            style=discord.TextStyle.short,
+            required=False,
+            disabled=True  # disables editing
+        ))
+
+        self.add_item(discord.ui.TextInput(
+            label="Classes",
+            default=item['classes'] or "All",
+            style=discord.TextStyle.paragraph,
+            required=False,
+            disabled=True
+        ))
+
+        self.add_item(discord.ui.TextInput(
+            label="Stats",
+            default=item['stats'] or "No stats available",
+            style=discord.TextStyle.paragraph,
+            required=False,
+            disabled=True
+        ))
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Since it's read-only, just acknowledge
+        await interaction.response.send_message("Closed.", ephemeral=True)
+
+
+# ---------- BUTTON ----------
 class ViewDetailsButton(discord.ui.Button):
     def __init__(self, item):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
         self.item = item
 
     async def callback(self, interaction: discord.Interaction):
-        # Build a modal or new embed showing full stats
-        stats = self.item.get('stats') or 'No stats available'
-        classes = self.item.get('classes') or 'All'
-        # Make an embed with full details
-        details_embed = discord.Embed(
-            title=f"{self.item['name']} Details",
-            color=discord.Color.green()
-        )
-        details_embed.add_field(name="Type", value=f"{self.item['type']} | {self.item['subtype']}", inline=False)
-        details_embed.add_field(name="Classes", value=classes, inline=False)
-        details_embed.add_field(name="Stats", value=stats, inline=False)
-
-        await interaction.response.send_message(embed=details_embed, ephemeral=True)
+        modal = ItemDetailsModal(self.item)
+        await interaction.response.send_modal(modal)
 
 
+# ---------- COMMAND ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items()
@@ -299,11 +325,11 @@ async def view_bank(interaction: discord.Interaction):
         embed.add_field(name="Type", value=f"{row['type']} | {row['subtype']}", inline=False)
         embed.add_field(name="Classes", value=row['classes'] or "All", inline=False)
 
-        # one button per item, right under its embed
         view = discord.ui.View()
         view.add_item(ViewDetailsButton(row))
 
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+
 
 
 #----------
@@ -330,6 +356,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 bot.run(TOKEN)
+
 
 
 
