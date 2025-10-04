@@ -252,7 +252,10 @@ async def view_bank(interaction: discord.Interaction):
         )
 
         # Add a button for this item
-        view.add_item(ViewDetailsButton(row))
+        view = discord.ui.View()
+        view.add_item(ViewDetailsButton(row))  # make sure ViewDetailsButton uses db_row internally
+
+        await interaction.channel.send(embed=embed, view=view)
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -292,6 +295,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 bot.run(TOKEN)
+
 
 
 
