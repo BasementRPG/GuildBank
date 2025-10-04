@@ -318,7 +318,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-            if stats_parts =[""] ():
+            if stats_parts ==[""] ():
                self.view.stats = " "
             
             # Combine into one stats string
