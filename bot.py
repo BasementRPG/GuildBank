@@ -390,10 +390,12 @@ async def view_bank(interaction: discord.Interaction):
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 @app_commands.describe(item_type="Type of the item")
 @app_commands.choices(item_type=[
-    app_commands.Choice(name="Weapon", value="Weapon"),
+    
     app_commands.Choice(name="Armor", value="Armor"),
+    app_commands.Choice(name="Crafting", value="Crafting"),
     app_commands.Choice(name="Consumable", value="Consumable"),
-    app_commands.Choice(name="Misc", value="Misc")
+    app_commands.Choice(name="Misc", value="Misc"),
+    app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str):  # Change this line
     try:
