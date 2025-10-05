@@ -2,7 +2,12 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
-import asyncpg
+from discord.ui import Modal, TextInput
+from discord import Interaction, app_commands
+import asyncpg 
+
+
+
 
 print("discord.py version:", discord.__version__)
 
