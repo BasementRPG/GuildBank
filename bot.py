@@ -562,39 +562,40 @@ async def get_fund_totals():
 
 
 # ---------- Funds DB Helpers ----------
-# Add funds (donation or spend)
-async def add_funds_db(type_, plat=0, gold=0, silver=0, copper=0, donated_by=None):
+
+# Convert from 4-part currency to copper
+def currency_to_copper(plat=0, gold=0, silver=0, copper=0):
+    return plat * 10000 + gold * 100 + silver * 1 + copper
+
+# Convert from copper to 4-part currency
+def copper_to_currency(total_copper):
+    plat = total_copper // 10000
+    rem = total_copper % 10000
+    gold = rem // 100
+    rem = rem % 100
+    silver = rem
+    copper = 0  # optional, since silver covers copper in our scale
+    return plat, gold, silver, copper
+
+# Add donation or spend
+async def add_funds_db(type_, total_copper, donated_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO funds (type, plat, gold, silver, copper, donated_by)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        ''', type_, plat, gold, silver, copper, donated_by)
-
-# Get all donation/spend entries
-async def get_all_funds():
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch('SELECT * FROM funds ORDER BY donated_at')
-    return rows
+            INSERT INTO funds (type, total_copper, donated_by)
+            VALUES ($1, $2, $3)
+        ''', type_, total_copper, donated_by)
 
 # Get total sums
 async def get_fund_totals():
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow('''
             SELECT
-                SUM(CASE WHEN type='donation' THEN plat ELSE 0 END) AS donated_plat,
-                SUM(CASE WHEN type='donation' THEN gold ELSE 0 END) AS donated_gold,
-                SUM(CASE WHEN type='donation' THEN silver ELSE 0 END) AS donated_silver,
-                SUM(CASE WHEN type='donation' THEN copper ELSE 0 END) AS donated_copper,
-                
-                SUM(CASE WHEN type='spend' THEN plat ELSE 0 END) AS spent_plat,
-                SUM(CASE WHEN type='spend' THEN gold ELSE 0 END) AS spent_gold,
-                SUM(CASE WHEN type='spend' THEN silver ELSE 0 END) AS spent_silver,
-                SUM(CASE WHEN type='spend' THEN copper ELSE 0 END) AS spent_copper
-        FROM funds
+                SUM(CASE WHEN type='donation' THEN total_copper ELSE 0 END) AS donated,
+                SUM(CASE WHEN type='spend' THEN total_copper ELSE 0 END) AS spent
+            FROM funds
         ''')
     return row
 
-from discord.ui import Modal, TextInput
 
 class AddFundsModal(Modal):
     def __init__(self):
