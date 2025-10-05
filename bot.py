@@ -576,7 +576,7 @@ async def add_funds(interaction: discord.Interaction,
                     silver: int = 0,
                     copper: int = 0,
                     donor: str = None):
-    await add_funds_db(platinum, gold, silver, copper, donated_by)
+    await add_funds_db(platinum, gold, silver, copper, donor)
     await interaction.response.send_message(
         f"💰 Added {platinum}p {gold}g {silver}s {copper}c to the guild funds.", ephemeral=True
     )
