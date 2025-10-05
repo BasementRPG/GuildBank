@@ -660,25 +660,6 @@ async def spend_funds(interaction: discord.Interaction):
 @bot.tree.command(name="view_funds", description="View current available funds.")
 async def view_funds(interaction: discord.Interaction):
     totals = await get_fund_totals()
-
-    # Convert each currency to total available (donated - spent)
-    avail_plat = (totals['donated_plat'] or 0) - (totals['spent_plat'] or 0)
-    avail_gold = (totals['donated_gold'] or 0) - (totals['spent_gold'] or 0)
-    avail_silver = (totals['donated_silver'] or 0) - (totals['spent_silver'] or 0)
-    avail_copper = (totals['donated_copper'] or 0) - (totals['spent_copper'] or 0)
-
-    embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(name="Platinum", value=str(avail_plat))
-    embed.add_field(name="Gold", value=str(avail_gold))
-    embed.add_field(name="Silver", value=str(avail_silver))
-    embed.add_field(name="Copper", value=str(avail_copper))
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-@bot.tree.command(name="view_funds", description="View current available funds.")
-async def view_funds(interaction: discord.Interaction):
-    totals = await get_fund_totals()
     donated = totals['donated'] or 0
     spent = totals['spent'] or 0
     available = donated - spent
@@ -690,6 +671,7 @@ async def view_funds(interaction: discord.Interaction):
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 
 
