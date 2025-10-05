@@ -681,6 +681,40 @@ async def view_funds(interaction: Interaction):
 
 
 
+# ---------- Fetch Donations/Spends ----------
+async def get_all_funds():
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch('''
+            SELECT id, type, total_copper, donated_by, donated_at
+            FROM funds
+            ORDER BY donated_at DESC
+        ''')
+    return rows
+
+# ---------- /view_donations Command ----------
+@bot.tree.command(name="view_donations", description="View all donations and spent funds with details.")
+async def view_donations(interaction: discord.Interaction):
+    rows = await get_all_funds()
+    if not rows:
+        await interaction.response.send_message("No donations or spent funds recorded.", ephemeral=True)
+        return
+
+    embed = discord.Embed(title="💰 Donation / Spend History", color=discord.Color.green())
+    
+    # Show each entry
+    for row in rows:
+        plat, gold, silver, copper = copper_to_currency(row['total_copper'])
+        amount_str = f"{plat}P {gold}G {silver}S {copper}C"
+        donated_by = row['donated_by'] or "Unknown"
+        date_str = row['donated_at'].strftime("%Y-%m-%d %H:%M") if row['donated_at'] else "Unknown"
+        embed.add_field(
+            name=f"{row['type'].capitalize()} (ID {row['id']})",
+            value=f"Amount: {amount_str}\nBy: {donated_by}\nDate: {date_str}",
+            inline=False
+        )
+
+    # Send as ephemeral to avoid flooding channel
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 
