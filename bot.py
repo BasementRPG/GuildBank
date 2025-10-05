@@ -531,7 +531,7 @@ async def add_funds_db(plat, gold, silver, copper, donated_by):
         await conn.execute('''
             INSERT INTO funds (plat, gold, silver, copper, donated_by)
             VALUES ($1, $2, $3, $4, $5)
-        ''', plat, gold, silver, copper, donor)
+        ''', plat, gold, silver, copper, donated_by)
 
 async def remove_funds_db(plat, gold, silver, copper, donated_by):
     # store as negative entry for history
