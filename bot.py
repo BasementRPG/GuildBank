@@ -526,18 +526,18 @@ import asyncio
 
 # ---- Funds DB Helpers ----
 
-async def add_funds_db(platinum, gold, silver, copper, donor):
+async def add_funds_db(plat, gold, silver, copper, donor):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO funds (platinum, gold, silver, copper, donor)
+            INSERT INTO funds (plat, gold, silver, copper, donor)
             VALUES ($1, $2, $3, $4, $5)
-        ''', platinum, gold, silver, copper, donor)
+        ''', plat, gold, silver, copper, donor)
 
-async def remove_funds_db(platinum, gold, silver, copper, donor):
+async def remove_funds_db(plat, gold, silver, copper, donor):
     # store as negative entry for history
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO funds (platinum, gold, silver, copper, donor)
+            INSERT INTO funds (plat, gold, silver, copper, donor)
             VALUES ($1, $2, $3, $4, $5)
         ''', -platinum, -gold, -silver, -copper, donor)
 
@@ -545,7 +545,7 @@ async def get_total_funds():
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow('''
             SELECT 
-                COALESCE(SUM(platinum),0) as platinum,
+                COALESCE(SUM(plat),0) as platinum,
                 COALESCE(SUM(gold),0) as gold,
                 COALESCE(SUM(silver),0) as silver,
                 COALESCE(SUM(copper),0) as copper
@@ -556,7 +556,7 @@ async def get_total_funds():
 async def get_funds_breakdown():
     async with db_pool.acquire() as conn:
         rows = await conn.fetch('''
-            SELECT donor, platinum, gold, silver, copper, created_at
+            SELECT donor, plat, gold, silver, copper, created_at
             FROM funds
             ORDER BY created_at DESC
         ''')
