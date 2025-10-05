@@ -535,7 +535,7 @@ async def add_funds_db(platinum: int, gold: int, silver: int, copper: int, donor
 
 async def get_all_funds():
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT * FROM funds ORDER BY donated_at DESC")
+        rows = await conn.fetch("SELECT * FROM funds ORDER BY donated_at1 DESC")
     return rows
 
 
@@ -591,7 +591,7 @@ async def view_funds(interaction: discord.Interaction):
     embed = discord.Embed(title="Guild Bank Donations", color=discord.Color.gold())
     for row in rows[:10]:  # show latest 10
         embed.add_field(
-            name=f"Entry #{row['id']} - {row['donated_at'].strftime('%Y-%m-%d %H:%M')}",
+            name=f"Entry #{row['id']} - {row['donated_at1'].strftime('%Y-%m-%d %H:%M')}",
             value=f"💰 {row['platinum']}P {row['gold']}G {row['silver']}S {row['copper']}C (Donor: {row['donor']})",
             inline=False
         )
