@@ -591,8 +591,8 @@ async def view_funds(interaction: discord.Interaction):
     embed = discord.Embed(title="Guild Bank Donations", color=discord.Color.gold())
     for row in rows[:10]:  # show latest 10
         embed.add_field(
-            name=f"Entry #{row['id']} - {row['donated_at'].strftime('%Y-%m-%d %H:%M')}",
-            value=f"💰 {row['platinum']}P {row['gold']}G {row['silver']}S {row['copper']}C (Donor: {row['donor']})",
+            name=f"Entry #{row['id']} - {row['donated_at'].strftime('%Y-%m-%d')}",
+            value=f"💰 {row['platinum']}p {row['gold']}g {row['silver']}s {row['copper']}c (Donor: {row['donor']})",
             inline=False
         )
 
