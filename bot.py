@@ -2,8 +2,7 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.ui import Modal, TextInput
-from discord import Interaction, app_commands
+
 import asyncpg 
 
 
@@ -567,31 +566,37 @@ async def get_fund_totals():
 
 
 # ---------- Funds DB Helpers ----------
+# ---------- Imports for Funds ----------
+from discord.ui import Modal, TextInput
+from discord import Interaction, app_commands
+import discord
 
-# Convert from 4-part currency to copper
+# ---------- Currency Conversion Helpers ----------
 def currency_to_copper(plat=0, gold=0, silver=0, copper=0):
+    """Convert 4-part currency into total copper."""
     return plat * 10000 + gold * 100 + silver * 1 + copper
 
-# Convert from copper to 4-part currency
 def copper_to_currency(total_copper):
+    """Convert total copper into 4-part currency."""
     plat = total_copper // 10000
     rem = total_copper % 10000
     gold = rem // 100
     rem = rem % 100
     silver = rem
-    copper = 0  # optional, since silver covers copper in our scale
+    copper = 0  # optional, since silver covers copper in this scale
     return plat, gold, silver, copper
 
-# Add donation or spend
+# ---------- Database Helpers ----------
 async def add_funds_db(type_, total_copper, donated_by=None):
+    """Insert a donation or spend into the funds table."""
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO funds (type, total_copper, donated_by)
             VALUES ($1, $2, $3)
         ''', type_, total_copper, donated_by)
 
-# Get total sums
 async def get_fund_totals():
+    """Get the total donated and spent amounts."""
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow('''
             SELECT
@@ -601,7 +606,7 @@ async def get_fund_totals():
         ''')
     return row
 
-
+# ---------- Modals ----------
 class AddFundsModal(Modal):
     def __init__(self):
         super().__init__(title="Add Donation")
@@ -616,7 +621,7 @@ class AddFundsModal(Modal):
         self.add_item(self.copper)
         self.add_item(self.donated_by)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: Interaction):
         total = currency_to_copper(
             plat=int(self.plat.value or 0),
             gold=int(self.gold.value or 0),
@@ -625,12 +630,6 @@ class AddFundsModal(Modal):
         )
         await add_funds_db('donation', total, self.donated_by.value.strip() or None)
         await interaction.response.send_message("✅ Donation added!", ephemeral=True)
-
-
-
-@bot.tree.command(name="add_funds", description="Add a donation to the guild bank.")
-async def add_funds(interaction: discord.Interaction):
-    await interaction.response.send_modal(AddFundsModal())
 
 class SpendFundsModal(Modal):
     def __init__(self):
@@ -646,7 +645,7 @@ class SpendFundsModal(Modal):
         self.add_item(self.copper)
         self.add_item(self.note)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: Interaction):
         total = currency_to_copper(
             plat=int(self.plat.value or 0),
             gold=int(self.gold.value or 0),
@@ -656,15 +655,17 @@ class SpendFundsModal(Modal):
         await add_funds_db('spend', total, self.note.value.strip() or None)
         await interaction.response.send_message("✅ Funds spent recorded!", ephemeral=True)
 
-
+# ---------- Commands ----------
+@bot.tree.command(name="add_funds", description="Add a donation to the guild bank.")
+async def add_funds(interaction: Interaction):
+    await interaction.response.send_modal(AddFundsModal())
 
 @bot.tree.command(name="spend_funds", description="Record spent guild funds.")
-async def spend_funds(interaction: discord.Interaction):
+async def spend_funds(interaction: Interaction):
     await interaction.response.send_modal(SpendFundsModal())
 
-
 @bot.tree.command(name="view_funds", description="View current available funds.")
-async def view_funds(interaction: discord.Interaction):
+async def view_funds(interaction: Interaction):
     totals = await get_fund_totals()
     donated = totals['donated'] or 0
     spent = totals['spent'] or 0
