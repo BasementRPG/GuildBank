@@ -195,14 +195,56 @@ class ItemEntryView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
     
-    async def upload_image(self, interaction: discord.Interaction):
-        modal = UploadImageModal(self)
-        await interaction.response.send_modal(modal)
-    
     async def open_item_details(self, interaction: discord.Interaction):
         modal = ItemDetailsModal(self)
         await interaction.response.send_modal(modal)
 
+
+    async def upload_image(self, interaction: discord.Interaction):
+        # Step 1: Ask user to upload image in chat
+        await interaction.response.send_message(
+            "Please upload the image as an attachment in your next message.", ephemeral=True
+        )
+
+        def check(m):
+            return (
+                m.author.id == interaction.user.id and
+                m.attachments and
+                m.channel == interaction.channel
+            )
+
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=120)
+        except asyncio.TimeoutError:
+            await interaction.followup.send("⏰ Upload timed out.", ephemeral=True)
+            return
+
+        attachment = msg.attachments[0]
+        self.image_url = attachment.url
+
+        # Step 2: Prompt for item title and donor
+        class ImageItemModal(discord.ui.Modal):
+            def __init__(self, parent_view):
+                super().__init__(title="Image Item Details")
+                self.parent_view = parent_view
+                self.item_name_input = discord.ui.TextInput(label="Item Name", required=True)
+                self.donated_by_input = discord.ui.TextInput(label="Donated By", required=False)
+                self.add_item(self.item_name_input)
+                self.add_item(self.donated_by_input)
+
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                self.parent_view.item_name = self.item_name_input.value
+                self.parent_view.stats = f"Image URL: {self.parent_view.image_url}\nDonated By: {self.donated_by_input.value or 'Anonymous'}"
+                await modal_interaction.response.send_message(
+                    f"✅ Image item **{self.parent_view.item_name}** saved!", ephemeral=True
+                )
+
+        modal = ImageItemModal(self)
+        await interaction.followup.send_modal(modal)
+
+
+
+    
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
         if self.item_id:  # editing
