@@ -461,9 +461,10 @@ async def view_bank(interaction: discord.Interaction):
 
     # First, send items with images
     for row in items_with_image:
-        embed.set_image(url=row['image'])
+       
 
-        embed = discord.Embed(
+        embed = embed.set_image(url=row['image'])
+        discord.Embed(
             title="",
             description=f"Donated By: {row.get('donated_by', 'Unknown')}",
             color=discord.Color.green()
