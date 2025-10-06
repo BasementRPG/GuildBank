@@ -202,7 +202,7 @@ class ItemEntryView(discord.ui.View):
             await update_item_db(guild_id=interaction.guild.id, item_id=self.item_id, name=self.item_name, type_=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
             await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
         else:  # adding
-            await add_item_db(guild_id=interaction.guild.id, item_id=self.item_id, name=self.item_name, type_=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
+            await add_item_db(guild_id=interaction.guild.id, name=self.item_name, type_=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
             await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
