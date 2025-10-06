@@ -479,6 +479,7 @@ async def view_bank(interaction: discord.Interaction):
 # ---------- /add_item Command ----------
 
 # ---------- /add_item Command (NEW) ----------
+# ---------- /add_item Command ----------
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 @app_commands.describe(item_type="Type of the item", image="Optional image upload")
 @app_commands.choices(item_type=[
@@ -489,9 +490,10 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
-    
-    # If an image was uploaded via slash command
-     if image:
+    """Add a new item to the guild bank, optionally with an image."""
+
+    # If an image is provided, use a modal to get item name and donated_by
+    if image:
         class ImageDetailsModal(discord.ui.Modal):
             def __init__(self, image_url: str):
                 super().__init__(title="Item Details for Image Upload")
@@ -521,17 +523,18 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
                 )
 
-        # Open the modal immediately after slash command
-        await interaction.response.send_modal(ImageDetailsModal())
+        # Show the modal
+        await interaction.response.send_modal(ImageDetailsModal(image.url))
         return
 
-    # Otherwise, open the normal item entry modal
+    # Otherwise, open the normal ItemEntryView modal
     view = ItemEntryView(interaction.user, item_type=item_type)
     await interaction.response.send_message(
-        f"Adding a new {item_type}:", 
-        view=view, 
+        f"Adding a new {item_type}:",
+        view=view,
         ephemeral=True
     )
+
 
 
 
