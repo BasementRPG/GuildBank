@@ -243,7 +243,9 @@ class ItemEntryView(discord.ui.View):
                 "name": self.item_name,
                 "type": self.item_type,
                 "subtype": self.subtype,
-                "stats": classes_str,
+                "stats": self.stats,
+                "classes": classes_str,
+                "donated_by": self.donated_by
             }
             if self.donated_by:
                 fields_to_update["donated_by"] = self.donated_by
@@ -398,12 +400,15 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Stats: {self.attributes.value.strip()}")
             if self.effects.value.strip():
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
-            if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+            
                  
             # Combine into one stats string
             self.view.stats = "\n".join(stats_parts)
-    
+            
+            if self.donated_by.value.strip():
+                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+
+        
         elif self.view.item_type == "Armor":
             
             stats_parts = [f"Armor Class: {self.armor_class.value}"]
