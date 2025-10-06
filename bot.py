@@ -665,6 +665,7 @@ class SpendFundsModal(Modal):
         )
         await interaction.response.send_message("✅ Funds spent recorded!", ephemeral=True)
 
+
 # Modal to show full donation history
 class DonationHistoryModal(discord.ui.Modal):
     def __init__(self, donations):
@@ -698,7 +699,15 @@ class DonationHistoryModal(discord.ui.Modal):
         await interaction.response.send_message("✅ Closed.", ephemeral=True)
 
 
+    # Button to view full history
+class ViewFullHistoryButton(discord.ui.Button):
+    def __init__(self, donations):
+         self.donations = donations
+         super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
 
+    async def callback(self, interaction_button: discord.Interaction):
+          modal = DonationHistoryModal(self.donations)
+         await interaction_button.response.send_modal(modal)
 
 
 # ----------------- Slash Commands -----------------
@@ -741,17 +750,9 @@ async def view_donations(interaction: discord.Interaction):
         color=discord.Color.green()
     )
     
-    # Button to view full history
-    class ViewFullHistoryButton(discord.ui.Button):
-        def __init__(self):
-            super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
-
-        async def callback(self, interaction_button: discord.Interaction):
-            modal = DonationHistoryModal(donations)
-            await interaction_button.response.send_modal(modal)
 
     view = discord.ui.View()
-    view.add_item(ViewFullHistoryButton())
+    view.add_item(ViewFullHistoryButton(donations))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
