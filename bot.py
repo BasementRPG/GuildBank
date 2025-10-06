@@ -173,10 +173,17 @@ class ItemEntryView(discord.ui.View):
         self.classes_select = ClassesSelect(self)
         self.add_item(self.classes_select)
 
+        # Upload Image button
+        self.upload_image_button = discord.ui.Button(label="Upload Image", style=discord.ButtonStyle.secondary)
+        self.upload_image_button.callback = self.upload_image
+        self.add_item(self.upload_image_button)
+        
+
         self.details_button = discord.ui.Button(label="Item Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
+        
         self.submit_button = discord.ui.Button(label="Submit", style=discord.ButtonStyle.success)
         self.submit_button.callback = self.submit_item
         self.add_item(self.submit_button)
@@ -187,7 +194,11 @@ class ItemEntryView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
-
+    
+    async def upload_image(self, interaction: discord.Interaction):
+        modal = UploadImageModal(self)
+        await interaction.response.send_modal(modal)
+    
     async def open_item_details(self, interaction: discord.Interaction):
         modal = ItemDetailsModal(self)
         await interaction.response.send_modal(modal)
@@ -209,6 +220,63 @@ class ItemEntryView(discord.ui.View):
         self.stats = ""
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
+
+#-----IMAGE UPLOAD ----
+
+class UploadImageModal(discord.ui.Modal):
+    def __init__(self, parent_view: "ItemEntryView"):
+        super().__init__(title="Upload Image for Item")
+        self.parent_view = parent_view
+
+        self.item_name = discord.ui.TextInput(
+            label="Item Name",
+            placeholder="Example: Dragon Slayer",
+            required=True
+        )
+        self.donated_by = discord.ui.TextInput(
+            label="Donated By",
+            placeholder="Optional",
+            required=False
+        )
+        self.image_url = discord.ui.TextInput(
+            label="Image URL or Attachment",
+            placeholder="Paste a URL here, or upload an attachment when responding",
+            required=False,
+            style=discord.TextStyle.short
+        )
+
+        self.add_item(self.item_name)
+        self.add_item(self.donated_by)
+        self.add_item(self.image_url)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Save values to parent view
+        self.parent_view.item_name = self.item_name.value
+        self.parent_view.stats = None  # no stats for image-only
+        self.parent_view.subtype = None
+        self.parent_view.usable_classes = None
+        self.parent_view.image_url = self.image_url.value.strip() or None
+
+        # Submit directly
+        await add_item_db(
+            guild_id=interaction.guild.id,
+            name=self.parent_view.item_name,
+            type_=self.parent_view.item_type,
+            subtype=None,
+            stats=None,
+            classes=None,
+            image_url=self.parent_view.image_url
+        )
+
+        await interaction.response.send_message(
+            f"✅ Added **{self.parent_view.item_name}** with custom image to the Guild Bank.",
+            ephemeral=True
+        )
+        self.parent_view.stop()
+
+
+
+
 
 
 # ------ITEM DETAILS ----
