@@ -567,24 +567,38 @@ async def get_fund_totals():
 
 
 # ----------------- Currency Helpers -----------------
+# Convert from 4-part currency to total copper
 def currency_to_copper(plat=0, gold=0, silver=0, copper=0):
-    """Convert 4-part currency to total copper."""
-    return plat * 10000 + gold * 100 + silver * 1 + copper
+    # 1 Platinum = 100 Gold = 10,000 Silver = 1,000,000 Copper
+    # 1 Gold = 100 Silver = 10,000 Copper
+    # 1 Silver = 100 Copper
+    total_copper = (
+        plat * 100 * 100 * 100 +  # Plat to Copper
+        gold * 100 * 100 +        # Gold to Copper
+        silver * 100 +            # Silver to Copper
+        copper                     # Copper
+    )
+    return total_copper
 
+
+# Convert total copper back to 4-part currency
 def copper_to_currency(total_copper):
-    """Convert copper to 4-part currency (plat, gold, silver, copper)."""
-    plat = total_copper // 10000
-    rem = total_copper % 10000
-    gold = rem // 100
-    rem = rem % 100
-    silver = rem // 1
-    copper = rem % 1  # will always be 0 in this scale
+    plat = total_copper // (100*100*100)
+    remainder = total_copper % (100*100*100)
+    
+    gold = remainder // (100*100)
+    remainder = remainder % (100*100)
+    
+    silver = remainder // 100
+    copper = remainder % 100
+    
     return plat, gold, silver, copper
+
 
 # ----------------- DB Helpers -----------------
 async def add_funds_db(type_, total_copper, donated_by=None, donated_at=None):
     """Insert a donation or spend entry."""
-    donated_at = donated_at or datetime.date.today()  # Use today if not provided
+    donated_at = donated_at or date.today.datetime()  # Use today if not provided
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO funds (type, total_copper, donated_by, donated_at)
@@ -682,6 +696,42 @@ class SpendFundsModal(Modal):
         )
         await interaction.response.send_message("✅ Funds spent recorded!", ephemeral=True)
 
+# Modal to show full donation history
+class DonationHistoryModal(discord.ui.Modal):
+    def __init__(self, donations):
+        super().__init__(title="📜 Full Donation History")
+        self.donations = donations
+
+        # Combine all donations into one string
+        history_text = ""
+        total_copper = 0
+        for d in donations:
+            total_copper += d['total_copper']
+            plat, gold, silver, copper = copper_to_currency(d['total_copper'])
+            donor = d['donated_by'] or "Anonymous"
+            date = d['donated_at'].strftime("%Y-%m-%d")
+            history_text += f"**{donor}**: {plat}P {gold}G {silver}S {copper}C on {date}\n"
+
+        # Optional: truncate if too long
+        if len(history_text) > 4000:
+            history_text = history_text[:3990] + "\n…"
+
+        self.history_input = discord.ui.TextInput(
+            label="Donation History",
+            style=discord.TextStyle.paragraph,
+            default=history_text,
+            required=False
+        )
+        self.history_input.disabled = True
+        self.add_item(self.history_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
+
+
+
+
 # ----------------- Slash Commands -----------------
 @bot.tree.command(name="add_funds", description="Add a donation to the guild bank.")
 async def add_funds(interaction: discord.Interaction):
@@ -704,22 +754,45 @@ async def view_funds(interaction: discord.Interaction):
     embed.add_field(name="Gold", value=str(gold))
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
+
+    embed = discord.Embed(
+        title="📜 Donation History",
+        description=description,
+        color=discord.Color.green()
+    )
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="view_donations", description="View all donations.")
+@bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
-    rows = await get_all_donations()
-    if not rows:
-        await interaction.response.send_message("No donations recorded.", ephemeral=True)
+    donations = await get_all_donations()
+    if not donations:
+        await interaction.response.send_message("No donations found.", ephemeral=True)
         return
 
-    text = ""
-    for r in rows:
-        plat, gold, silver, copper = copper_to_currency(r['total_copper'])
-        donor = r['donated_by'] or "Unknown"
-        text += f"{donor} → {plat}p {gold}g {silver}s {copper}c on {r['donated_at']}\n"
+    # Calculate total
+    total_copper = sum(d['total_copper'] for d in donations)
+    t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
 
-    await interaction.response.send_message(f"📜 Donations:\n{text}", ephemeral=True)
+    # Show total in embed
+    embed = discord.Embed(
+        title="📜 Donation Summary",
+        description=f"**Total Donations:** {t_plat}P {t_gold}G {t_silver}S {t_copper}C",
+        color=discord.Color.green()
+    )
+
+    # Button to view full history
+    class ViewFullHistoryButton(discord.ui.Button):
+        def __init__(self):
+            super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
+
+        async def callback(self, interaction_button: discord.Interaction):
+            modal = DonationHistoryModal(donations)
+            await interaction_button.response.send_modal(modal)
+
+    view = discord.ui.View()
+    view.add_item(ViewFullHistoryButton())
+
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 
