@@ -393,20 +393,16 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.view.item_type == "Weapon":
              
             # Start with Attack/Delay
-            stats_parts = [f"Attack/Delay: {self.attack_delay.value}"]
+            self.view.attack = self.attack_delay.value
     
             # Add optional fields if filled
             if self.attributes.value.strip():
-                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+                self.attributes.value = self.stats.value
             if self.effects.value.strip():
-                stats_parts.append(f"Effects: {self.effects.value.strip()}")
-            
-                 
-            # Combine into one stats string
-            self.view.stats = "\n".join(stats_parts)
-            
+                self.effects.value = self.effects.value
+                        
             if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+                self.donated_by.value = self.donated_by.value
 
         
         elif self.view.item_type == "Armor":
