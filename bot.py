@@ -771,7 +771,7 @@ class ViewFullHistoryButton(discord.ui.Button):
          super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction_button: discord.Interaction):
-        guild_donations = [d for d in all_donations if d['guild_id'] == interaction.guild.id]
+        guild_donations = [d for d in self.all_donations if d['guild_id'] == interaction.guild.id]
         
         modal = DonationHistoryModal(interaction.guild.id, guild_donations)
         await interaction_button.response.send_modal(modal)
