@@ -497,7 +497,7 @@ async def view_bank(interaction: discord.Interaction):
         rows = await conn.fetch(
             "SELECT * FROM items WHERE guild_id=$1 AND qty=1 ORDER BY name",
             interaction.guild.id
-    )
+        )
    
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
