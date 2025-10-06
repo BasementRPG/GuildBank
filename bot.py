@@ -505,9 +505,10 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 
     # If an image was uploaded via slash command
     if image:
-        view.waiting_for_image = True
-        view.image = None  # will be set when user sends image link or attachment
-
+    
+        view.image = image.url
+        view.waiting_for_image = False
+    
         # Optional: open a minimal modal for donated_by and item name
         class ImageDetailsModal(discord.ui.Modal):
             def __init__(self):
