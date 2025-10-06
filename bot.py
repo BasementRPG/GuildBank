@@ -709,8 +709,8 @@ class DonationHistoryModal(discord.ui.Modal):
             total_copper += d['total_copper']
             plat, gold, silver, copper = copper_to_currency(d['total_copper'])
             donor = d['donated_by'] or "Anonymous"
-            date = d['donated_at'].strftime("%Y-%m-%d")
-            history_text += f"**{donor}**: {plat}P {gold}G {silver}S {copper}C on {date}\n"
+            date = d['donated_at'].strftime("%m-%f-%zy")
+            history_text += f"**{donor}**: {plat}p {gold}g {silver}d {copper}v on {date}\n"
 
         # Optional: truncate if too long
         if len(history_text) > 4000:
@@ -750,7 +750,7 @@ async def view_funds(interaction: discord.Interaction):
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(name="Platinum", value=str(plat))
+    embed.add_field(name="Platinum", value=str(plat), "p")
     embed.add_field(name="Gold", value=str(gold))
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
