@@ -502,16 +502,18 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
             async def on_submit(self, modal_interaction: discord.Interaction):
                 item_name = self.item_name.value
                 donated_by = self.donated_by.value or "Anonymous"
-                image_url = image.url
-                stats = f"Image URL: {image_url}\nDonated By: {donated_by}"
+                image = image.url
+                
 
                 await add_item_db(
                     guild_id=interaction.guild.id,
                     name=item_name,
                     type_=item_type,
                     subtype="Image",
-                    stats=stats,
-                    classes="All"
+                    stats="Image",
+                    classes="All",
+                    image=image_url
+                    donated_by=donated_by
                 )
 
                 await modal_interaction.response.send_message(
