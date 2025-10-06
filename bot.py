@@ -173,12 +173,7 @@ class ItemEntryView(discord.ui.View):
         self.classes_select = ClassesSelect(self)
         self.add_item(self.classes_select)
 
-        # Upload Image button
-        self.upload_image_button = discord.ui.Button(label="Upload Image", style=discord.ButtonStyle.secondary)
-        self.upload_image_button.callback = self.upload_image
-        self.add_item(self.upload_image_button)
-        
-
+ 
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
@@ -198,51 +193,6 @@ class ItemEntryView(discord.ui.View):
     async def open_item_details(self, interaction: discord.Interaction):
         modal = ItemDetailsModal(self)
         await interaction.response.send_modal(modal)
-
-
-    async def upload_image(self, interaction: discord.Interaction):
-        # Step 1: Ask user to upload image in chat
-        await interaction.response.send_message(
-            "Please upload the image as an attachment in your next message.", ephemeral=True
-        )
-
-        def check(m):
-            return (
-                m.author.id == interaction.user.id and
-                m.attachments and
-                m.channel == interaction.channel
-            )
-
-        try:
-            msg = await bot.wait_for("message", check=check, timeout=120)
-        except asyncio.TimeoutError:
-            await interaction.followup.send("⏰ Upload timed out.", ephemeral=True)
-            return
-
-        attachment = msg.attachments[0]
-        self.image_url = attachment.url
-
-        # Step 2: Prompt for item title and donor
-        class ImageItemModal(discord.ui.Modal):
-            def __init__(self, parent_view):
-                super().__init__(title="Image Item Details")
-                self.parent_view = parent_view
-                self.item_name_input = discord.ui.TextInput(label="Item Name", required=True)
-                self.donated_by_input = discord.ui.TextInput(label="Donated By", required=False)
-                self.add_item(self.item_name_input)
-                self.add_item(self.donated_by_input)
-
-            async def on_submit(self, modal_interaction: discord.Interaction):
-                self.parent_view.item_name = self.item_name_input.value
-                self.parent_view.stats = f"Image URL: {self.parent_view.image_url}\nDonated By: {self.donated_by_input.value or 'Anonymous'}"
-                await modal_interaction.response.send_message(
-                    f"✅ Image item **{self.parent_view.item_name}** saved!", ephemeral=True
-                )
-
-        modal = ImageItemModal(self)
-        await interaction.followup.send_modal(modal)
-
-
 
     
     async def submit_item(self, interaction: discord.Interaction):
@@ -264,47 +214,6 @@ class ItemEntryView(discord.ui.View):
         self.stop()
 
 #-----IMAGE UPLOAD ----
-
-# Button to start upload workflow
-
-
-class UploadImageButton(discord.ui.Button):
-    def __init__(self, parent_view):
-        super().__init__(label="Upload Image", style=discord.ButtonStyle.primary)
-        self.parent_view = parent_view
-
-    async def callback(self, interaction: discord.Interaction):
-        # Step 1: Open a modal asking for item name and donor
-        class ImageModal(discord.ui.Modal):
-            def __init__(self, parent_view):
-                super().__init__(title="Upload Image Item")
-                self.parent_view = parent_view
-                self.item_name = discord.ui.TextInput(label="Item Name", required=True)
-                self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
-                self.add_item(self.item_name)
-                self.add_item(self.donated_by)
-
-            async def on_submit(self, modal_interaction: discord.Interaction):
-                # Step 2: Get uploaded attachment from modal interaction
-                # Discord doesn’t allow attachment fields in modal, so we get it from interaction.message.attachments
-                # User must attach file **before clicking the button** if using ephemeral
-                attachments = modal_interaction.message.attachments
-                if attachments:
-                    self.parent_view.image_url = attachments[0].url
-                    self.parent_view.item_name = self.item_name.value
-                    self.parent_view.stats = f"Image URL: {self.parent_view.image_url}\nDonated By: {self.donated_by.value or 'Anonymous'}"
-                    await modal_interaction.response.send_message(
-                        f"✅ Image item **{self.parent_view.item_name}** saved!", ephemeral=True
-                    )
-                else:
-                    await modal_interaction.response.send_message(
-                        "❌ No image uploaded. Please attach an image.", ephemeral=True
-                    )
-
-        modal = ImageModal(self.parent_view)
-        await interaction.response.send_modal(modal)
-
-
 
 
 
@@ -569,11 +478,10 @@ async def view_bank(interaction: discord.Interaction):
 
 # ---------- /add_item Command ----------
 
+# ---------- /add_item Command (NEW) ----------
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
-@app_commands.describe( item_type="Type of the item", image_url="Optional: URL to item details image")
-
+@app_commands.describe(item_type="Type of the item", image="Optional image upload")
 @app_commands.choices(item_type=[
-    
     app_commands.Choice(name="Armor", value="Armor"),
     app_commands.Choice(name="Crafting", value="Crafting"),
     app_commands.Choice(name="Consumable", value="Consumable"),
@@ -581,8 +489,8 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
+    # If an image was uploaded via slash command
     if image:
-        # If an image is uploaded, prompt for name and donor
         class ImageDetailsModal(discord.ui.Modal):
             def __init__(self):
                 super().__init__(title="Item Details for Image Upload")
@@ -592,13 +500,11 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                 self.add_item(self.donated_by)
 
             async def on_submit(self, modal_interaction: discord.Interaction):
-                # Save the image item
                 item_name = self.item_name.value
                 donated_by = self.donated_by.value or "Anonymous"
                 image_url = image.url
-
                 stats = f"Image URL: {image_url}\nDonated By: {donated_by}"
-                # Save to your DB
+
                 await add_item_db(
                     guild_id=interaction.guild.id,
                     name=item_name,
@@ -612,17 +518,18 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
                 )
 
-        modal = ImageDetailsModal()
-        await interaction.response.send_modal(modal)
+        # Open the modal immediately after slash command
+        await interaction.response.send_modal(ImageDetailsModal())
         return
 
-    # Otherwise, open the normal item modal
+    # Otherwise, open the normal item entry modal
     view = ItemEntryView(interaction.user, item_type=item_type)
     await interaction.response.send_message(
         f"Adding a new {item_type}:", 
         view=view, 
         ephemeral=True
     )
+
 
 
 @bot.event
