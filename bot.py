@@ -38,7 +38,7 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by)
