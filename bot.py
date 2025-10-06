@@ -681,7 +681,7 @@ class DonationHistoryModal(discord.ui.Modal):
             plat, gold, silver, copper = copper_to_currency(d['total_copper'])
             donor = d['donated_by'] or "Anonymous"
             date = d['donated_at'].strftime("%m-%d-%y")
-            history_text += f"**{donor}**: {plat}p {gold}g {silver}s {copper}c on {date}\n"
+            history_text += f"{donor} | {plat}p {gold}g {silver}s {copper}c | {date}\n"
 
         # Optional: truncate if too long
         if len(history_text) > 4000:
@@ -712,7 +712,7 @@ class SpendingHistoryModal(discord.ui.Modal):
             plat, gold, silver, copper = copper_to_currency(s['total_copper'])
             spender = s['donated_by'] or "Unknown"
             date = s['donated_at'].strftime("%m-%d-%y")
-            history_text += f"**{spender}**: {plat}p {gold}g {silver}s {copper}c on {date}\n"
+            history_text += f"{spender} | {plat}p {gold}g {silver}s {copper}c | {date}\n"
 
         if len(history_text) > 4000:
             history_text = history_text[:3990] + "\n…"
