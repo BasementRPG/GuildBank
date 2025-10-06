@@ -57,7 +57,7 @@ async def get_item_by_name(guild_id, name):
         row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1 AND name=$2", guild_id, name)
     return row
 
-async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes, donated_by, added_by):
+async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes, donated_by=None, added_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             UPDATE inventory
@@ -654,7 +654,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
 
         # Set qty to 0 instead of deleting
         await conn.execute(
-            "UPDATE inventory SET qty=0 WHERE id=$1",
+            "UPDATE inventory SET qty=0 WHERE item_id=$1",
             item['id']
         )
 
