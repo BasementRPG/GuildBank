@@ -672,10 +672,14 @@ class DonationHistoryModal(discord.ui.Modal):
     def __init__(self, donations):
         super().__init__(title="📜 Full Donation History")
         self.donations = donations
+        
+        total_copper = sum(d['total_copper'] for d in donations)
+        t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
+        
 
         # Combine all donations into one string
-        history_text = ""
-        total_copper = 0
+        history_text = f"Total Donated | {t_plat}p {t_gold}g {t_silver}s {t_copper}c\n\n"
+      
         for d in donations:
             total_copper += d['total_copper']
             plat, gold, silver, copper = copper_to_currency(d['total_copper'])
