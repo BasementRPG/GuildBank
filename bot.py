@@ -57,13 +57,41 @@ async def get_item_by_name(guild_id, name):
         row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1 AND name=$2", guild_id, name)
     return row
 
-async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes, donated_by=None, added_by=None):
+
+
+async def update_item_db(guild_id, item_id, **fields):
+    """
+    Update an item in the database.
+    Only updates the fields provided.
+    Automatically updates updated_at.
+    """
+    if not fields:
+        return  # nothing to update
+
+    set_clauses = []
+    values = []
+    i = 1
+    for key, value in fields.items():
+        set_clauses.append(f"{key}=${i}")
+        values.append(value)
+        i += 1
+
+    # Add updated_at
+    set_clauses.append(f"updated_at=NOW()")
+
+    values.append(guild_id)
+    values.append(item_id)
+
+    sql = f"""
+        UPDATE inventory
+        SET {', '.join(set_clauses)}
+        WHERE guild_id=${i} AND id=${i+1}
+    """
     async with db_pool.acquire() as conn:
-        await conn.execute('''
-            UPDATE inventory
-            SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, donated_by=$6, added_by=$7
-            WHERE guild_id=$8 AND id=$9
-        ''', name, type_, subtype, stats, classes, donated_by, added_by, guild_id, item_id)
+        await conn.execute(sql, *values)
+
+
+
 
 async def delete_item_db(guild_id, item_id):
     # Reduce qty by 1
@@ -211,18 +239,23 @@ class ItemEntryView(discord.ui.View):
         added_by = getattr(self, "added_by", str(interaction.user))
     
         if self.item_id:  # editing
-            await update_item_db(
-                guild_id=interaction.guild.id,
-                item_id=self.item_id,
-                name=self.item_name,
-                type_=self.item_type,
-                subtype=self.subtype,
-                stats=self.stats,
-                classes=classes_str,
-                donated_by=donor,
-                
-                added_by=added_by
-            )
+    fields_to_update = {
+        "name": self.item_name,
+        "type": self.item_type,
+        "subtype": self.subtype,
+        "stats": classes_str,
+    }
+    if self.donated_by:
+        fields_to_update["donated_by"] = self.donated_by
+    added_by = getattr(self, "added_by", str(interaction.user))
+    fields_to_update["added_by"] = added_by
+
+    await update_item_db(
+        guild_id=interaction.guild.id,
+        item_id=self.item_id,
+        **fields_to_update
+    )
+
             await interaction.response.send_message(
                 f"✅ Updated **{self.item_name}**.",
                 ephemeral=True
