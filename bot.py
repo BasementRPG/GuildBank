@@ -3,7 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import Modal, TextInput
-
+import datetime
 import asyncpg 
 
 
@@ -588,11 +588,12 @@ def parse_int(value: str):
 
 # Add donation or spend
 async def add_funds_db(type_, total_copper, donated_by=None):
+    donated_at= datetime.date.today()
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO funds (type, total_copper, donated_by)
+            INSERT INTO funds (type, total_copper, donated_by, donated_at)
             VALUES ($1, $2, $3)
-        ''', type_, total_copper, donated_by)
+        ''', type_, total_copper, donated_by, donated_at)
 
 # Get total sums
 async def get_fund_totals():
