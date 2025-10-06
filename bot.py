@@ -709,8 +709,8 @@ class DonationHistoryModal(discord.ui.Modal):
             total_copper += d['total_copper']
             plat, gold, silver, copper = copper_to_currency(d['total_copper'])
             donor = d['donated_by'] or "Anonymous"
-            date = d['donated_at'].strftime("%m-%f-%zy")
-            history_text += f"**{donor}**: {plat}p {gold}g {silver}d {copper}v on {date}\n"
+            date = d['donated_at'].strftime("%m-%d-%y")
+            history_text += f"**{donor}**: {plat}p {gold}g {silver}s {copper}c on {date}\n"
 
         # Optional: truncate if too long
         if len(history_text) > 4000:
@@ -752,6 +752,18 @@ async def view_funds(interaction: discord.Interaction):
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
     embed.add_field(name="\u200b", value=f"{plat}p {gold}g {silver}s {copper}c")
 
+# Button to view full history
+    class ViewFullHistoryButton(discord.ui.Button):
+        def __init__(self):
+            super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
+
+        async def callback(self, interaction_button: discord.Interaction):
+            modal = DonationHistoryModal(donations)
+            await interaction_button.response.send_modal(modal)
+
+    view = discord.ui.View()
+    view.add_item(ViewFullHistoryButton())
+    
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
