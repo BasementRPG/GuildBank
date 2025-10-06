@@ -466,7 +466,7 @@ async def view_bank(interaction: discord.Interaction):
         donated_by = row.get('donated_by') or "Anonymous"
         embed = discord.Embed(color=discord.Color.blue())
         embed.set_image(url=row['image'])
-        embed.set_footer(text=f"Donated By: {donated_by} | {name} ")
+        embed.set_footer(text=f"Donated By: {donated_by} | {row['name']} ")
         await interaction.channel.send(embed=embed)  # ✅ inside async function
 
     
