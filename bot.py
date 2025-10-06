@@ -38,34 +38,34 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(name, type_, subtype, stats, classes):
+async def add_item_db(guild_id, name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (name, type, subtype, stats, classes)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes)
             VALUES ($1, $2, $3, $4, $5)
-        ''', name, type_, subtype, stats, classes)
+        ''',guild_id, name, type_, subtype, stats, classes)
 
-async def get_all_items():
+async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes FROM inventory ORDER BY id")
+        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
-async def get_item_by_name(name):
+async def get_item_by_name(guild_id, name):
     async with db_pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM inventory WHERE name=$1", name)
+        row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1, name=$2", guild_id, name)
     return row
 
-async def update_item_db(id_, name, type_, subtype, stats, classes):
+async def update_item_db(guild_id, id_, name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             UPDATE inventory
             SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5
-            WHERE id=$6
-        ''', name, type_, subtype, stats, classes, id_)
+            WHERE guild_id=$6, id=$7
+        ''', name, type_, subtype, stats, classes, guild_id, id_)
 
-async def delete_item_db(id_):
+async def delete_item_db(guild_id, id_):
     async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM inventory WHERE id=$1", id_)
+        await conn.execute("DELETE FROM inventory WHERE guild_id=$1, id=$2", guild_id, id_)
 
 # ---------- UI Components ----------
 
@@ -200,7 +200,7 @@ class ItemEntryView(discord.ui.View):
             await update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
             await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
         else:  # adding
-            await add_item_db(self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await add_item_db(guild_id=interaction.guild.id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
             await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
@@ -443,7 +443,7 @@ class ViewDetailsButton(discord.ui.Button):
 # ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    rows = await get_all_items()
+    rows = await get_all_items(interaction.guild.id)
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
@@ -507,7 +507,7 @@ async def add_item(interaction: discord.Interaction, item_type: str):  # Change 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
-    item = await get_item_by_name(item_name)
+    item = await get_item_by_name(interaction.guild.id, item_name)
     if not item:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
@@ -521,7 +521,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     if not item:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
-    await delete_item_db(item['id'])
+    await delete_item_db(interaction.guild.id, item['id'])
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 
@@ -565,16 +565,16 @@ def copper_to_currency(total_copper):
 
 
 # ----------------- DB Helpers -----------------
-async def add_funds_db(type_, total_copper, donated_by=None, donated_at=None):
+async def add_funds_db(guild_id, type_, total_copper, donated_by=None, donated_at=None):
     """Insert a donation or spend entry."""
     donated_at = donated_at or date.today.datetime()  # Use today if not provided
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO funds (type, total_copper, donated_by, donated_at)
-            VALUES ($1, $2, $3, $4)
-        ''', type_, total_copper, donated_by, donated_at)
+            INSERT INTO funds (guild_id, type, total_copper, donated_by, donated_at)
+            VALUES ($1, $2, $3, $4, $5)
+        ''',guild_id, type_, total_copper, donated_by, donated_at)
 
-async def get_fund_totals():
+async def get_fund_totals(guild_id):
     """Get total donated and spent copper."""
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow('''
@@ -582,18 +582,19 @@ async def get_fund_totals():
                 SUM(CASE WHEN type='donation' THEN total_copper ELSE 0 END) AS donated,
                 SUM(CASE WHEN type='spend' THEN total_copper ELSE 0 END) AS spent
             FROM funds
-        ''')
+            WHERE guild_id=$1
+        ''', guild_id)
     return row
 
-async def get_all_donations():
+async def get_all_donations(guild_id):
     """Get all donations (type='donation')"""
     async with db_pool.acquire() as conn:
         rows = await conn.fetch('''
             SELECT donated_by, total_copper, donated_at
             FROM funds
-            WHERE type='donation'
+            WHERE guild_id=$1 AND type='donation'
             ORDER BY donated_at DESC
-        ''')
+        ''', guild_id)
     return rows
 
 # ----------------- Modals -----------------
