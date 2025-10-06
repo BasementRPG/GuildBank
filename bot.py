@@ -444,7 +444,9 @@ class ViewDetailsButton(discord.ui.Button):
         modal = ReadOnlyDetailsModal(item_row=self.item_row)
         await interaction.response.send_modal(modal)
 
+
 # ---------- /view_bank Command ----------
+
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items(interaction.guild.id)
@@ -452,12 +454,27 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Sort items alphabetically
-    sorted_rows = sorted(rows, key=lambda r: r['name'].lower())
+    # Separate items with and without images
+    items_with_image = [r for r in rows if r['image']]
+    items_without_image = [r for r in rows if not r['image']]
 
-    # Send one message per item
-    for row in sorted_rows:
-        
+    # Sort each group alphabetically
+    items_with_image.sort(key=lambda r: r['name'].lower())
+    items_without_image.sort(key=lambda r: r['name'].lower())
+
+    # Send items with images first
+    for row in items_with_image:
+        emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
+        embed = discord.Embed(
+            title=f"{emoji} {row['name']}",
+            description=f"{row['type']} | {row['subtype']}",
+            color=discord.Color.blue()
+        )
+        embed.set_image(url=row['image'])
+        await interaction.channel.send(embed=embed)
+
+    # Then send items without images, with details button
+    for row in items_without_image:
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
             title=f"{emoji} {row['name']}",
@@ -466,20 +483,19 @@ async def view_bank(interaction: discord.Interaction):
         )
         view = discord.ui.View()
         view.add_item(ViewDetailsButton(item_row=row))
-
         await interaction.channel.send(embed=embed, view=view)
-    
-    # Optionally, acknowledge the command ephemerally
-    await interaction.response.send_message(f"✅ Sent {len(sorted_rows)} items.", ephemeral=True)
+
+    # Acknowledge the command ephemerally
+    await interaction.response.send_message(
+        f"✅ Sent {len(rows)} items.", ephemeral=True
+    )
 
 
 
-#----------
+
 
 # ---------- /add_item Command ----------
 
-# ---------- /add_item Command (NEW) ----------
-# ---------- /add_item Command ----------
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 @app_commands.describe(item_type="Type of the item", image="Optional image upload")
 @app_commands.choices(item_type=[
