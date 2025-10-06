@@ -767,25 +767,41 @@ class SpendingHistoryModal(discord.ui.Modal):
 
 class ViewFullHistoryButton(discord.ui.Button):
     def __init__(self, donations):
-         self.donations = donations
-         super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
+        super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
+        self.donations = donations  # all donations fetched from DB
 
-    async def callback(self, interaction_button: discord.Interaction):
-        guild_donations = [d for d in self.donations if d['guild_id'] == interaction.guild.id]
-        
+    async def callback(self, interaction: discord.Interaction):
+        # Filter donations for this guild only
+        guild_donations = [
+            d for d in self.donations if d.get('guild_id') == interaction.guild.id
+        ]
+
+        if not guild_donations:
+            await interaction.response.send_message("No donations found for this guild.", ephemeral=True)
+            return
+
         modal = DonationHistoryModal(interaction.guild.id, guild_donations)
-        await interaction_button.response.send_modal(modal)
+        await interaction.response.send_modal(modal)
+
 
 class ViewSpendingHistoryButton(discord.ui.Button):
     def __init__(self, spendings):
-        self.spendings = spendings
         super().__init__(label="Spending History", style=discord.ButtonStyle.secondary)
+        self.spendings = spendings  # all spendings fetched from DB
 
     async def callback(self, interaction: discord.Interaction):
-        guild_spendings = [s for s in self.spendings if d['guild_id'] == interaction.guild.id]
-        
+        # Filter spendings for this guild only
+        guild_spendings = [
+            s for s in self.spendings if s.get('guild_id') == interaction.guild.id
+        ]
+
+        if not guild_spendings:
+            await interaction.response.send_message("No spendings found for this guild.", ephemeral=True)
+            return
+
         modal = SpendingHistoryModal(interaction.guild.id, guild_spendings)
         await interaction.response.send_modal(modal)
+
 
 
 # ----------------- Slash Commands -----------------
