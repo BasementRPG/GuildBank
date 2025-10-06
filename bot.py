@@ -494,9 +494,9 @@ class ViewDetailsButton(discord.ui.Button):
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     async with db_pool.acquire() as conn:
-    rows = await conn.fetch(
-        "SELECT * FROM items WHERE guild_id=$1 AND qty=1 ORDER BY name",
-        (interaction.guild.id,)
+        rows = await conn.fetch(
+            "SELECT * FROM items WHERE guild_id=$1 AND qty=1 ORDER BY name",
+            (interaction.guild.id,)
     )
    
     if not rows:
