@@ -750,10 +750,10 @@ async def view_funds(interaction: discord.Interaction):
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(name="Platinum", value=f"{plat}p")
-    embed.add_field(name="Gold", value=str(gold))
-    embed.add_field(name="Silver", value=str(silver))
-    embed.add_field(name="Copper", value=str(copper))
+    embed.add_field(value=f"{plat}p")
+    embed.add_field(value=f"{goldt}g")
+    embed.add_field(value=f"{silver}s")
+    embed.add_field(value=f"{copper}c")
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -771,7 +771,7 @@ async def view_donations(interaction: discord.Interaction):
     # Show total in embed
     embed = discord.Embed(
         title="📜 Donation Summary",
-        description=f"**Total Donations:** {t_plat}P {t_gold}G {t_silver}S {t_copper}C",
+        description=f"**Total Donations:** {t_plat}p {t_gold}g {t_silver}s {t_copper}c",
         color=discord.Color.green()
     )
 
