@@ -736,7 +736,7 @@ class SpendingHistoryModal(discord.ui.Modal):
 class ViewFullHistoryButton(discord.ui.Button):
     def __init__(self, donations):
          self.donations = donations
-         super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
+         super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction_button: discord.Interaction):
         modal = DonationHistoryModal(self.donations)
@@ -745,7 +745,7 @@ class ViewFullHistoryButton(discord.ui.Button):
 class ViewSpendingHistoryButton(discord.ui.Button):
     def __init__(self, spendings):
         self.spendings = spendings
-        super().__init__(label="View Spending History", style=discord.ButtonStyle.secondary)
+        super().__init__(label="Spending History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction: discord.Interaction):
         modal = SpendingHistoryModal(self.spendings)
@@ -780,7 +780,7 @@ async def view_funds(interaction: discord.Interaction):
             ORDER BY donated_at DESC
         ''')
 
-        donations = await conn.fetch('''
+        spendings = await conn.fetch('''
             SELECT donated_by, total_copper, donated_at
             FROM funds
             WHERE type='spend'
