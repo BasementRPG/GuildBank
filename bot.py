@@ -771,7 +771,7 @@ class ViewFullHistoryButton(discord.ui.Button):
          super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction_button: discord.Interaction):
-        guild_donations = [d for d in all_donations if d['guild_id'] -- interaction.guild.id]
+        guild_donations = [d for d in all_donations if d['guild_id'] == interaction.guild.id]
         
         modal = DonationHistoryModal(interaction.guild.id, guild_donations)
         await interaction_button.response.send_modal(modal)
@@ -782,7 +782,7 @@ class ViewSpendingHistoryButton(discord.ui.Button):
         super().__init__(label="Spending History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction: discord.Interaction):
-        guild_spendings = [s for s in all_spendings if d['guild_id'] -- interaction.guild.id]
+        guild_spendings = [s for s in all_spendings if d['guild_id'] == interaction.guild.id]
         
         modal = SpendingHistoryModal(interaction.guild.id, guild_spendings)
         await interaction.response.send_modal(modal)
