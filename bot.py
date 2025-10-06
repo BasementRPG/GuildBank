@@ -750,10 +750,10 @@ async def view_funds(interaction: discord.Interaction):
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(value=f"{plat}p")
-    embed.add_field(value=f"{goldt}g")
-    embed.add_field(value=f"{silver}s")
-    embed.add_field(value=f"{copper}c")
+    embed.add_field(name="\u200b", value=f"{plat}p")
+    embed.add_field(name="\u200b", value=f"{goldt}g")
+    embed.add_field(name="\u200b", value=f"{silver}s")
+    embed.add_field(name="\u200b", value=f"{copper}c")
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
