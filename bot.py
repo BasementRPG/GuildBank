@@ -754,7 +754,8 @@ class SpendingHistoryModal(discord.ui.Modal):
         self.history_input.disabled = True
         self.add_item(self.history_input)
 
-    async def on_submit(self):
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
         
     # Button to view full history
 
