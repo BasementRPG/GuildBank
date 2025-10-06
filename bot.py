@@ -39,12 +39,12 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by)
 
 
 async def get_all_items(guild_id):
@@ -166,6 +166,7 @@ class ItemEntryView(discord.ui.View):
         self.item_name = ""
         self.stats = ""
         self.item_id = item_id
+        self.donated_by
 
         # preload existing if editing
         if existing_data:
@@ -207,7 +208,7 @@ class ItemEntryView(discord.ui.View):
         classes_str = ", ".join(self.usable_classes)
     
         # default donor to the user running the command
-        donated_by = getattr(self, "donated_by", str(interaction.user))
+        added_by = getattr(self, "added_by", str(interaction.user))
     
         if self.item_id:  # editing
             await update_item_db(
@@ -219,6 +220,7 @@ class ItemEntryView(discord.ui.View):
                 stats=self.stats,
                 classes=classes_str,
                 donated_by=donated_by  # include donor if you support editing
+                added_by=added_by
             )
             await interaction.response.send_message(
                 f"✅ Updated **{self.item_name}**.",
