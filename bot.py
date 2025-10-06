@@ -447,6 +447,7 @@ class ViewDetailsButton(discord.ui.Button):
 
 # ---------- /view_bank Command ----------
 
+# ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
     rows = await get_all_items(interaction.guild.id)
@@ -454,42 +455,33 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Separate items with and without images
-    items_with_image = [r for r in rows if r['image']]
-    items_without_image = [r for r in rows if not r['image']]
+    # Split items into ones with and without images
+    items_with_image = sorted([r for r in rows if r['image']], key=lambda r: r['name'].lower())
+    items_without_image = sorted([r for r in rows if not r['image']], key=lambda r: r['name'].lower())
 
-    # Sort each group alphabetically
-    items_with_image.sort(key=lambda r: r['name'].lower())
-    items_without_image.sort(key=lambda r: r['name'].lower())
-
-    # Send items with images first
+    # First, send items with images
     for row in items_with_image:
-        emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
-            title=f"{emoji} {row['name']}",
-            description=f"{row['type']} | {row['subtype']}",
-            color=discord.Color.blue()
+            title=row['name'],
+            description=f"{row['type']} | {row['subtype']}\nDonated By: {row.get('donated_by', 'Unknown')}",
+            color=discord.Color.green()
         )
         embed.set_image(url=row['image'])
         await interaction.channel.send(embed=embed)
 
-    # Then send items without images, with details button
+    # Then, send items without images
     for row in items_without_image:
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
             title=f"{emoji} {row['name']}",
-            description=f"{row['type']} | {row['subtype']}",
+            description=f"{row['type']} | {row['subtype']}\nDonated By: {row.get('donated_by', 'Unknown')}",
             color=discord.Color.blue()
         )
         view = discord.ui.View()
         view.add_item(ViewDetailsButton(item_row=row))
         await interaction.channel.send(embed=embed, view=view)
 
-    # Acknowledge the command ephemerally
-    await interaction.response.send_message(
-        f"✅ Sent {len(rows)} items.", ephemeral=True
-    )
-
+    await interaction.response.send_message(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
 
 
@@ -506,50 +498,43 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
-    """Add a new item to the guild bank, optionally with an image."""
+    class ImageDetailsModal(discord.ui.Modal):
+        def __init__(self, img_url=None):
+            super().__init__(title="Item Details for Image Upload")
+            self.img_url = img_url
+            self.item_name = discord.ui.TextInput(label="Item Name", required=True)
+            self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
+            self.add_item(self.item_name)
+            self.add_item(self.donated_by)
 
-    # If an image is provided, use a modal to get item name and donated_by
+        async def on_submit(self, modal_interaction: discord.Interaction):
+            await add_item_db(
+                guild_id=interaction.guild.id,
+                name=self.item_name.value,
+                type_=item_type,
+                subtype="Image",
+                stats="",
+                classes="All",
+                image=self.img_url,
+                donated_by=self.donated_by.value or "Anonymous"
+            )
+            await modal_interaction.response.send_message(
+                f"✅ Image item **{self.item_name.value}** added to the guild bank!", ephemeral=True
+            )
+
+    # If image was uploaded, open modal to get name/donated_by
     if image:
-        class ImageDetailsModal(discord.ui.Modal):
-            def __init__(self, image_url: str):
-                super().__init__(title="Item Details for Image Upload")
-                self.image_url = image_url  # store the URL for later
-                self.item_name = discord.ui.TextInput(label="Item Name", required=True)
-                self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
-                self.add_item(self.item_name)
-                self.add_item(self.donated_by)
-
-            async def on_submit(self, modal_interaction: discord.Interaction):
-                item_name = self.item_name.value
-                donated_by = self.donated_by.value.strip() or "Anonymous"
-
-                # Add item to DB
-                await add_item_db(
-                    guild_id=modal_interaction.guild.id,
-                    name=item_name,
-                    type_=item_type,
-                    subtype="Image",
-                    stats="",
-                    classes="All",
-                    donated_by=donated_by,
-                    image=self.image_url
-                )
-
-                await modal_interaction.response.send_message(
-                    f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
-                )
-
-        # Show the modal
-        await interaction.response.send_modal(ImageDetailsModal(image.url))
+        await interaction.response.send_modal(ImageDetailsModal(img_url=image.url))
         return
 
-    # Otherwise, open the normal ItemEntryView modal
+    # Otherwise, normal item entry
     view = ItemEntryView(interaction.user, item_type=item_type)
     await interaction.response.send_message(
-        f"Adding a new {item_type}:",
-        view=view,
+        f"Adding a new {item_type}:", 
+        view=view, 
         ephemeral=True
     )
+
 
 
 
