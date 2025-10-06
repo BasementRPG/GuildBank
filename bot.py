@@ -38,15 +38,12 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, item_id, name, type_, subtype, stats, classes):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None):
     async with db_pool.acquire() as conn:
-        await conn.execute(
-            '''
-            INSERT INTO inventory (guild_id, item_id, name, type, subtype, stats, classes)
+        await conn.execute('''
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ''',
-            guild_id, item_id, name, type_, subtype, stats, classes
-        )
+        ''', guild_id, name, type_, subtype, stats, classes, image)
 
 
 async def get_all_items(guild_id):
@@ -476,7 +473,8 @@ async def view_bank(interaction: discord.Interaction):
 # ---------- /add_item Command ----------
 
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
-@app_commands.describe(item_type="Type of the item")
+@app_commands.describe( item_type="Type of the item", image_url="Optional: URL to item details image")
+
 @app_commands.choices(item_type=[
     
     app_commands.Choice(name="Armor", value="Armor"),
@@ -485,23 +483,30 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Misc", value="Misc"),
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
-async def add_item(interaction: discord.Interaction, item_type: str):  # Change this line
-    try:
-        # Now item_type is already a string, no need for .value
-        view = ItemEntryView(interaction.user, item_type=item_type)
-        await interaction.response.send_message(
-            f"Adding a new {item_type}:", 
-            view=view, 
-            ephemeral=True
+async def add_item(interaction: discord.Interaction, item_type: str, image_url: str = None):  # Change this line
+   
+    if image_url:
+        await add_item_db(
+            guild_id=interaction.guild.id,
+            name="Image Item",  # default placeholder name, or prompt later
+            type_=item_type,
+            subtype=None,
+            stats=None,
+            classes=None,
+            
+            image=image_url
         )
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        try:
-            await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
-        except:
-            pass
+        await interaction.response.send_message(f"✅ Item with image added as {item_type}.", ephemeral=True)
+        return
+    
+    
+    
+    view = ItemEntryView(interaction.user, item_type=item_type)
+    await interaction.response.send_message(
+        f"Adding a new {item_type}:",
+        view=view,
+        ephemeral=True
+    )
 
 
 @bot.event
