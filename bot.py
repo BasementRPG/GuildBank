@@ -61,8 +61,8 @@ async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes
     async with db_pool.acquire() as conn:
         await conn.execute('''
             UPDATE inventory
-            SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, donated_by=$6, added_by=$7,
-            WHERE guild_id=$8 AND item_id=$9
+            SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5, donated_by=$6, added_by=$7
+            WHERE guild_id=$8 AND id=$9
         ''', name, type_, subtype, stats, classes, donated_by, added_by, guild_id, item_id)
 
 async def delete_item_db(guild_id, item_id):
