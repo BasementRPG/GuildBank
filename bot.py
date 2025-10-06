@@ -753,6 +753,15 @@ async def view_funds(interaction: discord.Interaction):
     embed.add_field(name="\u200b", value=f"{plat}p {gold}g {silver}s {copper}c")
 
 # Button to view full history
+    donations = await get_all_donations()
+    if not donations:
+        await interaction.response.send_message("No donations found.", ephemeral=True)
+        return
+
+    # Calculate total
+    total_copper = sum(d['total_copper'] for d in donations)
+    t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
+    
     class ViewFullHistoryButton(discord.ui.Button):
         def __init__(self):
             super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
