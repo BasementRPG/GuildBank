@@ -461,12 +461,13 @@ async def view_bank(interaction: discord.Interaction):
 
     # First, send items with images
     for row in items_with_image:
-        embed = discord.Embed(
-            title=row['name'],
-            description=f"{row['type']} | {row['subtype']}\nDonated By: {row.get('donated_by', 'Unknown')}",
+        embed.set_image(url=row['image'])
+
+         embed = discord.Embed(
+            title="",
+            description=f"Donated By: {row.get('donated_by', 'Unknown')}",
             color=discord.Color.green()
         )
-        embed.set_image(url=row['image'])
         await interaction.channel.send(embed=embed)
 
     # Then, send items without images
