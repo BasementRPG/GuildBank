@@ -489,11 +489,13 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
+    
     # If an image was uploaded via slash command
-    if image:
+     if image:
         class ImageDetailsModal(discord.ui.Modal):
-            def __init__(self):
+            def __init__(self, image_url: str):
                 super().__init__(title="Item Details for Image Upload")
+                self.image_url = image_url  # store the URL for later
                 self.item_name = discord.ui.TextInput(label="Item Name", required=True)
                 self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
                 self.add_item(self.item_name)
@@ -501,19 +503,18 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 
             async def on_submit(self, modal_interaction: discord.Interaction):
                 item_name = self.item_name.value
-                donated_by = self.donated_by.value or "Anonymous"
-                image = image.url
-                
+                donated_by = self.donated_by.value.strip() or "Anonymous"
 
+                # Add item to DB
                 await add_item_db(
-                    guild_id=interaction.guild.id,
+                    guild_id=modal_interaction.guild.id,
                     name=item_name,
                     type_=item_type,
                     subtype="Image",
-                    stats="Image",
+                    stats="",
                     classes="All",
-                    image=image_url,
-                    donated_by=donated_by
+                    donated_by=donated_by,
+                    image=self.image_url
                 )
 
                 await modal_interaction.response.send_message(
