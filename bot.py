@@ -751,7 +751,7 @@ async def view_funds(interaction: discord.Interaction):
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
     embed.add_field(name="\u200b", value=f"{plat}p")
-    embed.add_field(name="\u200b", value=f"{goldt}g")
+    embed.add_field(name="\u200b", value=f"{gold}g")
     embed.add_field(name="\u200b", value=f"{silver}s")
     embed.add_field(name="\u200b", value=f"{copper}c")
 
