@@ -706,8 +706,8 @@ class ViewFullHistoryButton(discord.ui.Button):
          super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
 
     async def callback(self, interaction_button: discord.Interaction):
-          modal = DonationHistoryModal(self.donations)
-       await interaction_button.response.send_modal(modal)
+        modal = DonationHistoryModal(self.donations)
+        await interaction_button.response.send_modal(modal)
 
 
 # ----------------- Slash Commands -----------------
