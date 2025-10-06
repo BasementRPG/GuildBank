@@ -597,21 +597,28 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
     view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
     await interaction.response.send_message(f"Editing **{item_name}**:", view=view, ephemeral=True)
 
+
+
 @bot.tree.command(name="remove_item", description="Remove an item from the guild bank.")
 @app_commands.describe(item_name="Name of the item to remove")
 async def remove_item(interaction: discord.Interaction, item_name: str):
-    item = await get_item_by_name(interaction.guild.id, item_name)
+    # Fetch the item with qty = 1 (active) to remove
+    item = await db.fetch_one(
+        "SELECT * FROM items WHERE guild_id=? AND name=? AND qty=1",
+        (interaction.guild.id, item_name)
+    )
+    
     if not item:
-        await interaction.response.send_message("Item not found.", ephemeral=True)
+        await interaction.response.send_message("Item not found or already removed.", ephemeral=True)
         return
-        
-# Instead of deleting, set qty to 0
-await db.execute(
-    "UPDATE items SET qty = 0 WHERE guild_id=? AND id=?", 
-    (interaction.guild.id, item['id'])
-)
 
-await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
+    # Set qty to 0 instead of deleting
+    await db.execute(
+        "UPDATE items SET qty=0 WHERE id=?",
+        (item['id'],)
+    )
+
+    await interaction.response.send_message(f"🗑️ Removed **{item_name}** from the Guild Bank.", ephemeral=True)
 
 
 
