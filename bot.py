@@ -42,7 +42,7 @@ async def add_item_db(guild_id, name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO inventory (guild_id, name, type, subtype, stats, classes)
-            VALUES ($1, $2, $3, $4, $5)
+            VALUES ($1, $2, $3, $4, $5, $6)
         ''',guild_id, name, type_, subtype, stats, classes)
 
 async def get_all_items(guild_id):
@@ -60,7 +60,7 @@ async def update_item_db(guild_id, id_, name, type_, subtype, stats, classes):
         await conn.execute('''
             UPDATE inventory
             SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5
-            WHERE guild_id=$6, id=$7
+            WHERE guild_id=$6 AND id=$7
         ''', name, type_, subtype, stats, classes, guild_id, id_)
 
 async def delete_item_db(guild_id, id_):
