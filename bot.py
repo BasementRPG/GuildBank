@@ -675,10 +675,10 @@ class DonationHistoryModal(discord.ui.Modal):
         
         total_copper = sum(d['total_copper'] for d in donations)
         t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
-        
+        total_tex= f"{t_plat}p {t_gold}g {t_silver}s {t_copper}c"
 
         # Combine all donations into one string
-        history_text = f"Total Donated | {t_plat}p {t_gold}g {t_silver}s {t_copper}c\n\n"
+        history_text = ""
       
         for d in donations:
             total_copper += d['total_copper']
@@ -686,11 +686,22 @@ class DonationHistoryModal(discord.ui.Modal):
             donor = d['donated_by'] or "Anonymous"
             date = d['donated_at'].strftime("%m-%d-%y")
             history_text += f"{donor} | {plat}p {gold}g {silver}s {copper}c | {date}\n"
-
+        
         # Optional: truncate if too long
         if len(history_text) > 4000:
             history_text = history_text[:3990] + "\n…"
+        
+        
+        self.total_input = discord.ui.TextInput(
+            label="💰 Total Donated",
+            style=discord.TextStyle.short,
+            default=total_text,
+            required=False
+        )
+        self.total_input.disabled = True
+        self.add_item(self.total_input)
 
+        
         self.history_input = discord.ui.TextInput(
             label="Donation History",
             style=discord.TextStyle.paragraph,
