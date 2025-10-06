@@ -708,7 +708,7 @@ async def view_donations(interaction: discord.Interaction):
         value_str = f"{plat}p {gold}g {silver}s {copper}c"
         embed.add_field(
             name=f"{row['type'].capitalize()} #{row['id']}",
-            value=f"Amount: {value_str}\nBy: {row['donated_by'] or 'Unknown'}\nDate: {row['created_at']}",
+            value=f"Amount: {value_str}\nBy: {row['donated_by'] or 'Unknown'}\nDate: {row['donated_at']}",
             inline=False
         )
 
