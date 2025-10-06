@@ -741,7 +741,7 @@ async def view_funds(interaction: discord.Interaction):
     view = discord.ui.View()
     view.add_item(ViewFullHistoryButton(donations))
     
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 @bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
