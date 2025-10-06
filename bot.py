@@ -460,15 +460,14 @@ async def view_bank(interaction: discord.Interaction):
     items_without_image = sorted([r for r in rows if not r['image']], key=lambda r: r['name'].lower())
 
     # First, send items with images
+    
     for row in items_with_image:
-       
-
-        embed = embed.set_image(url=row['image'])
-        discord.Embed(
-            title="",
-            description=f"Donated By: {row.get('donated_by', 'Unknown')}",
-            color=discord.Color.green()
+        donated_by = row.get('donated_by') or "Anonymous"
+        embed = discord.Embed(
+            description=f"Donated By: {donated_by}",
+            color=discord.Color.blue()
         )
+        embed.set_image(url=row['image'])
         await interaction.channel.send(embed=embed)
 
     # Then, send items without images
