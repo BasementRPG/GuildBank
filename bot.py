@@ -755,11 +755,6 @@ async def view_funds(interaction: discord.Interaction):
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
 
-    embed = discord.Embed(
-        title="📜 Donation History",
-        description=description,
-        color=discord.Color.green()
-    )
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
