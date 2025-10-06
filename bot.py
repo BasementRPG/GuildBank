@@ -625,6 +625,7 @@ class AddFundsModal(Modal):
             return
 
         await add_funds_db(
+            guild_id=interaction.guild.id,
             type_='donation',
             total_copper=total,
             donated_by=self.donated_by.value.strip() or None,
@@ -659,6 +660,7 @@ class SpendFundsModal(Modal):
             return
 
         await add_funds_db(
+            guild_id=interaction.guild.id,
             type_='spend',
             total_copper=total,
             donated_by=self.note.value.strip() or None,
