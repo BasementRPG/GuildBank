@@ -256,10 +256,10 @@ class ItemEntryView(discord.ui.View):
             **fields_to_update
         )
 
-            await interaction.response.send_message(
-                f"✅ Updated **{self.item_name}**.",
-                ephemeral=True
-            )
+        await interaction.response.send_message(
+            f"✅ Updated **{self.item_name}**.",
+            ephemeral=True
+        )
         else:  # adding new
             await add_item_db(
                 guild_id=interaction.guild.id,
