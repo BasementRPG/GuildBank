@@ -754,9 +754,8 @@ class SpendingHistoryModal(discord.ui.Modal):
         self.history_input.disabled = True
         self.add_item(self.history_input)
 
-    async def on_submit(self, interaction: discord.Interaction)
-
-
+    async def on_submit(self):
+        
     # Button to view full history
 
 class ViewFullHistoryButton(discord.ui.Button):
