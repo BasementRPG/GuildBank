@@ -149,53 +149,58 @@ class ClassesSelect(discord.ui.Select):
         await interaction.response.edit_message(view=self.view)
 
 class ItemEntryView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, user: discord.User):
         super().__init__(timeout=900)
+        self.user = user
         self.item_type = None
-        self.image = None
-        # other attributes…
+        self.image_url = None
 
     @discord.ui.select(
         placeholder="Select Item Type",
         options=[
             discord.SelectOption(label="Weapon", value="weapon"),
             discord.SelectOption(label="Armor", value="armor"),
-            discord.SelectOption(label="Image Upload / Link", value="image"),  # NEW
+            discord.SelectOption(label="Image Upload / Link", value="image"),
         ]
     )
     async def select_item_type(self, select: discord.ui.Select, interaction: discord.Interaction):
         self.item_type = select.values[0]
         if self.item_type == "image":
-            await interaction.response.send_message(
-                "📷 Please upload an image **or** provide a link in your next message.", ephemeral=True
+            modal = discord.ui.Modal(title="Upload or Link an Image")
+
+            img_input = discord.ui.TextInput(
+                label="Image URL (or leave blank to upload)",
+                required=False
             )
-            self.waiting_for_image = True
+            modal.add_item(img_input)
+
+            async def modal_callback(modal_interaction: discord.Interaction):
+                if modal_interaction.message.attachments:
+                    self.image_url = modal_interaction.message.attachments[0].url
+                else:
+                    self.image_url = img_input.value
+                await modal_interaction.response.send_message(
+                    "📷 Got your image. Press Submit to save it.", ephemeral=True
+                )
+
+            modal.on_submit = modal_callback
+            await interaction.response.send_modal(modal)
         else:
-            # continue your normal flow
-            await interaction.response.send_message(f"Selected item type: {self.item_type}", ephemeral=True)
+            await interaction.response.send_message(f"Selected {self.item_type}", ephemeral=True)
 
     @discord.ui.button(label="Submit", style=discord.ButtonStyle.success)
     async def submit_item(self, button: discord.ui.Button, interaction: discord.Interaction):
-        # If image provided, skip all others
-        if self.item_type == "image" and self.image:
+        if self.item_type == "image" and self.image_url:
             await add_item_db(
                 guild_id=interaction.guild.id,
                 name="Image Item",
                 type_=self.item_type,
-                image_url=self.image
+                image_url=self.image_url
             )
             await interaction.response.send_message("✅ Image-only item saved!", ephemeral=True)
         else:
-            # your normal add_item_db call with all fields
-            await add_item_db(
-                guild_id=interaction.guild.id,
-                name=self.item_name,
-                type_=self.item_type,
-                subtype=self.subtype,
-                stats=self.stats,
-                classes=self.classes
-            )
-            await interaction.response.send_message("✅ Item saved!", ephemeral=True)
+            # your normal add_item_db call here
+            pass
 
 
 
