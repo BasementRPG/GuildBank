@@ -517,7 +517,7 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
 @bot.tree.command(name="remove_item", description="Remove an item from the guild bank.")
 @app_commands.describe(item_name="Name of the item to remove")
 async def remove_item(interaction: discord.Interaction, item_name: str):
-    item = await get_item_by_name(item_name)
+    item = await get_item_by_name(interaction.guild.id, item_name)
     if not item:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
