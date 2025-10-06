@@ -197,10 +197,10 @@ class ItemEntryView(discord.ui.View):
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
         if self.item_id:  # editing
-            await update_item_db(self.item_id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await update_item_db(guild_id=interaction.guild.id, name=self.item_name, type=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
             await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
         else:  # adding
-            await add_item_db(guild_id=interaction.guild.id, self.item_name, self.item_type, self.subtype, self.stats, classes_str)
+            await add_item_db(guild_id=interaction.guild.id, name=self.item_name, type=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
             await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
         self.stop()
 
