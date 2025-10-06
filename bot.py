@@ -527,38 +527,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
 
 
 
-# Convert from 4-part currency to copper
-def currency_to_copper(plat=0, gold=0, silver=0, copper=0):
-    return plat * 10000 + gold * 100 + silver * 1 + copper
 
-# Convert from copper to 4-part currency
-def copper_to_currency(total_copper):
-    plat = total_copper // 10000
-    rem = total_copper % 10000
-    gold = rem // 100
-    rem = rem % 100
-    silver = rem
-    copper = 0  # optional, since silver covers copper in our scale
-    return plat, gold, silver, copper
-
-# Add donation or spend
-async def add_funds_db(type_, total_copper, donated_by=None):
-    async with db_pool.acquire() as conn:
-        await conn.execute('''
-            INSERT INTO funds (type, total_copper, donated_by)
-            VALUES ($1, $2, $3)
-        ''', type_, total_copper, donated_by)
-
-# Get total sums
-async def get_fund_totals():
-    async with db_pool.acquire() as conn:
-        row = await conn.fetchrow('''
-            SELECT
-                SUM(CASE WHEN type='donation' THEN total_copper ELSE 0 END) AS donated,
-                SUM(CASE WHEN type='spend' THEN total_copper ELSE 0 END) AS spent
-            FROM funds
-        ''')
-    return row
 
 
 
@@ -751,28 +720,6 @@ async def view_funds(interaction: discord.Interaction):
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
     embed.add_field(name="\u200b", value=f"{plat}p {gold}g {silver}s {copper}c")
-
-# Button to view full history
-    donations = await get_all_donations()
-    if not donations:
-        await interaction.response.send_message("No donations found.", ephemeral=True)
-        return
-
-    # Calculate total
-    total_copper = sum(d['total_copper'] for d in donations)
-    t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
-    
-    class ViewFullHistoryButton(discord.ui.Button):
-        def __init__(self):
-            super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
-
-        async def callback(self, interaction_button: discord.Interaction):
-            modal = DonationHistoryModal(donations)
-            await interaction_button.response.send_modal(modal)
-
-    view = discord.ui.View()
-    view.add_item(ViewFullHistoryButton())
-    
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
