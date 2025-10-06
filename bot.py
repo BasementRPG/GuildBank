@@ -179,7 +179,7 @@ class ItemEntryView(discord.ui.View):
         self.add_item(self.upload_image_button)
         
 
-        self.details_button = discord.ui.Button(label="Item Details", style=discord.ButtonStyle.secondary)
+        self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
@@ -223,58 +223,53 @@ class ItemEntryView(discord.ui.View):
 
 #-----IMAGE UPLOAD ----
 
-class UploadImageModal(discord.ui.Modal):
-    def __init__(self, parent_view: "ItemEntryView"):
-        super().__init__(title="Upload Image for Item")
-        self.parent_view = parent_view
+# Button to start upload workflow
 
-        self.item_name = discord.ui.TextInput(
-            label="Item Name",
-            placeholder="Example: Dragon Slayer",
-            required=True
-        )
-        self.donated_by = discord.ui.TextInput(
-            label="Donated By",
-            placeholder="Optional",
-            required=False
-        )
-        self.image_url = discord.ui.TextInput(
-            label="Image URL or Attachment",
-            placeholder="Paste a URL here, or upload an attachment when responding",
-            required=False,
-            style=discord.TextStyle.short
-        )
 
-        self.add_item(self.item_name)
-        self.add_item(self.donated_by)
-        self.add_item(self.image_url)
+class UploadImageButton(discord.ui.Button):
+    def __init__(self, item_type):
+        super().__init__(label="Upload Image", style=discord.ButtonStyle.primary)
+        self.item_type = item_type
 
-    async def on_submit(self, interaction: discord.Interaction):
-        # Save values to parent view
-        self.parent_view.item_name = self.item_name.value
-        self.parent_view.stats = None  # no stats for image-only
-        self.parent_view.subtype = None
-        self.parent_view.usable_classes = None
-        self.parent_view.image_url = self.image_url.value.strip() or None
-
-        # Submit directly
-        await add_item_db(
-            guild_id=interaction.guild.id,
-            name=self.parent_view.item_name,
-            type_=self.parent_view.item_type,
-            subtype=None,
-            stats=None,
-            classes=None,
-            image_url=self.parent_view.image_url
-        )
-
+    async def callback(self, interaction: discord.Interaction):
         await interaction.response.send_message(
-            f"✅ Added **{self.parent_view.item_name}** with custom image to the Guild Bank.",
-            ephemeral=True
+            "Please upload the image as an attachment in your next message.", ephemeral=True
         )
-        self.parent_view.stop()
 
+        def check(m):
+            return (
+                m.author.id == interaction.user.id and
+                m.attachments and
+                m.channel == interaction.channel
+            )
 
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=120)  # wait 2 minutes
+        except asyncio.TimeoutError:
+            await interaction.followup.send("⏰ Upload timed out.", ephemeral=True)
+            return
+
+        attachment = msg.attachments[0]  # get first attachment
+        image_url = attachment.url
+
+        # Now ask for item title and donor in a modal
+        class ImageItemModal(discord.ui.Modal):
+            def __init__(self):
+                super().__init__(title="Image Item Details")
+                self.item_name = discord.ui.TextInput(label="Item Name", required=True)
+                self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
+                self.add_item(self.item_name)
+                self.add_item(self.donated_by)
+
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                # Save to DB or do whatever you need
+                await modal_interaction.response.send_message(
+                    f"✅ Uploaded **{self.item_name.value}** for {self.donated_by.value or 'Anonymous'}!\nImage URL: {image_url}",
+                    ephemeral=True
+                )
+
+        modal = ImageItemModal()
+        await interaction.followup.send_modal(modal)
 
 
 
