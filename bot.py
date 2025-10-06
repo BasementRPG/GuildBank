@@ -397,12 +397,12 @@ class ItemDetailsModal(discord.ui.Modal):
     
             # Add optional fields if filled
             if self.attributes.value.strip():
-                self.attributes.value = self.stats.value
+                self.view.attributes = self.stats.value
             if self.effects.value.strip():
-                self.effects.value = self.effects.value
+                self.view.effects  = self.effects.value
                         
             if self.donated_by.value.strip():
-                self.donated_by.value = self.donated_by.value
+                self.view.donated_by = self.donated_by.value
 
         
         elif self.view.item_type == "Armor":
