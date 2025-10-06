@@ -461,7 +461,7 @@ async def view_bank(interaction: discord.Interaction):
 
     # First, send items with images
     for row in items_with_image:
-        embed.set_image(url=row['image'])
+         embed.set_image(url=row['image'])
 
          embed = discord.Embed(
             title="",
