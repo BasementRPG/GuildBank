@@ -672,8 +672,9 @@ class SpendFundsModal(Modal):
 # Modal to show full donation history
 
 class DonationHistoryModal(discord.ui.Modal):
-    def __init__(self, donations):
+    def __init__(self, guild_id, donations):
         super().__init__(title="📜 Full Donation History")
+        self.guild_id = guild_id
         self.donations = donations
         
         total_copper = sum(d['total_copper'] for d in donations)
@@ -718,9 +719,11 @@ class DonationHistoryModal(discord.ui.Modal):
         await interaction.response.send_message("✅ Closed.", ephemeral=True)
 
 class SpendingHistoryModal(discord.ui.Modal):
-    def __init__(self, spendings):
+    def __init__(self, guild_id, spendings):
         super().__init__(title="📜 Full Spending History")
+        self.guild_id = guild_id
         self.spendings = spendings
+        
 
         total_copper = sum(s['total_copper'] for s in spendings)
         t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
@@ -825,7 +828,8 @@ async def view_funds(interaction: discord.Interaction):
 
 @bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
-    donations = await get_all_donations(interaction.guild.id)
+    guild_id = interaction.guild.id
+    donations = await get_donation_for_guild(guild_id)
     if not donations:
         await interaction.response.send_message("No donations found.", ephemeral=True)
         return
