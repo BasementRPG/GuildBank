@@ -496,9 +496,19 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
             default=item_row['classes'],
             required=False
         )
+        
         self.classes_field.disabled = True
         self.add_item(self.classes_field)
 
+         # Hard text display (read-only)
+        self.type_field = discord.ui.TextInput(
+            label="Donated by",
+            style=discord.TextStyle.short,
+            default=f"{item_row['donated_by']}",
+            required=False
+        )
+        self.type_field.disabled = True
+        self.add_item(self.type_field) 
 
     async def on_submit(self, interaction: discord.Interaction):
         # Just close the modal; no need to process input
