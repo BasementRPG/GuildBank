@@ -750,7 +750,7 @@ async def view_funds(interaction: discord.Interaction):
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(name="Platinum", value=str(plat)"p")
+    embed.add_field(name="Platinum", value=f"{plat}p")
     embed.add_field(name="Gold", value=str(gold))
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
