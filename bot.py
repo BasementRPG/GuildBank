@@ -203,15 +203,45 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_modal(modal)
 
     
-    async def submit_item(self, interaction: discord.Interaction):
-        classes_str = ", ".join(self.usable_classes)
-        if self.item_id:  # editing
-            await update_item_db(guild_id=interaction.guild.id, item_id=self.item_id, name=self.item_name, type_=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
-            await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
-        else:  # adding
-            await add_item_db(guild_id=interaction.guild.id, name=self.item_name, type_=self.item_type, subtype=self.subtype, stats=self.stats, classes=classes_str)
-            await interaction.response.send_message(f"✅ Added **{self.item_name}** to the Guild Bank.", ephemeral=True)
-        self.stop()
+  async def submit_item(self, interaction: discord.Interaction):
+    classes_str = ", ".join(self.usable_classes)
+
+    # default donor to the user running the command
+    donated_by = getattr(self, "donated_by", str(interaction.user))
+
+    if self.item_id:  # editing
+        await update_item_db(
+            guild_id=interaction.guild.id,
+            item_id=self.item_id,
+            name=self.item_name,
+            type_=self.item_type,
+            subtype=self.subtype,
+            stats=self.stats,
+            classes=classes_str,
+            donated_by=donated_by  # include donor if you support editing
+        )
+        await interaction.response.send_message(
+            f"✅ Updated **{self.item_name}**.",
+            ephemeral=True
+        )
+    else:  # adding new
+        await add_item_db(
+            guild_id=interaction.guild.id,
+            name=self.item_name,
+            type_=self.item_type,
+            subtype=self.subtype,
+            stats=self.stats,
+            classes=classes_str,
+            donated_by=donated_by,  # <-- new
+            qty=1                   # <-- new
+        )
+        await interaction.response.send_message(
+            f"✅ Added **{self.item_name}** to the Guild Bank.",
+            ephemeral=True
+        )
+
+    self.stop()
+
 
     async def reset_entry(self, interaction: discord.Interaction):
         self.subtype = None
