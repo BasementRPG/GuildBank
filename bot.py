@@ -38,7 +38,7 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, id_, name, type_, subtype, stats, classes):
+async def add_item_db(guild_id, item_id, name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO inventory (guild_id, name, type, subtype, stats, classes)
@@ -55,17 +55,17 @@ async def get_item_by_name(guild_id, name):
         row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1 AND name=$2", guild_id, name)
     return row
 
-async def update_item_db(guild_id, id_, name, type_, subtype, stats, classes):
+async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             UPDATE inventory
             SET name=$1, type=$2, subtype=$3, stats=$4, classes=$5
             WHERE guild_id=$6 AND id=$7
-        ''', name, type_, subtype, stats, classes, guild_id, id_)
+        ''', name, type_, subtype, stats, classes, guild_id, item_id)
 
-async def delete_item_db(guild_id, id_):
+async def delete_item_db(guild_id, item_id):
     async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM inventory WHERE guild_id=$1 AND id=$2", guild_id, id_)
+        await conn.execute("DELETE FROM inventory WHERE guild_id=$1 AND id=$2", guild_id, item_id)
 
 # ---------- UI Components ----------
 
