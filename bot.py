@@ -304,10 +304,10 @@ class ItemDetailsModal(discord.ui.Modal):
         if view.item_type == "Weapon":
             # Required fields
             self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
-            self.attack_delay = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
+            self.attack = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
            
             # Optional fields
-            self.attributes = discord.ui.TextInput(
+            self.stats = discord.ui.TextInput(
                 label="Stats", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
             )
             self.effects = discord.ui.TextInput(
@@ -317,8 +317,8 @@ class ItemDetailsModal(discord.ui.Modal):
 
             # Add fields to modal
             self.add_item(self.item_name)
-            self.add_item(self.attack_delay)
-            self.add_item(self.attributes)
+            self.add_item(self.attack)
+            self.add_item(self.stats)
             self.add_item(self.effects)
             self.add_item(self.donated_by)
 
@@ -339,7 +339,7 @@ class ItemDetailsModal(discord.ui.Modal):
             # Add fields to modal
             self.add_item(self.item_name)
             self.add_item(self.armor_class)
-            self.add_item(self.attributes)
+            self.add_item(self.stats)
             self.add_item(self.effects)
             self.add_item(self.donated_by)
 
@@ -371,7 +371,7 @@ class ItemDetailsModal(discord.ui.Modal):
             
             # Add fields to modal
             self.add_item(self.item_name)
-            self.add_item(self.attributes)
+            self.add_item(self.stats)
             self.add_item(self.effects)
             self.add_item(self.donated_by)
 
@@ -393,11 +393,11 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.view.item_type == "Weapon":
              
             # Start with Attack/Delay
-            self.view.attack = self.attack_delay.value
+            self.view.attack = self.attack.value
     
             # Add optional fields if filled
-            if self.attributes.value.strip():
-                self.view.attributes = self.stats.value
+            if self.stats.value.strip():
+                self.view.stats = self.stats.value
             if self.effects.value.strip():
                 self.view.effects  = self.effects.value
                         
