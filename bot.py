@@ -206,7 +206,7 @@ class ItemEntryView(discord.ui.View):
     
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
-       donor=self.donated_by or "Anonymous"
+        donor=self.donated_by or "Anonymous"
         # default donor to the user running the command
         added_by = getattr(self, "added_by", str(interaction.user))
     
