@@ -524,7 +524,6 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     await delete_item_db(item['id'])
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
-import asyncio
 
 
 
@@ -564,23 +563,30 @@ async def get_fund_totals():
 
 
 
+# ---------- Funds DB Helpers ----------
 
-# ---------------- Currency Conversion ----------------
-# Convert 4-part currency to total copper
+# Convert from 4-part currency to copper
 def currency_to_copper(plat=0, gold=0, silver=0, copper=0):
-    return plat * 1_000_000 + gold * 10_000 + silver * 100 + copper
+    return plat * 10000 + gold * 100 + silver * 1 + copper
 
-# Convert total copper back to 4-part currency
+# Convert from copper to 4-part currency
 def copper_to_currency(total_copper):
-    plat = total_copper // 1_000_000
-    rem = total_copper % 1_000_000
-    gold = rem // 10_000
-    rem = rem % 10_000
-    silver = rem // 100
-    copper = rem % 100
+    plat = total_copper // 10000
+    rem = total_copper % 10000
+    gold = rem // 100
+    rem = rem % 100
+    silver = rem // 1
+    copper = 0  # copper is fully accounted for in silver scale
     return plat, gold, silver, copper
 
-# ---------------- Database Helpers ----------------
+# Safe integer parsing
+def parse_int(value: str):
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return 0
+
+# Add donation or spend
 async def add_funds_db(type_, total_copper, donated_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
@@ -588,34 +594,27 @@ async def add_funds_db(type_, total_copper, donated_by=None):
             VALUES ($1, $2, $3)
         ''', type_, total_copper, donated_by)
 
+# Get total sums
 async def get_fund_totals():
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow('''
             SELECT
-                COALESCE(SUM(CASE WHEN type='donation' THEN total_copper ELSE 0 END),0) AS donated,
-                COALESCE(SUM(CASE WHEN type='spend' THEN total_copper ELSE 0 END),0) AS spent
+                SUM(CASE WHEN type='donation' THEN total_copper ELSE 0 END) AS donated,
+                SUM(CASE WHEN type='spend' THEN total_copper ELSE 0 END) AS spent
             FROM funds
         ''')
     return row
 
-async def get_all_funds():
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch('''
-            SELECT id, type, total_copper, donated_by, created_at
-            FROM funds
-            ORDER BY created_at DESC
-        ''')
-    return rows
-
-# ---------------- Modals ----------------
-class AddFundsModal(Modal):
+# ---------- Add Funds Modal ----------
+class AddFundsModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="Add Donation")
-        self.plat = TextInput(label="Platinum", default="0", required=False)
-        self.gold = TextInput(label="Gold", default="0", required=False)
-        self.silver = TextInput(label="Silver", default="0", required=False)
-        self.copper = TextInput(label="Copper", default="0", required=False)
-        self.donated_by = TextInput(label="Donated By", placeholder="Optional", required=False)
+        self.plat = discord.ui.TextInput(label="Platinum", default="0", required=False)
+        self.gold = discord.ui.TextInput(label="Gold", default="0", required=False)
+        self.silver = discord.ui.TextInput(label="Silver", default="0", required=False)
+        self.copper = discord.ui.TextInput(label="Copper", default="0", required=False)
+        self.donated_by = discord.ui.TextInput(label="Donated By", placeholder="Optional", required=False)
+
         self.add_item(self.plat)
         self.add_item(self.gold)
         self.add_item(self.silver)
@@ -624,22 +623,24 @@ class AddFundsModal(Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         total = currency_to_copper(
-            plat=int(self.plat.value or 0),
-            gold=int(self.gold.value or 0),
-            silver=int(self.silver.value or 0),
-            copper=int(self.copper.value or 0)
+            plat=parse_int(self.plat.value),
+            gold=parse_int(self.gold.value),
+            silver=parse_int(self.silver.value),
+            copper=parse_int(self.copper.value)
         )
         await add_funds_db('donation', total, self.donated_by.value.strip() or None)
         await interaction.response.send_message("✅ Donation added!", ephemeral=True)
 
-class SpendFundsModal(Modal):
+# ---------- Spend Funds Modal ----------
+class SpendFundsModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="Spend Funds")
-        self.plat = TextInput(label="Platinum", default="0", required=False)
-        self.gold = TextInput(label="Gold", default="0", required=False)
-        self.silver = TextInput(label="Silver", default="0", required=False)
-        self.copper = TextInput(label="Copper", default="0", required=False)
-        self.note = TextInput(label="Note", placeholder="Optional", required=False)
+        self.plat = discord.ui.TextInput(label="Platinum", default="0", required=False)
+        self.gold = discord.ui.TextInput(label="Gold", default="0", required=False)
+        self.silver = discord.ui.TextInput(label="Silver", default="0", required=False)
+        self.copper = discord.ui.TextInput(label="Copper", default="0", required=False)
+        self.note = discord.ui.TextInput(label="Note", placeholder="Optional", required=False)
+
         self.add_item(self.plat)
         self.add_item(self.gold)
         self.add_item(self.silver)
@@ -648,15 +649,15 @@ class SpendFundsModal(Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         total = currency_to_copper(
-            plat=int(self.plat.value or 0),
-            gold=int(self.gold.value or 0),
-            silver=int(self.silver.value or 0),
-            copper=int(self.copper.value or 0)
+            plat=parse_int(self.plat.value),
+            gold=parse_int(self.gold.value),
+            silver=parse_int(self.silver.value),
+            copper=parse_int(self.copper.value)
         )
         await add_funds_db('spend', total, self.note.value.strip() or None)
         await interaction.response.send_message("✅ Funds spent recorded!", ephemeral=True)
 
-# ---------------- Bot Commands ----------------
+# ---------- Commands ----------
 @bot.tree.command(name="add_funds", description="Add a donation to the guild bank.")
 async def add_funds(interaction: discord.Interaction):
     await interaction.response.send_modal(AddFundsModal())
@@ -668,17 +669,18 @@ async def spend_funds(interaction: discord.Interaction):
 @bot.tree.command(name="view_funds", description="View current available funds.")
 async def view_funds(interaction: discord.Interaction):
     totals = await get_fund_totals()
-    donated = totals['donated']
-    spent = totals['spent']
+    donated = totals['donated'] or 0
+    spent = totals['spent'] or 0
     available = donated - spent
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(value=str(plat))
+    embed.add_field(name="Platinum", value=str(plat))
     embed.add_field(name="Gold", value=str(gold))
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
 @bot.tree.command(name="view_donations", description="View all donations and spends.")
 async def view_donations(interaction: discord.Interaction):
