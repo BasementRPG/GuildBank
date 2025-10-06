@@ -667,6 +667,7 @@ class SpendFundsModal(Modal):
 
 
 # Modal to show full donation history
+
 class DonationHistoryModal(discord.ui.Modal):
     def __init__(self, donations):
         super().__init__(title="📜 Full Donation History")
@@ -698,8 +699,40 @@ class DonationHistoryModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("✅ Closed.", ephemeral=True)
 
+class SpendingHistoryModal(discord.ui.Modal):
+    def __init__(self, spendings):
+        super().__init__(title="📜 Full Spending History")
+        self.spendings = spendings
+
+        # Combine all spendings into one string
+        history_text = ""
+        total_copper = 0
+        for s in spendings:
+            total_copper += s['total_copper']
+            plat, gold, silver, copper = copper_to_currency(s['total_copper'])
+            spender = s['donated_by'] or "Unknown"
+            date = s['donated_at'].strftime("%m-%d-%y")
+            history_text += f"**{spender}**: {plat}p {gold}g {silver}s {copper}c on {date}\n"
+
+        if len(history_text) > 4000:
+            history_text = history_text[:3990] + "\n…"
+
+        self.history_input = discord.ui.TextInput(
+            label="Spending History",
+            style=discord.TextStyle.paragraph,
+            default=history_text,
+            required=False
+        )
+        self.history_input.disabled = True
+        self.add_item(self.history_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
+
 
     # Button to view full history
+
 class ViewFullHistoryButton(discord.ui.Button):
     def __init__(self, donations):
          self.donations = donations
@@ -708,6 +741,15 @@ class ViewFullHistoryButton(discord.ui.Button):
     async def callback(self, interaction_button: discord.Interaction):
         modal = DonationHistoryModal(self.donations)
         await interaction_button.response.send_modal(modal)
+
+class ViewSpendingHistoryButton(discord.ui.Button):
+    def __init__(self, spendings):
+        self.spendings = spendings
+        super().__init__(label="View Spending History", style=discord.ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        modal = SpendingHistoryModal(self.spendings)
+        await interaction.response.send_modal(modal)
 
 
 # ----------------- Slash Commands -----------------
@@ -737,9 +779,18 @@ async def view_funds(interaction: discord.Interaction):
             WHERE type='donation'
             ORDER BY donated_at DESC
         ''')
+
+        donations = await conn.fetch('''
+            SELECT donated_by, total_copper, donated_at
+            FROM funds
+            WHERE type='spend'
+            ORDER BY donated_at DESC
+        ''')
+    
     
     view = discord.ui.View()
     view.add_item(ViewFullHistoryButton(donations))
+    view.add_item(ViewSpendingHistoryButton(spendings))
     
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
