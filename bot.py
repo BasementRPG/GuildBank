@@ -7,6 +7,7 @@ import datetime
 import asyncpg 
 
 
+
 print("discord.py version:", discord.__version__)
 
 
@@ -504,8 +505,53 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 
     # If an image was uploaded via slash command
     if image:
-        view.waiti
+        view.waiting_for_image = True
+        view.image = None  # will be set when user sends image link or attachment
 
+        # Optional: open a minimal modal for donated_by and item name
+        class ImageDetailsModal(discord.ui.Modal):
+            def __init__(self):
+                super().__init__(title="Image Item Details")
+                self.item_name = discord.ui.TextInput(label="Item Name", required=True)
+                self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
+                self.add_item(self.item_name)
+                self.add_item(self.donated_by)
+
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                item_name = self.item_name.value
+                donated_by = self.donated_by.value or "Anonymous"
+
+                # Make sure the image was set in the view
+                if not view.image:
+                    await modal_interaction.response.send_message(
+                        "❌ No image provided. Send an attachment or a link in chat.", ephemeral=True
+                    )
+                    return
+
+                # Save to DB
+                await add_item_db(
+                    guild_id=interaction.guild.id,
+                    name=item_name,
+                    type_=item_type,
+                    subtype="Image",
+                    stats="",
+                    classes="All",
+                    image=view.image,
+                    donated_by=donated_by
+                )
+
+                active_views.pop(interaction.user.id, None)  # remove from active_views
+                await modal_interaction.response.send_message(
+                    f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
+                )
+
+        await interaction.response.send_modal(ImageDetailsModal())
+        return
+
+    # Otherwise, open the normal item entry view
+    await interaction.response.send_message(
+        f"Adding a new {item_type}:", view=view, ephemeral=True
+    )
 
 
 
