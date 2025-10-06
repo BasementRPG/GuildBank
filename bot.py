@@ -772,17 +772,6 @@ async def view_donations(interaction: discord.Interaction):
         description=f"**Total Donations:** {t_plat}p {t_gold}g {t_silver}s {t_copper}c",
         color=discord.Color.green()
     )
-     class ViewFullHistoryButton(discord.ui.Button):
-        def __init__(self):
-            super().__init__(label="View Full History", style=discord.ButtonStyle.secondary)
-
-        async def callback(self, interaction_button: discord.Interaction):
-            modal = DonationHistoryModal(donations)
-            await interaction_button.response.send_modal(modal)
-
-    view = discord.ui.View()
-    view.add_item(ViewFullHistoryButton())
-
     
     # Button to view full history
     class ViewFullHistoryButton(discord.ui.Button):
