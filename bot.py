@@ -730,6 +730,13 @@ async def view_funds(interaction: discord.Interaction):
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
     embed.add_field(name="\u200b", value=f"{plat}p {gold}g {silver}s {copper}c")
 
+    async with db_pool.acquire() as conn:
+        donations = await conn.fetch('''
+            SELECT donated_by, total_copper, donated_at
+            FROM funds
+            WHERE type='donation'
+            ORDER BY donated_at DESC
+        ''')
     
     view = discord.ui.View()
     view.add_item(ViewFullHistoryButton(donations))
