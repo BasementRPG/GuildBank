@@ -269,49 +269,41 @@ class ItemEntryView(discord.ui.View):
 
 
 class UploadImageButton(discord.ui.Button):
-    def __init__(self, item_type):
+    def __init__(self, parent_view):
         super().__init__(label="Upload Image", style=discord.ButtonStyle.primary)
-        self.item_type = item_type
+        self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            "Please upload the image as an attachment in your next message.", ephemeral=True
-        )
-
-        def check(m):
-            return (
-                m.author.id == interaction.user.id and
-                m.attachments and
-                m.channel == interaction.channel
-            )
-
-        try:
-            msg = await bot.wait_for("message", check=check, timeout=120)  # wait 2 minutes
-        except asyncio.TimeoutError:
-            await interaction.followup.send("⏰ Upload timed out.", ephemeral=True)
-            return
-
-        attachment = msg.attachments[0]  # get first attachment
-        image_url = attachment.url
-
-        # Now ask for item title and donor in a modal
-        class ImageItemModal(discord.ui.Modal):
-            def __init__(self):
-                super().__init__(title="Image Item Details")
+        # Step 1: Open a modal asking for item name and donor
+        class ImageModal(discord.ui.Modal):
+            def __init__(self, parent_view):
+                super().__init__(title="Upload Image Item")
+                self.parent_view = parent_view
                 self.item_name = discord.ui.TextInput(label="Item Name", required=True)
                 self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
                 self.add_item(self.item_name)
                 self.add_item(self.donated_by)
 
             async def on_submit(self, modal_interaction: discord.Interaction):
-                # Save to DB or do whatever you need
-                await modal_interaction.response.send_message(
-                    f"✅ Uploaded **{self.item_name.value}** for {self.donated_by.value or 'Anonymous'}!\nImage URL: {image_url}",
-                    ephemeral=True
-                )
+                # Step 2: Get uploaded attachment from modal interaction
+                # Discord doesn’t allow attachment fields in modal, so we get it from interaction.message.attachments
+                # User must attach file **before clicking the button** if using ephemeral
+                attachments = modal_interaction.message.attachments
+                if attachments:
+                    self.parent_view.image_url = attachments[0].url
+                    self.parent_view.item_name = self.item_name.value
+                    self.parent_view.stats = f"Image URL: {self.parent_view.image_url}\nDonated By: {self.donated_by.value or 'Anonymous'}"
+                    await modal_interaction.response.send_message(
+                        f"✅ Image item **{self.parent_view.item_name}** saved!", ephemeral=True
+                    )
+                else:
+                    await modal_interaction.response.send_message(
+                        "❌ No image uploaded. Please attach an image.", ephemeral=True
+                    )
 
-        modal = ImageItemModal()
-        await interaction.followup.send_modal(modal)
+        modal = ImageModal(self.parent_view)
+        await interaction.response.send_modal(modal)
+
 
 
 
@@ -588,28 +580,47 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Misc", value="Misc"),
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
-async def add_item(interaction: discord.Interaction, item_type: str, image_url: str = None):  # Change this line
-   
-    if image_url:
-        await add_item_db(
-            guild_id=interaction.guild.id,
-            name="Image Item",  # default placeholder name, or prompt later
-            type_=item_type,
-            subtype=None,
-            stats=None,
-            classes=None,
-            
-            image=image_url
-        )
-        await interaction.response.send_message(f"✅ Item with image added as {item_type}.", ephemeral=True)
+async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
+    if image:
+        # If an image is uploaded, prompt for name and donor
+        class ImageDetailsModal(discord.ui.Modal):
+            def __init__(self):
+                super().__init__(title="Item Details for Image Upload")
+                self.item_name = discord.ui.TextInput(label="Item Name", required=True)
+                self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
+                self.add_item(self.item_name)
+                self.add_item(self.donated_by)
+
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                # Save the image item
+                item_name = self.item_name.value
+                donated_by = self.donated_by.value or "Anonymous"
+                image_url = image.url
+
+                stats = f"Image URL: {image_url}\nDonated By: {donated_by}"
+                # Save to your DB
+                await add_item_db(
+                    guild_id=interaction.guild.id,
+                    name=item_name,
+                    type_=item_type,
+                    subtype="Image",
+                    stats=stats,
+                    classes="All"
+                )
+
+                await modal_interaction.response.send_message(
+                    f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
+                )
+
+        modal = ImageDetailsModal()
+        await interaction.response.send_modal(modal)
         return
-    
-    
-    
+
+    # Otherwise, open the normal item modal
     view = ItemEntryView(interaction.user, item_type=item_type)
     await interaction.response.send_message(
-        f"Adding a new {item_type}:",
-        view=view,
+        f"Adding a new {item_type}:", 
+        view=view, 
         ephemeral=True
     )
 
