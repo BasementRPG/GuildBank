@@ -512,7 +512,7 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     subtype="Image",
                     stats="Image",
                     classes="All",
-                    image=image_url
+                    image=image_url,
                     donated_by=donated_by
                 )
 
