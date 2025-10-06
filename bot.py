@@ -195,6 +195,8 @@ class ItemEntryView(discord.ui.View):
         self.stats = ""
         self.item_id = item_id
         self.donated_by = ""
+        self.attack = ""
+        self.effects = ""
 
         # preload existing if editing
         if existing_data:
@@ -272,7 +274,9 @@ class ItemEntryView(discord.ui.View):
                 classes=classes_str,
                 donated_by=self.donated_by,  # <-- new
                 qty=1,
-                added_by=added_by
+                added_by=added_by,
+                attack=self.attack,
+                effects=self.effects,
             )
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank.",
@@ -399,7 +403,7 @@ class ItemDetailsModal(discord.ui.Modal):
             if self.stats.value.strip():
                 self.view.stats = self.stats.value
             if self.effects.value.strip():
-                self.view.effects  = self.effects.value
+                self.view.effects = self.effects.value
                         
             if self.donated_by.value.strip():
                 self.view.donated_by = self.donated_by.value
