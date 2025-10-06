@@ -238,23 +238,23 @@ class ItemEntryView(discord.ui.View):
         # default donor to the user running the command
         added_by = getattr(self, "added_by", str(interaction.user))
     
-        if self.item_id:  # editing
-    fields_to_update = {
-        "name": self.item_name,
-        "type": self.item_type,
-        "subtype": self.subtype,
-        "stats": classes_str,
-    }
-    if self.donated_by:
-        fields_to_update["donated_by"] = self.donated_by
-    added_by = getattr(self, "added_by", str(interaction.user))
-    fields_to_update["added_by"] = added_by
-
-    await update_item_db(
-        guild_id=interaction.guild.id,
-        item_id=self.item_id,
-        **fields_to_update
-    )
+    if self.item_id:  # editing
+        fields_to_update = {
+            "name": self.item_name,
+            "type": self.item_type,
+            "subtype": self.subtype,
+            "stats": classes_str,
+        }
+        if self.donated_by:
+            fields_to_update["donated_by"] = self.donated_by
+        added_by = getattr(self, "added_by", str(interaction.user))
+        fields_to_update["added_by"] = added_by
+    
+        await update_item_db(
+            guild_id=interaction.guild.id,
+            item_id=self.item_id,
+            **fields_to_update
+        )
 
             await interaction.response.send_message(
                 f"✅ Updated **{self.item_name}**.",
