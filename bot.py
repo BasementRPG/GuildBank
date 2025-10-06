@@ -611,7 +611,7 @@ await db.execute(
     (interaction.guild.id, item['id'])
 )
 
-    await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
+ await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 
 
