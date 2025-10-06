@@ -219,7 +219,7 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 stats=self.stats,
                 classes=classes_str,
-                donated_by=donated_by  # include donor if you support editing
+                donated_by=donated_by,  # include donor if you support editing
                 added_by=added_by
             )
             await interaction.response.send_message(
