@@ -6,7 +6,7 @@ from discord.ui import Modal, TextInput
 import datetime
 import asyncpg 
 
-
+active_views = {}
 
 print("discord.py version:", discord.__version__)
 
