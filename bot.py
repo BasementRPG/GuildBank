@@ -755,7 +755,7 @@ class SpendingHistoryModal(discord.ui.Modal):
         self.add_item(self.history_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
 
 
 
