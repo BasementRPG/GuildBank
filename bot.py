@@ -38,12 +38,13 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, item_id, name, type_, subtype, stats, classes):
-    async with db_pool.acquire() as conn:
-        await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        ''',guild_id, name, type_, subtype, stats, classes)
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None):
+    async with aiosqlite.connect("guild_bank.db") as db:
+        await db.execute("""
+            INSERT INTO items (guild_id, name, type, subtype, stats, classes, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (guild_id, name, type_, subtype, stats, classes, image))
+        await db.commit()
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
@@ -147,9 +148,60 @@ class ClassesSelect(discord.ui.Select):
 
         await interaction.response.edit_message(view=self.view)
 
+class ItemEntryView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=900)
+        self.item_type = None
+        self.image = None
+        # other attributes…
+
+    @discord.ui.select(
+        placeholder="Select Item Type",
+        options=[
+            discord.SelectOption(label="Weapon", value="weapon"),
+            discord.SelectOption(label="Armor", value="armor"),
+            discord.SelectOption(label="Image Upload / Link", value="image"),  # NEW
+        ]
+    )
+    async def select_item_type(self, select: discord.ui.Select, interaction: discord.Interaction):
+        self.item_type = select.values[0]
+        if self.item_type == "image":
+            await interaction.response.send_message(
+                "📷 Please upload an image **or** provide a link in your next message.", ephemeral=True
+            )
+            self.waiting_for_image = True
+        else:
+            # continue your normal flow
+            await interaction.response.send_message(f"Selected item type: {self.item_type}", ephemeral=True)
+
+    @discord.ui.button(label="Submit", style=discord.ButtonStyle.success)
+    async def submit_item(self, button: discord.ui.Button, interaction: discord.Interaction):
+        # If image provided, skip all others
+        if self.item_type == "image" and self.image:
+            await add_item_db(
+                guild_id=interaction.guild.id,
+                name="Image Item",
+                type_=self.item_type,
+                image_url=self.image
+            )
+            await interaction.response.send_message("✅ Image-only item saved!", ephemeral=True)
+        else:
+            # your normal add_item_db call with all fields
+            await add_item_db(
+                guild_id=interaction.guild.id,
+                name=self.item_name,
+                type_=self.item_type,
+                subtype=self.subtype,
+                stats=self.stats,
+                classes=self.classes
+            )
+            await interaction.response.send_message("✅ Item saved!", ephemeral=True)
 
 
 
+
+
+"""
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
         super().__init__(timeout=None)
@@ -211,7 +263,7 @@ class ItemEntryView(discord.ui.View):
         self.stats = ""
         await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
-
+"""
 
 # ------ITEM DETAILS ----
 
@@ -501,6 +553,19 @@ async def add_item(interaction: discord.Interaction, item_type: str):  # Change 
             await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
         except:
             pass
+
+
+@bot.event
+async def on_message(message):
+    # This should be scoped to the user who is adding the item
+    view = get_user_active_view(message.author.id)  # however you're tracking the view
+    if view and getattr(view, "waiting_for_image", False):
+        if message.attachments:
+            view.image = message.attachments[0].url
+        else:
+            view.image = message.content  # assume it's a link
+        view.waiting_for_image = False
+        await message.channel.send("📷 Got your image. Press Submit to save it.", delete_after=5)
 
 
 
