@@ -495,7 +495,7 @@ class ViewDetailsButton(discord.ui.Button):
 async def view_bank(interaction: discord.Interaction):
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT * FROM items WHERE guild_id=$1 AND qty=1 ORDER BY name",
+            "SELECT * FROM inventory WHERE guild_id=$1 AND qty=1 ORDER BY name",
             interaction.guild.id
         )
    
