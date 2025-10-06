@@ -219,7 +219,8 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 stats=self.stats,
                 classes=classes_str,
-                donated_by=self.donated_by
+                donated_by=self.donated_by,
+                
                 added_by=added_by
             )
             await interaction.response.send_message(
@@ -234,8 +235,9 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 stats=self.stats,
                 classes=classes_str,
-                donated_by=donated_by,  # <-- new
-                qty=1                   # <-- new
+                donated_by=self.donated_by,  # <-- new
+                qty=1,
+                added_by=added_by
             )
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank.",
