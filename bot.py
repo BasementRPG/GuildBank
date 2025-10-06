@@ -52,7 +52,7 @@ async def get_all_items(guild_id):
 
 async def get_item_by_name(guild_id, name):
     async with db_pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1, name=$2", guild_id, name)
+        row = await conn.fetchrow("SELECT * FROM inventory WHERE guild_id=$1 AND name=$2", guild_id, name)
     return row
 
 async def update_item_db(guild_id, id_, name, type_, subtype, stats, classes):
@@ -65,7 +65,7 @@ async def update_item_db(guild_id, id_, name, type_, subtype, stats, classes):
 
 async def delete_item_db(guild_id, id_):
     async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM inventory WHERE guild_id=$1, id=$2", guild_id, id_)
+        await conn.execute("DELETE FROM inventory WHERE guild_id=$1 AND id=$2", guild_id, id_)
 
 # ---------- UI Components ----------
 
