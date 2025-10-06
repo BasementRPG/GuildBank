@@ -498,42 +498,13 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
-    class ImageDetailsModal(discord.ui.Modal):
-        def __init__(self, img_url=None):
-            super().__init__(title="Item Details for Image Upload")
-            self.img_url = img_url
-            self.item_name = discord.ui.TextInput(label="Item Name", required=True)
-            self.donated_by = discord.ui.TextInput(label="Donated By", required=False)
-            self.add_item(self.item_name)
-            self.add_item(self.donated_by)
 
-        async def on_submit(self, modal_interaction: discord.Interaction):
-            await add_item_db(
-                guild_id=interaction.guild.id,
-                name=self.item_name.value,
-                type_=item_type,
-                subtype="Image",
-                stats="",
-                classes="All",
-                image=self.img_url,
-                donated_by=self.donated_by.value or "Anonymous"
-            )
-            await modal_interaction.response.send_message(
-                f"✅ Image item **{self.item_name.value}** added to the guild bank!", ephemeral=True
-            )
-
-    # If image was uploaded, open modal to get name/donated_by
-    if image:
-        await interaction.response.send_modal(ImageDetailsModal(img_url=image.url))
-        return
-
-    # Otherwise, normal item entry
     view = ItemEntryView(interaction.user, item_type=item_type)
-    await interaction.response.send_message(
-        f"Adding a new {item_type}:", 
-        view=view, 
-        ephemeral=True
-    )
+    active_views[interaction.user.id] = view  # Track this view for image messages
+
+    # If an image was uploaded via slash command
+    if image:
+        view.waiti
 
 
 
@@ -541,15 +512,20 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 
 @bot.event
 async def on_message(message):
+    # Ignore bot messages
+    if message.author.bot:
+        return
 
+    view = active_views.get(message.author.id)
     if view and getattr(view, "waiting_for_image", False):
         if message.attachments:
             view.image = message.attachments[0].url
         else:
             view.image = message.content  # assume it's a link
         view.waiting_for_image = False
-        await message.channel.send("📷 Got your image. Press Submit to save it.", delete_after=5)
-
+        await message.channel.send(
+            "📷 Got your image. Fill out the modal and click Submit to save it.", delete_after=5
+        )
 
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
