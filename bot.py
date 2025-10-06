@@ -719,6 +719,10 @@ class SpendingHistoryModal(discord.ui.Modal):
         super().__init__(title="📜 Full Spending History")
         self.spendings = spendings
 
+        total_copper = sum(s['total_copper'] for s in spendings)
+        t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
+        total_text = f"{t_plat}p {t_gold}g {t_silver}s {t_copper}c"
+        
         # Combine all spendings into one string
         history_text = ""
         total_copper = 0
@@ -731,6 +735,15 @@ class SpendingHistoryModal(discord.ui.Modal):
 
         if len(history_text) > 4000:
             history_text = history_text[:3990] + "\n…"
+
+        self.total_input = discord.ui.TextInput(
+            label="💰 Total Spending",
+            style=discord.TextStyle.short,
+            default=total_text,
+            required=False
+        )
+        self.total_input.disabled = True
+        self.add_item(self.total_input)
 
         self.history_input = discord.ui.TextInput(
             label="Spending History",
