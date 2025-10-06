@@ -2,10 +2,9 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.ui import Modal, TextInput
 
 import asyncpg 
-
-
 
 
 print("discord.py version:", discord.__version__)
@@ -565,20 +564,6 @@ async def get_fund_totals():
 
 
 
-# ---------- Funds DB Helpers ----------
-import discord
-from discord import app_commands
-from discord.ui import Modal, TextInput
-from discord.ext import commands
-import asyncpg
-import os
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
-db_pool: asyncpg.Pool = None
 
 # ---------------- Currency Conversion ----------------
 # Convert 4-part currency to total copper
@@ -689,7 +674,7 @@ async def view_funds(interaction: discord.Interaction):
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
-    embed.add_field(name="Platinum", value=str(plat))
+    embed.add_field(value=str(plat)p)
     embed.add_field(name="Gold", value=str(gold))
     embed.add_field(name="Silver", value=str(silver))
     embed.add_field(name="Copper", value=str(copper))
