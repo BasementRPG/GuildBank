@@ -42,9 +42,9 @@ db_pool: asyncpg.Pool = None
 async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty)
 
 
 async def get_all_items(guild_id):
@@ -66,8 +66,15 @@ async def update_item_db(guild_id, item_id, name, type_, subtype, stats, classes
         ''', name, type_, subtype, stats, classes, guild_id, item_id)
 
 async def delete_item_db(guild_id, item_id):
-    async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM inventory WHERE guild_id=$1 AND id=$2", guild_id, item_id)
+    # Reduce qty by 1
+    item = await db.fetch_one("SELECT qty FROM items WHERE guild_id=? AND id=?", (guild_id, item_id))
+    if not item:
+        return
+    if item['qty'] > 1:
+        await db.execute("UPDATE items SET qty = qty - 1 WHERE id = ?", (item_id,))
+    else:
+        await db.execute("DELETE FROM items WHERE id = ?", (item_id,))
+
 
 # ---------- UI Components ----------
 
@@ -451,7 +458,11 @@ class ViewDetailsButton(discord.ui.Button):
 # ---------- /view_bank Command ----------
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    rows = await get_all_items(interaction.guild.id)
+    rows = await db.fetch_all(
+        "SELECT * FROM items WHERE guild_id=? AND qty=1 ORDER BY name",
+        (interaction.guild.id,)
+    )
+   
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
@@ -538,7 +549,8 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     stats="",
                     classes="All",
                     image=view.image,
-                    donated_by=donated_by
+                    donated_by=donated_by,
+                    qty=1
                 )
 
                 active_views.pop(interaction.user.id, None)  # remove from active_views
@@ -592,7 +604,13 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
     if not item:
         await interaction.response.send_message("Item not found.", ephemeral=True)
         return
-    await delete_item_db(interaction.guild.id, item['id'])
+        
+# Instead of deleting, set qty to 0
+await db.execute(
+    "UPDATE items SET qty = 0 WHERE guild_id=? AND id=?", 
+    (interaction.guild.id, item['id'])
+)
+
     await interaction.response.send_message(f"🗑️ Deleted **{item_name}** from the Guild Bank.", ephemeral=True)
 
 
@@ -935,8 +953,8 @@ async def view_donations(interaction: discord.Interaction):
     t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
 
     embed = discord.Embed(
-        title="📜 Donation Summary",
-        description=f"**Total Donations:** {t_plat}p {t_gold}g {t_silver}s {t_copper}c",
+        title="📜 Donation Records",
+        description=f"**Total Funds:** {t_plat}p {t_gold}g {t_silver}s {t_copper}c",
         color=discord.Color.green()
     )
 
