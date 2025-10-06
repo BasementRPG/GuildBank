@@ -810,14 +810,14 @@ async def view_funds(interaction: discord.Interaction):
 
     async with db_pool.acquire() as conn:
         donations = await conn.fetch('''
-            SELECT donated_by, total_copper, donated_at
+            SELECT guild_id, donated_by, total_copper, donated_at
             FROM funds
             WHERE type='donation'
             ORDER BY donated_at DESC
         ''')
 
         spendings = await conn.fetch('''
-            SELECT donated_by, total_copper, donated_at
+            SELECT guild_id, donated_by, total_copper, donated_at
             FROM funds
             WHERE type='spend'
             ORDER BY donated_at DESC
