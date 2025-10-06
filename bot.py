@@ -792,7 +792,7 @@ async def spend_funds(interaction: discord.Interaction):
 
 @bot.tree.command(name="view_funds", description="View current available funds.")
 async def view_funds(interaction: discord.Interaction):
-    totals = await get_fund_totals()
+    totals = await get_fund_totals(interaction.guild.id)
     donated = totals['donated'] or 0
     spent = totals['spent'] or 0
     available = donated - spent
@@ -825,7 +825,7 @@ async def view_funds(interaction: discord.Interaction):
 
 @bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
-    donations = await get_all_donations()
+    donations = await get_all_donations(interaction.guild.id)
     if not donations:
         await interaction.response.send_message("No donations found.", ephemeral=True)
         return
