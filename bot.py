@@ -490,9 +490,10 @@ class ViewDetailsButton(discord.ui.Button):
 # ---------- /view_bank Command ----------
 
 # ---------- /view_bank Command ----------
+
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    rows = await db.fetch_all(
+    rows = await conn.fetch(
         "SELECT * FROM items WHERE guild_id=? AND qty=1 ORDER BY name",
         (interaction.guild.id,)
     )
