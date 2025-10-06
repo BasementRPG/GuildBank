@@ -691,7 +691,35 @@ async def add_funds(interaction: discord.Interaction):
 async def spend_funds(interaction: discord.Interaction):
     await interaction.response.send_modal(SpendFundsModal())
 
-@bot.tree.command(name="view_funds", description="View current available_
+@bot.tree.command(name="view_funds", description="View current available funds.")
+async def view_funds(interaction: discord.Interaction):
+    totals = await get_fund_totals()
+    donated = totals['donated'] or 0
+    spent = totals['spent'] or 0
+    available = donated - spent
+    plat, gold, silver, copper = copper_to_currency(available)
+
+    embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
+    embed.add_field(name="Platinum", value=str(plat))
+    embed.add_field(name="Gold", value=str(gold))
+    embed.add_field(name="Silver", value=str(silver))
+    embed.add_field(name="Copper", value=str(copper))
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="view_donations", description="View all donations.")
+async def view_donations(interaction: discord.Interaction):
+    rows = await get_all_donations()
+    if not rows:
+        await interaction.response.send_message("No donations recorded.", ephemeral=True)
+        return
+
+    text = ""
+    for r in rows:
+        plat, gold, silver, copper = copper_to_currency(r['total_copper'])
+        donor = r['donated_by'] or "Unknown"
+        text += f"{donor} → {plat}p {gold}g {silver}s {copper}c on {r['donated_at']}\n"
+
+    await interaction.response.send_message(f"📜 Donations:\n{text}", ephemeral=True)
 
 
 
