@@ -540,8 +540,7 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 
 @bot.event
 async def on_message(message):
-    # This should be scoped to the user who is adding the item
-    view = get_user_active_view(message.author.id)  # however you're tracking the view
+
     if view and getattr(view, "waiting_for_image", False):
         if message.attachments:
             view.image = message.attachments[0].url
