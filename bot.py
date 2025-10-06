@@ -762,45 +762,38 @@ class SpendingHistoryModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("✅ Closed.", ephemeral=True)
-        
+
+
+
     # Button to view full history
 
 class ViewFullHistoryButton(discord.ui.Button):
     def __init__(self, donations):
         super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
-        self.donations = donations  # all donations fetched from DB
+        self.donations = donations  # Already filtered by guild_id
 
     async def callback(self, interaction: discord.Interaction):
-        # Filter donations for this guild only
-        guild_donations = [
-            d for d in self.donations if d.get('guild_id') == interaction.guild.id
-        ]
-
-        if not guild_donations:
+        if not self.donations:
             await interaction.response.send_message("No donations found for this guild.", ephemeral=True)
             return
 
-        modal = DonationHistoryModal(interaction.guild.id, guild_donations)
+        modal = DonationHistoryModal(interaction.guild.id, self.donations)
         await interaction.response.send_modal(modal)
 
 
 class ViewSpendingHistoryButton(discord.ui.Button):
     def __init__(self, spendings):
         super().__init__(label="Spending History", style=discord.ButtonStyle.secondary)
-        self.spendings = spendings  # all spendings fetched from DB
+        self.spendings = spendings  # Already filtered by guild_id
 
     async def callback(self, interaction: discord.Interaction):
-        # Filter spendings for this guild only
-        guild_spendings = [
-            s for s in self.spendings if s.get('guild_id') == interaction.guild.id
-        ]
-
-        if not guild_spendings:
-            await interaction.response.send_message("No spendings found for this guild.", ephemeral=True)
+        if not self.spendings:
+            await interaction.response.send_message("No spending found for this guild.", ephemeral=True)
             return
 
-        modal = SpendingHistoryModal(interaction.guild.id, guild_spendings)
+        modal = SpendingHistoryModal(interaction.guild.id, self.spendings)
         await interaction.response.send_modal(modal)
+
 
 
 
@@ -815,61 +808,72 @@ async def spend_funds(interaction: discord.Interaction):
 
 @bot.tree.command(name="view_funds", description="View current available funds.")
 async def view_funds(interaction: discord.Interaction):
-    totals = await get_fund_totals(interaction.guild.id)
-    donated = totals['donated'] or 0
-    spent = totals['spent'] or 0
+    guild_id = interaction.guild.id
+
+    async with db_pool.acquire() as conn:
+        all_donations = await conn.fetch('''
+            SELECT donated_by, total_copper, donated_at, guild_id
+            FROM funds
+            WHERE type='donation'
+            ORDER BY donated_at DESC
+        ''')
+        all_spendings = await conn.fetch('''
+            SELECT donated_by, total_copper, donated_at, guild_id
+            FROM funds
+            WHERE type='spend'
+            ORDER BY donated_at DESC
+        ''')
+
+    # Filter by current guild
+    donations = [d for d in all_donations if d['guild_id'] == guild_id]
+    spendings = [s for s in all_spendings if s['guild_id'] == guild_id]
+
+    donated = sum(d['total_copper'] for d in donations)
+    spent = sum(s['total_copper'] for s in spendings)
     available = donated - spent
     plat, gold, silver, copper = copper_to_currency(available)
 
     embed = discord.Embed(title="💰 Available Funds", color=discord.Color.gold())
     embed.add_field(name="\u200b", value=f"{plat}p {gold}g {silver}s {copper}c")
 
-    async with db_pool.acquire() as conn:
-        donations = await conn.fetch('''
-            SELECT guild_id, donated_by, total_copper, donated_at
-            FROM funds
-            WHERE type='donation'
-            ORDER BY donated_at DESC
-        ''')
-
-        spendings = await conn.fetch('''
-            SELECT guild_id, donated_by, total_copper, donated_at
-            FROM funds
-            WHERE type='spend'
-            ORDER BY donated_at DESC
-        ''')
-    
-    
     view = discord.ui.View()
     view.add_item(ViewFullHistoryButton(donations))
     view.add_item(ViewSpendingHistoryButton(spendings))
-    
+
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+
 
 @bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
     guild_id = interaction.guild.id
-    donations = await get_all_donations(guild_id)
+
+    async with db_pool.acquire() as conn:
+        donations = await conn.fetch('''
+            SELECT donated_by, total_copper, donated_at
+            FROM funds
+            WHERE type='donation' AND guild_id=$1
+            ORDER BY donated_at DESC
+        ''', guild_id)
+
     if not donations:
-        await interaction.response.send_message("No donations found.", ephemeral=True)
+        await interaction.response.send_message("No donations found for this guild.", ephemeral=True)
         return
 
-    # Calculate total
     total_copper = sum(d['total_copper'] for d in donations)
     t_plat, t_gold, t_silver, t_copper = copper_to_currency(total_copper)
 
-    # Show total in embed
     embed = discord.Embed(
         title="📜 Donation Summary",
         description=f"**Total Donations:** {t_plat}p {t_gold}g {t_silver}s {t_copper}c",
         color=discord.Color.green()
     )
-    
 
     view = discord.ui.View()
     view.add_item(ViewFullHistoryButton(donations))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 
 
 
