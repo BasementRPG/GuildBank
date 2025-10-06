@@ -461,15 +461,14 @@ async def view_bank(interaction: discord.Interaction):
 
     # First, send items with images
     
-for row in items_with_image:
-    donated_by = row.get('donated_by') or "Anonymous"
-    embed = discord.Embed(
-        color=discord.Color.blue()
-    )
-    embed.set_image(url=row['image'])
-    embed.set_footer(text=f"Donated By: {donated_by}")
-    await interaction.channel.send(embed=embed)
+    for row in sorted(items_with_image, key=lambda r: r['name'].lower()):
+        donated_by = row.get('donated_by') or "Anonymous"
+        embed = discord.Embed(color=discord.Color.blue())
+        embed.set_image(url=row['image'])
+        embed.set_footer(text=f"Donated By: {donated_by}")
+        await interaction.channel.send(embed=embed)  # ✅ inside async function
 
+    
     # Then, send items without images
     for row in items_without_image:
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
