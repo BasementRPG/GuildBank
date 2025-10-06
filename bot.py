@@ -48,7 +48,7 @@ async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=N
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
+        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes, image, dontated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
 async def get_item_by_name(guild_id, name):
