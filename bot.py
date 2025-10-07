@@ -26,16 +26,13 @@ ITEM_TYPE_EMOJIS = {
     "Funds": "💰"
 }
 
-bg_files = {
+BG_FILES = {
     "Weapon": "assets/backgrounds/bg_weapon.png",
-    "Armor": "assets/backgrounds/bg_weapon.png",
-    "Consumable": "assets/backgrounds/bg_weapon.png",
-    "Crafting": "assets/backgrounds/bg_weapon.png",
-    "Misc": "assets/backgrounds/bg_weapon.png"
+    "Armor": "assets/backgrounds/bg_armor.png",
+    "Consumable": "assets/backgrounds/bg_consumable.png",
+    "Crafting": "assets/backgrounds/bg_crafting.png",
+    "Misc": "assets/backgrounds/bg_misc.png"
 }
-
-background_path = bg_files.get(item_type, "assets/backgrounds/bg_misc.png")
-background = Image.open(background_path).convert("RGBA")
 
 
 
