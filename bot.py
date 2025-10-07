@@ -465,13 +465,6 @@ class ItemDetailsModal(discord.ui.Modal):
 
 # ---------- /view_bank Command ----------
 
-@bot.tree.command(name="view_bank", description="View all items in the guild bank.")
-async def view_bank(interaction: discord.Interaction):
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM inventory WHERE guild_id=$1 ORDER BY name",
-            interaction.guild.id
-        )
        TYPE_COLORS = {
         "weapon": discord.Color.red(),
         "armor": discord.Color.blue(),
@@ -479,6 +472,15 @@ async def view_bank(interaction: discord.Interaction):
         "crafting": discord.Color.green(),
         "misc": discord.Color.dark_gray(),
     }
+
+@bot.tree.command(name="view_bank", description="View all items in the guild bank.")
+async def view_bank(interaction: discord.Interaction):
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM inventory WHERE guild_id=$1 ORDER BY name",
+            interaction.guild.id
+        )
+
 
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
