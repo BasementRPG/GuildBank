@@ -513,32 +513,32 @@ async def view_bank(interaction: discord.Interaction):
 
 
         # Otherwise show full info in text form
-        desc = f"**Type:** {row['type']} | **Subtype:** {subtype}\n"
+        desc = f"{row['type']} | {subtype}\n"
 
         match item_type:
             case "weapon":
                 attack = row.get('attack') or "N/A"
                 desc += (
-                    f"**Attack / Delay:** {attack}\n"
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
+                    f"Attack / Delay: {attack}\n"
+                    f"Stats: {code_block(stats)}"
+                    f"Effects: {code_block(effects)}"
                 )
             case "armor":
                 ac = row.get('ac') or "N/A"
                 desc += (
-                    f"**AC:** {ac}\n"
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
+                    f"AC: {ac}\n"
+                    f"Stats: {code_block(stats)}"
+                    f"Effects: {code_block(effects)}"
                 )
             case "consumable":
                 desc += (
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
+                    f"Stats: {code_block(stats)}"
+                    f"Effects: {code_block(effects)}"
                 )
             case "crafting" | "misc":
-                desc += f"**Stats:** {code_block(stats)}"
+                desc += f"Info: {code_block(stats)}"
             case _:
-                desc += f"**Stats:** {code_block(stats)}"
+                desc += f"Info: {code_block(stats)}"
 
         desc += f"\n**Donated by:** {donated_by}"
 
