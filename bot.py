@@ -514,7 +514,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
                 default=item_row['effects'],
                 required=False
             )
-            self.attack_field.disabled = True
+            self.effects_field.disabled = True
             self.add_item(self.effects_field)
 
         
