@@ -198,6 +198,7 @@ class ItemEntryView(discord.ui.View):
         self.donated_by = ""
         self.attack = ""
         self.effects = ""
+        self.ac = ""
 
         # preload existing if editing
         if existing_data:
@@ -329,11 +330,11 @@ class ItemDetailsModal(discord.ui.Modal):
 
         elif view.item_type == "Armor":
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Fungus Covered Scale Tunic", default=view.item_name, required=True)
-            self.armor_class = discord.ui.TextInput(label="Armor Class", default="", placeholder="Example: 21", required=True)
+            self.ac = discord.ui.TextInput(label="Armor Class", default="", placeholder="Example: 21", required=True)
             
            
             # Optional fields
-            self.attributes = discord.ui.TextInput(
+            self.stats = discord.ui.TextInput(
                 label="Stats", default="", placeholder="Example: +2 str, -10 dex, +2 int, -10 int ", required=False, style=discord.TextStyle.paragraph
             )
             self.effects = discord.ui.TextInput(
@@ -343,7 +344,7 @@ class ItemDetailsModal(discord.ui.Modal):
             
             # Add fields to modal
             self.add_item(self.item_name)
-            self.add_item(self.armor_class)
+            self.add_item(self.ac)
             self.add_item(self.stats)
             self.add_item(self.effects)
             self.add_item(self.donated_by)
@@ -365,7 +366,7 @@ class ItemDetailsModal(discord.ui.Modal):
                     
            
             # Optional fields
-            self.attributes = discord.ui.TextInput(
+            self.stats = discord.ui.TextInput(
                 label="Stats", default="", placeholder="Example: +5 str, +5 dex, +5 sta, + 5 agi, +30 hp, +30 mana ", required=False, style=discord.TextStyle.paragraph
             )
             self.effects = discord.ui.TextInput(
@@ -397,7 +398,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.view.donated_by = self.donated_by.value or "Anonymous"
         if self.view.item_type == "Weapon":
              
-            # Start with Attack/Delay
+            
             self.view.attack = self.attack.value
     
             # Add optional fields if filled
@@ -412,19 +413,16 @@ class ItemDetailsModal(discord.ui.Modal):
         
         elif self.view.item_type == "Armor":
             
-            stats_parts = [f"Armor Class: {self.armor_class.value}"]
+            self.view.ac = self.ac.value
             
-            # Add optional fields if filled
-            if self.attributes.value.strip():
-                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+            if self.stats.value.strip():
+                self.view.stats = self.stats.value
             if self.effects.value.strip():
-                stats_parts.append(f"Effects: {self.effects.value.strip()}")
+                self.view.effects = self.effects.value
+                        
             if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
-                 
-    
-            # Combine into one stats string
-            self.view.stats = "\n".join(stats_parts)
+                self.view.donated_by = self.donated_by.value
+
 
         
         elif self.view.item_type == "Crafting":
