@@ -812,86 +812,86 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
     )
 
 """"
-class ImageDetailsModal(discord.ui.Modal):
-    def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
-        """
-        Unified modal for adding or editing an image item.
-
-        Parameters:
-        - interaction: The current Discord interaction.
-        - view: Optional, for /add_item flow. Should contain `view.image` if adding.
-        - item_row: Optional, for editing. Pre-fills fields with existing data.
-        """
-        super().__init__(title="Image Item Details")
-
-        self.interaction = interaction
-        self.view = view
-        self.is_edit = item_row is not None
-
-        if self.is_edit:
-            self.item_id = item_row['id']
-            self.guild_id = item_row['guild_id']
-            default_name = item_row['name']
-            default_donor = item_row.get('donated_by') or "Anonymous"
-        else:
-            self.item_id = None
-            self.guild_id = interaction.guild.id
-            default_name = ""
-            default_donor = "Anonymous"
-
-        # Item Name
-        self.item_name = discord.ui.TextInput(
-            label="Item Name",
-            default=default_name,
-            required=True
-        )
-        self.add_item(self.item_name)
-
-        # Donated By
-        self.donated_by = discord.ui.TextInput(
-            label="Donated By",
-            default=default_donor,
-            required=False
-        )
-        self.add_item(self.donated_by)
-
-    async def on_submit(self, modal_interaction: discord.Interaction):
-        item_name = self.item_name.value
-        donated_by = self.donated_by.value or "Anonymous"
-
-        if self.is_edit:
-            # Update existing item in DB
-            await update_item_db(
-                guild_id=self.guild_id,
-                item_id=self.item_id,
-                name=item_name,
-                donated_by=donated_by
-            )
-            await modal_interaction.response.send_message(
-                f"✅ Updated **{item_name}**.", ephemeral=True
-            )
-        else:
-            # Adding new image item
-            if not self.view or not getattr(self.view, "image", None):
-                await modal_interaction.response.send_message(
-                    "❌ No image provided. Send an attachment or a link in chat.", ephemeral=True
+        class ImageDetailsModal(discord.ui.Modal):
+            def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
+                """
+                Unified modal for adding or editing an image item.
+        
+                Parameters:
+                - interaction: The current Discord interaction.
+                - view: Optional, for /add_item flow. Should contain `view.image` if adding.
+                - item_row: Optional, for editing. Pre-fills fields with existing data.
+                """
+                super().__init__(title="Image Item Details")
+        
+                self.interaction = interaction
+                self.view = view
+                self.is_edit = item_row is not None
+        
+                if self.is_edit:
+                    self.item_id = item_row['id']
+                    self.guild_id = item_row['guild_id']
+                    default_name = item_row['name']
+                    default_donor = item_row.get('donated_by') or "Anonymous"
+                else:
+                    self.item_id = None
+                    self.guild_id = interaction.guild.id
+                    default_name = ""
+                    default_donor = "Anonymous"
+        
+                # Item Name
+                self.item_name = discord.ui.TextInput(
+                    label="Item Name",
+                    default=default_name,
+                    required=True
                 )
-                return
-
-            await add_item_db(
-                guild_id=self.guild_id,
-                name=item_name,
-                type_="Image",
-                subtype="Image",
-                stats="",
-                classes="All",
-                image=self.view.image,
-                donated_by=donated_by,
-                qty=1
-            )
-            await modal_interaction.response.send_message(
-                f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
-            )
+                self.add_item(self.item_name)
+        
+                # Donated By
+                self.donated_by = discord.ui.TextInput(
+                    label="Donated By",
+                    default=default_donor,
+                    required=False
+                )
+                self.add_item(self.donated_by)
+        
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                item_name = self.item_name.value
+                donated_by = self.donated_by.value or "Anonymous"
+        
+                if self.is_edit:
+                    # Update existing item in DB
+                    await update_item_db(
+                        guild_id=self.guild_id,
+                        item_id=self.item_id,
+                        name=item_name,
+                        donated_by=donated_by
+                    )
+                    await modal_interaction.response.send_message(
+                        f"✅ Updated **{item_name}**.", ephemeral=True
+                    )
+                else:
+                    # Adding new image item
+                    if not self.view or not getattr(self.view, "image", None):
+                        await modal_interaction.response.send_message(
+                            "❌ No image provided. Send an attachment or a link in chat.", ephemeral=True
+                        )
+                        return
+        
+                    await add_item_db(
+                        guild_id=self.guild_id,
+                        name=item_name,
+                        type_="Image",
+                        subtype="Image",
+                        stats="",
+                        classes="All",
+                        image=self.view.image,
+                        donated_by=donated_by,
+                        qty=1
+                    )
+                    await modal_interaction.response.send_message(
+                        f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
+                    )
 
 
 @bot.event
