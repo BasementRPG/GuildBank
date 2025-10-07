@@ -629,7 +629,7 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
 
     # Open the appropriate modal based on whether the item has an image
     if item.get('image'):
-        await interaction.response.send_modal(ImageDetailsModal(item))
+        await interaction.response.send_modal(ImageDetailsModal(interaction, item_row=item))
     else:
         view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
         await interaction.response.send_modal(ItemDetailsModal(view))
