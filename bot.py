@@ -240,6 +240,8 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_modal(modal)
 
     
+   
+    """
     async def submit_item(self, interaction: discord.Interaction):
         classes_str = ", ".join(self.usable_classes)
         donor=self.donated_by or "Anonymous"
@@ -291,8 +293,70 @@ class ItemEntryView(discord.ui.View):
             )
     
         self.stop()
+"""
 
 
+async def submit_item(self, interaction: discord.Interaction):
+    # Ensure all fields are up-to-date from the modal
+    classes_str = ", ".join(self.usable_classes)
+    donor = self.donated_by or "Anonymous"
+    added_by = getattr(self, "added_by", str(interaction.user))
+
+    # Only update fields for this item type
+    fields_to_update = {
+        "name": self.item_name,
+        "type": self.item_type,
+        "subtype": self.subtype,
+        "stats": self.stats,
+        "classes": classes_str,
+        "donated_by": self.donated_by or donor,
+        "added_by": added_by
+    }
+
+    if self.item_type == "Weapon":
+        fields_to_update["attack"] = self.attack
+        fields_to_update["effects"] = self.effects
+    elif self.item_type == "Armor":
+        fields_to_update["ac"] = self.ac
+        fields_to_update["effects"] = self.effects
+    elif self.item_type == "Consumable":
+        fields_to_update["effects"] = self.effects
+    # Crafting / Misc uses stats and donated_by only
+
+    if self.item_id:  # editing existing item
+        await update_item_db(
+            guild_id=interaction.guild.id,
+            item_id=self.item_id,
+            **fields_to_update
+        )
+        await interaction.response.send_message(
+            f"✅ Updated **{self.item_name}**.",
+            ephemeral=True
+        )
+    else:  # adding new item
+        await add_item_db(
+            guild_id=interaction.guild.id,
+            name=self.item_name,
+            type_=self.item_type,
+            subtype=self.subtype,
+            stats=self.stats,
+            classes=classes_str,
+            donated_by=self.donated_by or donor,
+            qty=1,
+            added_by=added_by,
+            attack=self.attack,
+            effects=self.effects,
+            ac=self.ac
+        )
+        await interaction.response.send_message(
+            f"✅ Added **{self.item_name}** to the Guild Bank.",
+            ephemeral=True
+        )
+
+    self.stop()
+
+
+    
     async def reset_entry(self, interaction: discord.Interaction):
         self.subtype = None
         self.usable_classes = []
