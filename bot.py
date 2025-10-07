@@ -347,11 +347,11 @@ class ItemEntryView(discord.ui.View):
             # Save to bytes
             image_bytes = io.BytesIO()
             background.save(image_bytes, format="PNG")
-            reated_image = image_bytes.getvalue()
+            image_bytes.seek(0)
+            created_images = image_bytes.read()
             image_bytes.close()
 
-            created_images = image_bytes.read()
-        
+            
             # Optional: save to a file locally
             # with open(f"{self.item_name}_manual.png", "wb") as f:
             #     f.write(image_bytes.getbuffer())
