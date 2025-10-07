@@ -473,7 +473,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
             self.attack_field = discord.ui.TextInput(
                 label="Attack / Delay",
                 style=discord.TextStyle.short,
-                default==item_row['attack'],
+                default=item_row['attack'],
                 required=False
             )
             self.attack_field.disabled = True
