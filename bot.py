@@ -341,7 +341,7 @@ class ItemEntryView(discord.ui.View):
         
             # Draw text
             draw = ImageDraw.Draw(background)
-            font = ImageFont.load.default()  # adjust font path & size
+            font = ImageFont.load_default()  # adjust font path & size
             draw.multiline_text((50, 50), item_text, fill=(255, 255, 255), font=font)
         
             # Save to bytes
