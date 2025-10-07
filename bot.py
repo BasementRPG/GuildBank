@@ -596,7 +596,9 @@ async def view_bank(interaction: discord.Interaction):
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         embed = discord.Embed(
             title=f"{emoji} {row['name']}",
-            description=f"{row['type']} | {row['subtype']}\nDonated By: {row.get('donated_by', 'Unknown')}",
+            description=f"{row['type']} | {row['subtype']}\n
+            Stats:{row.get('stats')\n
+            Donated By: {row.get('donated_by', 'Unknown')}",
             color=discord.Color.blue()
         )
         view = discord.ui.View()
