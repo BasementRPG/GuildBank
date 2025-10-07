@@ -605,13 +605,11 @@ async def view_bank(interaction: discord.Interaction):
         "misc": discord.Color.dark_gray(),
     }
 
-
     def code_block(text: str) -> str:
-        #---Wrap text in Discord code block if not empty.
         text = (text or "").strip()
         return f"```{text}```" if text else "```None```"
 
-    def build_embed(row):
+    async def build_embed_with_file(row):
         item_type = (row.get('type') or "Misc").lower()
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
         name = row.get('name', 'Unknown Item')
@@ -620,27 +618,20 @@ async def view_bank(interaction: discord.Interaction):
         stats = row.get('stats') or ""
         effects = row.get('effects') or ""
 
-        # If item has image — simplified layout
-        if row.get('image'):
-            embed = discord.Embed(
-                color=TYPE_COLORS.get(item_type, discord.Color.blurple())
-            )
-            embed.set_image(url=row['image'])
-            # Field name is empty, text appears under the image
-            embed.set_footer(text=f"Donated by: {donated_by} | {name}")
-            return embed
-            
+        embed = discord.Embed(
+            title=f"{emoji} {name}",
+            color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+        )
+        embed.set_footer(text=f"Donated by: {donated_by} | {name}")
+
+        # Handle created_images
         if row.get('created_images'):
-            embed = discord.Embed(
-                color=TYPE_COLORS.get(item_type, discord.Color.blurple())
-            )
-            embed.set_image(url=row['created_images'])
-            embed.set_footer(text=f"Donated by: {donated_by} | {name}")
-            return embed
+            file = discord.File(io.BytesIO(row['created_images']), filename=f"{name}.png")
+            embed.set_image(url=f"attachment://{name}.png")
+            return embed, file
 
-        # Otherwise show full info in text form
+        # Handle text-only items
         desc = f"{row['type']} | {subtype}\n"
-
         match item_type:
             case "weapon":
                 attack = row.get('attack') or "N/A"
@@ -667,17 +658,16 @@ async def view_bank(interaction: discord.Interaction):
                 desc += f"Info: {code_block(stats)}"
 
         desc += f"\nDonated by: {donated_by}"
+        embed.description = desc
+        return embed, None
 
-        embed = discord.Embed(
-            title=f"{emoji} {name}",
-            description=desc,
-            color=TYPE_COLORS.get(item_type, discord.Color.blurple())
-        )
-        return embed
-
-    # Send embeds
+    # Send embeds (with files if created_images exist)
     for row in rows:
-        await interaction.channel.send(embed=build_embed(row))
+        embed, file = await build_embed_with_file(row)
+        if file:
+            await interaction.channel.send(embed=embed, file=file)
+        else:
+            await interaction.channel.send(embed=embed)
 
     await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
