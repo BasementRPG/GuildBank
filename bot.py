@@ -347,13 +347,14 @@ class ImageDetailsModal(discord.ui.Modal):
     async def on_submit(self, modal_interaction: discord.Interaction):
         item_name = self.item_name.value
         donated_by = self.donated_by.value or "Anonymous"
-
+        added_by =str(self.interation.user)
         if self.is_edit:
             await update_item_db(
                 guild_id=self.guild_id,
                 item_id=self.item_id,
                 name=item_name,
                 donated_by=donated_by
+                added_by=added_by
             )
             await modal_interaction.response.send_message(f"✅ Updated **{item_name}**.", ephemeral=True)
         else:
@@ -373,6 +374,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 image=self.view.image,
                 donated_by=donated_by,
                 qty=1
+                added_by=added_by
             )
             await modal_interaction.response.send_message(
                 f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
