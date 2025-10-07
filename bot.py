@@ -468,6 +468,8 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
         super().__init__(title=f"{item_row['name']}\n{item_row['type']} | {item_row['subtype']}")
 
+
+#----- ATTACK ------
         
         if item_row['type'] == "Weapon":
             self.attack_field = discord.ui.TextInput(
@@ -488,7 +490,19 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         )
         self.stats_field.disabled = True
         self.add_item(self.stats_field)
+        
+# -------- EFFECT
+    if item_row['type'] == "Weapon":
+            self.effects_field = discord.ui.TextInput(
+                label="Effects",
+                style=discord.TextStyle.paragraph,
+                default=item_row['effects'],
+                required=False
+            )
+            self.attack_field.disabled = True
+            self.add_item(self.effects_field)
 
+        
         # Read-only field for Classes
         self.classes_field = discord.ui.TextInput(
             label="Classes",
