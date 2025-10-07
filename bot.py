@@ -484,7 +484,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
 
 #----- AC --- 
         
-         if item_row['type'] == "Armor":
+        if item_row['type'] == "Armor":
             self.attack_field = discord.ui.TextInput(
                 label="Type | Subtype | Armor Class",
                 style=discord.TextStyle.short,
