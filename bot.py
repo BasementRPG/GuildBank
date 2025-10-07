@@ -51,12 +51,12 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_image=None):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_image)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_images)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_image)
+        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
@@ -353,7 +353,7 @@ class ItemEntryView(discord.ui.View):
             # with open(f"{self.item_name}_manual.png", "wb") as f:
             #     f.write(image_bytes.getbuffer())
         
-            # 2. Save all info to database, including created_image
+            # 2. Save all info to database, including created_images
             await add_item_db(
                 guild_id=interaction.guild.id,
                 name=self.item_name,
@@ -362,7 +362,7 @@ class ItemEntryView(discord.ui.View):
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
                 image=None,  # original image field empty
-                created_image=image_bytes.read(),  # store bytes directly
+                created_images=image_bytes.read(),  # store bytes directly
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
                 added_by=str(interaction.user),
@@ -627,11 +627,11 @@ async def view_bank(interaction: discord.Interaction):
             embed.set_footer(text=f"Donated by: {donated_by} | {name}")
             return embed
             
-        if row.get('created_image'):
+        if row.get('created_images'):
             embed = discord.Embed(
                 color=TYPE_COLORS.get(item_type, discord.Color.blurple())
             )
-            embed.set_image(url=row['created_image'])
+            embed.set_image(url=row['created_images'])
             embed.set_footer(text=f"Donated by: {donated_by} | {name}")
             return embed
 
