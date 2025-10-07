@@ -51,12 +51,12 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_image=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_image)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_image)
 
 
 async def get_all_items(guild_id):
