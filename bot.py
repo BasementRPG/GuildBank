@@ -240,60 +240,7 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_modal(modal)
 
     
-   
-    """
-    async def submit_item(self, interaction: discord.Interaction):
-        classes_str = ", ".join(self.usable_classes)
-        donor=self.donated_by or "Anonymous"
-        # default donor to the user running the command
-        added_by = getattr(self, "added_by", str(interaction.user))
-    
-        if self.item_id:  # editing
-            fields_to_update = {
-                "name": self.item_name,
-                "type": self.item_type,
-                "subtype": self.subtype,
-                "stats": self.stats,
-                "classes": classes_str,
-                "donated_by": self.donated_by
-            }
-            if self.donated_by:
-                fields_to_update["donated_by"] = self.donated_by
-            added_by = getattr(self, "added_by", str(interaction.user))
-            fields_to_update["added_by"] = added_by
-        
-            await update_item_db(
-                guild_id=interaction.guild.id,
-                item_id=self.item_id,
-                **fields_to_update
-            )
-    
-            await interaction.response.send_message(
-                f"✅ Updated **{self.item_name}**.",
-                ephemeral=True
-            )
-        else:  # adding new
-            await add_item_db(
-                guild_id=interaction.guild.id,
-                name=self.item_name,
-                type_=self.item_type,
-                subtype=self.subtype,
-                stats=self.stats,
-                classes=classes_str,
-                donated_by=self.donated_by,  # <-- new
-                qty=1,
-                added_by=added_by,
-                attack=self.attack,
-                effects=self.effects,
-                ac= self.ac
-            )
-            await interaction.response.send_message(
-                f"✅ Added **{self.item_name}** to the Guild Bank.",
-                ephemeral=True
-            )
-    
-        self.stop()
-"""
+ 
     async def submit_item(self, interaction: discord.Interaction):
         # Ensure all fields are up-to-date from the modal
         classes_str = ", ".join(self.usable_classes)
@@ -483,165 +430,6 @@ class ItemDetailsModal(discord.ui.Modal):
 
 
 
-"""
-class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView):
-        super().__init__(title=f"{view.item_type} Details")
-        self.view = view
-
-        if view.item_type == "Weapon":
-            # Required fields
-            self.item_name = discord.ui.TextInput(label="Item Name", default=view.item_name, placeholder="Example: Short Sword of the Ykesha", required=True)
-            self.attack = discord.ui.TextInput(label="Attack / Delay", default="", placeholder="Format: Attack/Delay | Example: 8/24" , required=True)
-           
-            # Optional fields
-            self.stats = discord.ui.TextInput(
-                label="Stats", default="", placeholder="Example: +3 str, -1 cha, +5 sv fire", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default="", placeholder="Example: Ykesha: briefly stun and cause 75 dmg - lvl 37", required=False, style=discord.TextStyle.paragraph
-            )
-            self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
-
-            # Add fields to modal
-            self.add_item(self.item_name)
-            self.add_item(self.attack)
-            self.add_item(self.stats)
-            self.add_item(self.effects)
-            self.add_item(self.donated_by)
-
-        elif view.item_type == "Armor":
-            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Fungus Covered Scale Tunic", default=view.item_name, required=True)
-            self.ac = discord.ui.TextInput(label="Armor Class", default="", placeholder="Example: 21", required=True)
-            
-           
-            # Optional fields
-            self.stats = discord.ui.TextInput(
-                label="Stats", default="", placeholder="Example: +2 str, -10 dex, +2 int, -10 int ", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default="", placeholder="Example: +15 HP Regen", required=False, style=discord.TextStyle.paragraph
-            )
-            self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
-            
-            # Add fields to modal
-            self.add_item(self.item_name)
-            self.add_item(self.ac)
-            self.add_item(self.stats)
-            self.add_item(self.effects)
-            self.add_item(self.donated_by)
-
-        
-        elif view.item_type == "Crafting":
-            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Cloth Scraps", default=view.item_name, required=True)
-            self.stats = discord.ui.TextInput(
-                label="Info", default="", placeholder="Example: Used primarily for tailor and sub-compoints for other tradeskills", style=discord.TextStyle.paragraph, required=False
-            )
-            
-            self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
-            
-            # Add fields to modal
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
-            self.add_item(self.donated_by)
-
-        elif view.item_type == "Consumable":
-            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Dinner Gift Basket", default=view.item_name, required=True)
-                    
-           
-            # Optional fields
-            self.stats = discord.ui.TextInput(
-                label="Stats", default="", placeholder="Example: +5 str, +5 dex, +5 sta, + 5 agi, +30 hp, +30 mana ", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default="", placeholder="Example: This is a miraculous meal", required=False, style=discord.TextStyle.paragraph
-            )
-
-            self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
-            
-            # Add fields to modal
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
-            self.add_item(self.effects)
-            self.add_item(self.donated_by)
-
-        else:
-            self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Deathfist Slashed Belt", default=view.item_name, required=True)
-            self.stats = discord.ui.TextInput(
-                label="Info", placeholder="Example: Can be turned in for xp", default=view.stats, style=discord.TextStyle.paragraph
-            )
-
-            self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
-            
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
-            self.add_item(self.donated_by)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        self.view.item_name = self.item_name.value
-        self.view.donated_by = self.donated_by.value or "Anonymous"
-        if self.view.item_type == "Weapon":
-             
-            
-            self.view.attack = self.attack.value
-    
-            # Add optional fields if filled
-            if self.stats.value.strip():
-                self.view.stats = self.stats.value
-            if self.effects.value.strip():
-                self.view.effects = self.effects.value
-                        
-            if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value
-
-        
-        elif self.view.item_type == "Armor":
-            
-            self.view.ac = self.ac.value
-            
-            if self.stats.value.strip():
-                self.view.stats = self.stats.value
-            if self.effects.value.strip():
-                self.view.effects = self.effects.value
-                        
-            if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value
-
-
-        
-        elif self.view.item_type == "Crafting":
-            self.view.stats = self.stats.value
-                 
-            if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value
-                 
-
-        elif self.view.item_type == "Consumable":
-           
-            # Add optional fields if filled
-            if self.stats.value.strip():
-                self.view.stats = self.stats.value
-            if self.effects.value.strip():
-                self.view.effects = self.effects.value
-                        
-            if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value
-
-
-    
-        else:
-            
-            #--- MISC --- 
-            self.view.stats = self.stats.value
-
-            if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value
-                 
-    
-        await interaction.response.send_message(
-            "✅ Details saved. Click Submit when ready.", ephemeral=True
-        )
-"""
 
 
 # ---------- /view_bank Command ----------
@@ -862,32 +650,23 @@ async def on_message(message):
             "📷 Got your image. Fill out the modal and click Submit to save it.", delete_after=5
         )
 
-"""
-@bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
-@app_commands.describe(item_name="Name of the item to edit")
-async def edit_item(interaction: discord.Interaction, item_name: str):
-    item = await get_item_by_name(interaction.guild.id, item_name)
-    if not item:
-        await interaction.response.send_message("Item not found.", ephemeral=True)
-        return
-    view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
-    await interaction.response.send_message(f"Editing **{item_name}**:", view=view, ephemeral=True)
-"""
+
 
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
     # Fetch the item from the database
     item = await get_item_by_name(interaction.guild.id, item_name)
-if not item:
-    await interaction.response.send_message("Item not found.", ephemeral=True)
-    return
+    if not item:
+        await interaction.response.send_message("Item not found.", ephemeral=True)
+        return
 
-if item.get('image'):
-    await interaction.response.send_modal(ImageDetailsModal(item))
-else:
-    view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
-    await interaction.response.send_modal(ItemDetailsModal(view))
+    # Open the appropriate modal based on whether the item has an image
+    if item.get('image'):
+        await interaction.response.send_modal(ImageDetailsModal(item))
+    else:
+        view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
+        await interaction.response.send_modal(ItemDetailsModal(view))
 
 
 
