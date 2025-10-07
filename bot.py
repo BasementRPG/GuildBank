@@ -278,7 +278,8 @@ class ItemEntryView(discord.ui.View):
                 qty=1,
                 added_by=added_by,
                 attack=self.attack,
-                effects=self.effects
+                effects=self.effects,
+                ac= self.ac
             )
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank.",
