@@ -353,7 +353,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 guild_id=self.guild_id,
                 item_id=self.item_id,
                 name=item_name,
-                donated_by=donated_by
+                donated_by=donated_by,
                 added_by=added_by
             )
             await modal_interaction.response.send_message(f"✅ Updated **{item_name}**.", ephemeral=True)
@@ -373,7 +373,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 classes="All",
                 image=self.view.image,
                 donated_by=donated_by,
-                qty=1
+                qty=1,
                 added_by=added_by
             )
             await modal_interaction.response.send_message(
