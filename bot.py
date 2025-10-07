@@ -624,13 +624,18 @@ async def view_bank(interaction: discord.Interaction):
         )
         embed.set_footer(text=f"Donated by: {donated_by} | {name}")
 
-        # Handle created_images
+        # Handle created_images (raw bytes)
         if row.get('created_images'):
             file = discord.File(io.BytesIO(row['created_images']), filename=f"{name}.png")
             embed.set_image(url=f"attachment://{name}.png")
             return embed, file
 
-        # Handle text-only items
+        # Handle uploaded images (URL)
+        if row.get('image'):
+            embed.set_image(url=row['image'])
+            return embed, None
+
+        # Otherwise, text-only
         desc = f"{row['type']} | {subtype}\n"
         match item_type:
             case "weapon":
@@ -661,7 +666,7 @@ async def view_bank(interaction: discord.Interaction):
         embed.description = desc
         return embed, None
 
-    # Send embeds (with files if created_images exist)
+    # Send embeds
     for row in rows:
         embed, file = await build_embed_with_file(row)
         if file:
