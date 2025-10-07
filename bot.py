@@ -827,7 +827,7 @@ async def on_message(message):
             "📷 Got your image. Fill out the modal and click Submit to save it.", delete_after=5
         )
 
-
+"""
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
@@ -837,6 +837,26 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
         return
     view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
     await interaction.response.send_message(f"Editing **{item_name}**:", view=view, ephemeral=True)
+"""
+
+@bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
+@app_commands.describe(item_name="Name of the item to edit")
+async def edit_item(interaction: discord.Interaction, item_name: str):
+    # Fetch the item from the database
+    item = await get_item_by_name(interaction.guild.id, item_name)
+    if not item:
+        await interaction.response.send_message("Item not found.", ephemeral=True)
+        return
+
+    # If the item has an image, open the simplified modal
+    if item.get('image'):
+        modal = ReadOnlyImageItemModal(item)
+        await interaction.response.send_modal(modal)
+    else:
+        # Otherwise, open the full modal for that item type
+        view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
+        modal = ItemDetailsModal(view)
+        await interaction.response.send_modal(modal)
 
 
 
