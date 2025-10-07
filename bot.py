@@ -519,20 +519,16 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
 class ViewDetailsButton(discord.ui.Button):
     def __init__(self, item_row):
         super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.item_row = item_row  # store the DB row
+        self.item_row = item_row
 
     async def callback(self, interaction: discord.Interaction):
-        if not self.item_row:
-            await interaction.response.send_message("Error: no data available.", ephemeral=True)
-            return
+        modal = ReadOnlyDetailsModal(self.item_row)
+        try:
+            await interaction.response.send_modal(modal)
+        except discord.HTTPException as e:
+            # Fallback if modal fails
+            await interaction.followup.send("⚠ Unable to open modal.", ephemeral=True)
 
-        details_text = (
-            f"Type: {self.item_row['type']} | Subtype: {self.item_row['subtype']}\n"
-            f"Classes: {self.item_row['classes']}\n"
-            f"Stats:\n{self.item_row['stats']}"
-        )
-        modal = ReadOnlyDetailsModal(item_row=self.item_row)
-        await interaction.response.send_modal(modal)
 
 
 # ---------- /view_bank Command ----------
