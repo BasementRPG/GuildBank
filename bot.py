@@ -762,6 +762,47 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
         view.waiting_for_image = False
     
         # Optional: open a minimal modal for donated_by and item name
+    
+        class ImageDetailsModal(discord.ui.Modal):
+            def __init__(self, item_row):
+                super().__init__(title="Edit Image Item")
+                
+                self.item_id = item_row['id']
+                self.guild_id = item_row['guild_id']
+        
+                # Pre-fill existing values
+                self.item_name = discord.ui.TextInput(
+                    label="Item Name",
+                    default=item_row['name'],
+                    required=True
+                )
+                self.add_item(self.item_name)
+        
+                self.donated_by = discord.ui.TextInput(
+                    label="Donated By",
+                    default=item_row.get('donated_by') or "Anonymous",
+                    required=False
+                )
+                self.add_item(self.donated_by)
+        
+            async def on_submit(self, modal_interaction: discord.Interaction):
+                # Update name and donated_by in DB
+                await update_item_db(
+                    guild_id=self.guild_id,
+                    item_id=self.item_id,
+                    name=self.item_name.value,
+                    donated_by=self.donated_by.value or "Anonymous"
+                )
+        
+                await modal_interaction.response.send_message(
+                    f"✅ Updated **{self.item_name.value}**.", ephemeral=True
+                )
+
+
+
+
+"""
+        
         class ImageDetailsModal(discord.ui.Modal):
             def __init__(self):
                 super().__init__(title="Image Item Details")
@@ -779,6 +820,8 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     await modal_interaction.response.send_message(
                         "❌ No image provided. Send an attachment or a link in chat.", ephemeral=True
                     )
+"""
+                    
                     return
 
                 # Save to DB
@@ -844,19 +887,16 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
 async def edit_item(interaction: discord.Interaction, item_name: str):
     # Fetch the item from the database
     item = await get_item_by_name(interaction.guild.id, item_name)
-    if not item:
-        await interaction.response.send_message("Item not found.", ephemeral=True)
-        return
+if not item:
+    await interaction.response.send_message("Item not found.", ephemeral=True)
+    return
 
-    # If the item has an image, open the simplified modal
-    if item.get('image'):
-        modal = ReadOnlyImageItemModal(item)
-        await interaction.response.send_modal(modal)
-    else:
-        # Otherwise, open the full modal for that item type
-        view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
-        modal = ItemDetailsModal(view)
-        await interaction.response.send_modal(modal)
+if item.get('image'):
+    await interaction.response.send_modal(ImageDetailsModal(item))
+else:
+    view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
+    await interaction.response.send_modal(ItemDetailsModal(view))
+
 
 
 
