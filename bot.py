@@ -353,13 +353,15 @@ class ItemDetailsModal(discord.ui.Modal):
         
         elif view.item_type == "Crafting":
             self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Cloth Scraps", default=view.item_name, required=True)
-            self.info = discord.ui.TextInput(label="Info", default="", placeholder="Example: Used primarily for tailor and sub-compoints for other tradeskills", required=False)
+            self.stats = discord.ui.TextInput(
+                label="Info", default="", placeholder="Example: Used primarily for tailor and sub-compoints for other tradeskills", style=discord.TextStyle.paragraph, required=False
+            )
             
             self.donated_by = discord.ui.TextInput(label="Donated by", default="", placeholder="Example: Thieron or Raid Dropped", required=False)
             
             # Add fields to modal
             self.add_item(self.item_name)
-            self.add_item(self.info)
+            self.add_item(self.stats)
             self.add_item(self.donated_by)
 
         elif view.item_type == "Consumable":
@@ -427,34 +429,31 @@ class ItemDetailsModal(discord.ui.Modal):
 
         
         elif self.view.item_type == "Crafting":
-            stats_parts = [f"Info: {self.info.value}"]
+            self.view.stats = self.stats.value
                  
             if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+                self.view.donated_by = self.donated_by.value)
                  
-            self.view.stats = "\n".join(stats_parts)
 
         elif self.view.item_type == "Consumable":
-            stats_parts = [""]
+           
             # Add optional fields if filled
-            if self.attributes.value.strip():
-                stats_parts.append(f"Stats: {self.attributes.value.strip()}")
+            if self.stats.value.strip():
+                self.view.stats = self.stats.value
             if self.effects.value.strip():
-                stats_parts.append(f"Effects: {self.effects.value.strip()}")
+                self.view.effects = self.effects.value
+                        
             if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+                self.view.donated_by = self.donated_by.value
 
-            
-            self.view.stats = "\n".join(stats_parts)
+
     
         else:
-            stats_parts = [f"Info: {self.stats.value}"]
+
 
             if self.donated_by.value.strip():
-                stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
+                self.view.donated_by = self.donated_by.value
                  
-            
-            self.view.stats = "\n".join(stats_parts)
     
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
@@ -506,7 +505,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         
 # -------- EFFECT
     
-        if item_row['type'] == "Weapon" or "Armor":
+        if item_row['type'] == "Weapon" or "Armor" or "Consumable":
             self.effects_field = discord.ui.TextInput(
                 label="Effects",
                 style=discord.TextStyle.paragraph,
