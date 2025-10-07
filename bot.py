@@ -347,7 +347,8 @@ class ItemEntryView(discord.ui.View):
             # Save to bytes
             image_bytes = io.BytesIO()
             background.save(image_bytes, format="PNG")
-            image_bytes.seek(0)
+            reated_image = image_bytes.getvalue()
+            image_bytes.close()
         
             # Optional: save to a file locally
             # with open(f"{self.item_name}_manual.png", "wb") as f:
@@ -362,7 +363,7 @@ class ItemEntryView(discord.ui.View):
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
                 image=None,  # original image field empty
-                created_images=image_bytes.read(),  # store bytes directly
+                created_images=created_images,  # store bytes directly
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
                 added_by=str(interaction.user),
