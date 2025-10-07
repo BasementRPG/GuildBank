@@ -345,8 +345,8 @@ class ItemEntryView(discord.ui.View):
                 width, height = background.size
             
                 # Example positions:
-                x_margin = 30
-                y = 30  # start y
+                x_margin = 50
+                y = 20  # start y
             
                 # Name at top
                 draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
