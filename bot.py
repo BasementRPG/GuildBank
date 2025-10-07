@@ -473,9 +473,9 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         
         if item_row['type'] == "Weapon":
             self.attack_field = discord.ui.TextInput(
-                label="Attack / Delay",
+                label="Type | Subtype | Attack/Delay",
                 style=discord.TextStyle.short,
-                default=item_row['attack'],
+                default=f"{item_row['type']} | {item_row['subtype']} | {item_row['attack']}",
                 required=False
             )
             self.attack_field.disabled = True
