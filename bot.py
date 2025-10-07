@@ -432,7 +432,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.view.stats = self.stats.value
                  
             if self.donated_by.value.strip():
-                self.view.donated_by = self.donated_by.value)
+                self.view.donated_by = self.donated_by.value
                  
 
         elif self.view.item_type == "Consumable":
