@@ -443,7 +443,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 stats_parts.append(f"Effects: {self.effects.value.strip()}")
             if self.donated_by.value.strip():
                 stats_parts.append(f"Donated By: {self.donated_by.value.strip()}")
-                 
+
             
             self.view.stats = "\n".join(stats_parts)
     
@@ -506,7 +506,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         
 # -------- EFFECT
     
-        if item_row['type'] == "Weapon":
+        if item_row['type'] == "Weapon" or "Armor":
             self.effects_field = discord.ui.TextInput(
                 label="Effects",
                 style=discord.TextStyle.paragraph,
