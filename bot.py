@@ -597,7 +597,7 @@ async def view_bank(interaction: discord.Interaction):
         embed = discord.Embed(
             title=f"{emoji} {row['name']}",
             description=f"{row['type']} | {row['subtype']}\n
-            Stats:{row.get('stats')\n
+            Stats:{row['stats']\n
             Donated By: {row.get('donated_by', 'Unknown')}",
             color=discord.Color.blue()
         )
