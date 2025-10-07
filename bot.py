@@ -604,14 +604,17 @@ async def view_bank(interaction: discord.Interaction):
 ])
 async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
     view = ItemEntryView(interaction.user, item_type=item_type)
-    active_views[interaction.user.id] = view  # Track this view for image messages
+    active_views[interaction.user.id] = view  # Track this view
 
+    # If an image was uploaded, attach it to the view
     if image:
         view.image = image.url
         view.waiting_for_image = False
+        # Optional: open the minimal modal for donated_by and item name
         await interaction.response.send_modal(ImageDetailsModal(interaction, view=view))
     else:
-        await interaction.response.send_modal(ItemDetailsModal(view))
+        # Just show the view with dropdowns for subtype/classes
+        await interaction.response.send_message(f"Adding a new {item_type}:", view=view, ephemeral=True)
 
 
 
