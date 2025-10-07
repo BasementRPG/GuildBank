@@ -469,6 +469,92 @@ class ItemDetailsModal(discord.ui.Modal):
 async def view_bank(interaction: discord.Interaction):
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
+            "SELECT * FROM inventory WHERE guild_id=$1 ORDER BY name",
+            interaction.guild.id
+        )
+   
+    if not rows:
+        await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
+        return
+
+    for row in rows:
+        item_type = row['type']
+        name = row['name']
+        subtype = row.get('subtype', '')
+        donated_by = row.get('donated_by') or "Anonymous"
+
+        embed = discord.Embed(color=TYPE_COLORS.get(item_type, discord.Color.blurple()))
+
+        # If item has image — simplified layout
+        if row.get('image'):
+            embed.set_image(url=row['image'])
+            # Name and donated by under image
+            embed.add_field(name="\u200b", value=f"{donated_by} | {name}", inline=False)
+        else:
+            emoji = ITEM_TYPE_EMOJIS.get(item_type, "")
+            # Start description
+            description_lines = [f"**Type:** {item_type}", f"**Subtype:** {subtype}"]
+
+            if item_type == "Weapon":
+                attack = row.get('attack', '')
+                stats = row.get('stats', '')
+                effects = row.get('effects', '')
+
+                if attack:
+                    description_lines.append(f"**Attack / Delay:** {attack}")
+                if stats:
+                    description_lines.append(f"**Stats:** ```fix\n{stats}\n```")
+                if effects:
+                    description_lines.append(f"**Effects:** ```fix\n{effects}\n```")
+
+            elif item_type == "Armor":
+                ac = row.get('ac', '')
+                stats = row.get('stats', '')
+                effects = row.get('effects', '')
+
+                if ac:
+                    description_lines.append(f"**Armor Class:** {ac}")
+                if stats:
+                    description_lines.append(f"**Stats:** ```fix\n{stats}\n```")
+                if effects:
+                    description_lines.append(f"**Effects:** ```fix\n{effects}\n```")
+
+            elif item_type == "Consumable":
+                stats = row.get('stats', '')
+                effects = row.get('effects', '')
+
+                if stats:
+                    description_lines.append(f"**Stats:** ```fix\n{stats}\n```")
+                if effects:
+                    description_lines.append(f"**Effects:** ```fix\n{effects}\n```")
+
+            elif item_type == "Crafting":
+                stats = row.get('stats', '')
+                if stats:
+                    description_lines.append(f"**Info:** ```fix\n{stats}\n```")
+
+            else:  # Misc
+                stats = row.get('stats', '')
+                if stats:
+                    description_lines.append(f"**Info:** ```fix\n{stats}\n```")
+
+            # Donated by at the bottom
+            description_lines.append(f"**Donated By:** {donated_by}")
+
+            embed.title = f"{emoji} {name}"
+            embed.description = "\n".join(description_lines)
+
+        await interaction.channel.send(embed=embed)
+
+    await interaction.response.send_message(f"✅ Sent {len(rows)} items.", ephemeral=True)
+
+
+
+"""
+@bot.tree.command(name="view_bank", description="View all items in the guild bank.")
+async def view_bank(interaction: discord.Interaction):
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
             "SELECT * FROM inventory WHERE guild_id=$1 AND qty >= 1 ORDER BY name",
             interaction.guild.id
         )
@@ -487,8 +573,9 @@ async def view_bank(interaction: discord.Interaction):
         "misc": discord.Color.dark_gray(),
     }
 
+
     def code_block(text: str) -> str:
-        """Wrap text in Discord code block if not empty."""
+        #---Wrap text in Discord code block if not empty.
         text = (text or "").strip()
         return f"```{text}```" if text else "```None```"
 
@@ -555,7 +642,7 @@ async def view_bank(interaction: discord.Interaction):
 
     await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
-
+"""
 
 # ---------- /add_item Command ----------
 
