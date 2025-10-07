@@ -42,7 +42,7 @@ db_pool: asyncpg.Pool = None
 async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effect, ac)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac)
 
@@ -276,7 +276,7 @@ class ItemEntryView(discord.ui.View):
                 qty=1,
                 added_by=added_by,
                 attack=self.attack,
-                effects=self.effects,
+                effects=self.effects
             )
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank.",
