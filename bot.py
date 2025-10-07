@@ -472,7 +472,14 @@ async def view_bank(interaction: discord.Interaction):
             "SELECT * FROM inventory WHERE guild_id=$1 ORDER BY name",
             interaction.guild.id
         )
-   
+       TYPE_COLORS = {
+        "weapon": discord.Color.red(),
+        "armor": discord.Color.blue(),
+        "consumable": discord.Color.gold(),
+        "crafting": discord.Color.green(),
+        "misc": discord.Color.dark_gray(),
+    }
+
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
