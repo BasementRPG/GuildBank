@@ -6,6 +6,8 @@ from discord.ext import commands
 from discord.ui import Modal, TextInput
 import datetime
 import asyncpg 
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 active_views = {}
 
@@ -23,6 +25,18 @@ ITEM_TYPE_EMOJIS = {
     "Misc": "🔑",
     "Funds": "💰"
 }
+
+bg_files = {
+    "Weapon": "assets/backgrounds/bg_weapon.png",
+    "Armor": "assets/backgrounds/bg_weapon.png",
+    "Consumable": "assets/backgrounds/bg_weapon.png",
+    "Crafting": "assets/backgrounds/bg_weapon.png",
+    "Misc": "assets/backgrounds/bg_weapon.png"
+}
+
+background_path = bg_files.get(item_type, "assets/backgrounds/bg_misc.png")
+background = Image.open(background_path).convert("RGBA")
+
 
 
 ITEM_TYPES = ["Armor", "Crafting", "Consumable", "Misc", "Weapon"]
@@ -103,6 +117,42 @@ async def delete_item_db(guild_id, item_id):
         await db.execute("UPDATE items SET qty = qty - 1 WHERE id = ?", (item_id,))
     else:
         await db.execute("DELETE FROM items WHERE id = ?", (item_id,))
+
+
+
+async def generate_item_image(item_name, item_type, subtype, stats, effects, donated_by):
+    # Create a base image
+    width, height = 512, 256
+    background_color = (30, 30, 30)  # dark gray
+    text_color = (255, 255, 255)     # white
+
+    img = Image.new('RGB', (width, height), color=background_color)
+    draw = ImageDraw.Draw(img)
+
+    # Optional: load a TTF font
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+
+    # Draw text
+    y = 10
+    line_spacing = 28
+    for line in [
+        f"Name: {item_name}",
+        f"Type: {item_type} | Subtype: {subtype}",
+        f"Stats: {stats}",
+        f"Effects: {effects}",
+        f"Donated by: {donated_by}"
+    ]:
+        draw.text((10, y), line, fill=text_color, font=font)
+        y += line_spacing
+
+    # Save image to BytesIO
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
 
 
 # ---------- UI Components ----------
@@ -245,7 +295,7 @@ class ItemEntryView(discord.ui.View):
         # Ensure all fields are up-to-date from the modal
         classes_str = ", ".join(self.usable_classes)
         donor = self.donated_by or "Anonymous"
-        added_by = getattr(self, "added_by", str(interaction.user))
+        added_by = str(interaction.user)
     
         # Only update fields for this item type
         fields_to_update = {
@@ -254,7 +304,7 @@ class ItemEntryView(discord.ui.View):
             "subtype": self.subtype,
             "stats": self.stats,
             "classes": classes_str,
-            "donated_by": self.donated_by or donor,
+            "donated_by": donor,
             "added_by": added_by
         }
     
@@ -278,27 +328,60 @@ class ItemEntryView(discord.ui.View):
                 f"✅ Updated **{self.item_name}**.",
                 ephemeral=True
             )
-        else:  # adding new item
+        else:  # adding new item manually
+            # 1. Generate image with text on background
+            item_text = (
+                f"Name: {self.item_name}\n"
+                f"Type: {self.item_type} | {self.subtype}\n"
+                f"Stats: {self.stats or 'N/A'}\n"
+                f"Effects: {self.effects or 'N/A'}\n"
+                f"Donated by: {self.donated_by or 'Anonymous'}"
+            )
+        
+            # Select background
+            bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+            background = Image.open(bg_path).convert("RGBA")
+        
+            # Draw text
+            draw = ImageDraw.Draw(background)
+            font = ImageFont.truetype("arial.ttf", size=24)  # adjust font path & size
+            draw.multiline_text((50, 50), item_text, fill=(255, 255, 255), font=font)
+        
+            # Save to bytes
+            image_bytes = io.BytesIO()
+            background.save(image_bytes, format="PNG")
+            image_bytes.seek(0)
+        
+            # Optional: save to a file locally
+            # with open(f"{self.item_name}_manual.png", "wb") as f:
+            #     f.write(image_bytes.getbuffer())
+        
+            # 2. Save all info to database, including created_image
             await add_item_db(
                 guild_id=interaction.guild.id,
                 name=self.item_name,
                 type_=self.item_type,
                 subtype=self.subtype,
                 stats=self.stats,
-                classes=classes_str,
-                donated_by=self.donated_by or donor,
+                classes=", ".join(self.usable_classes) or "All",
+                image=None,  # original image field empty
+                created_image=image_bytes.read(),  # store bytes directly
+                donated_by=self.donated_by or "Anonymous",
                 qty=1,
-                added_by=added_by,
+                added_by=str(interaction.user),
                 attack=self.attack,
                 effects=self.effects,
                 ac=self.ac
             )
+        
             await interaction.response.send_message(
-                f"✅ Added **{self.item_name}** to the Guild Bank.",
+                f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
                 ephemeral=True
             )
+
     
         self.stop()
+
 
 
 
@@ -546,7 +629,14 @@ async def view_bank(interaction: discord.Interaction):
             # Field name is empty, text appears under the image
             embed.set_footer(text=f"Donated by: {donated_by} | {name}")
             return embed
-
+            
+        if row.get('created_image'):
+            embed = discord.Embed(
+                color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+            )
+            embed.set_image(url=row['created_image'])
+            embed.set_footer(text=f"Donated by: {donated_by} | {name}")
+            return embed
 
         # Otherwise show full info in text form
         desc = f"{row['type']} | {subtype}\n"
