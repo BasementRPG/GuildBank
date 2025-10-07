@@ -492,7 +492,8 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.add_item(self.stats_field)
         
 # -------- EFFECT
-    if item_row['type'] == "Weapon":
+    
+        if item_row['type'] == "Weapon":
             self.effects_field = discord.ui.TextInput(
                 label="Effects",
                 style=discord.TextStyle.paragraph,
