@@ -334,7 +334,7 @@ class ImageDetailsModal(discord.ui.Modal):
             self.item_id = None
             self.guild_id = interaction.guild.id
             default_name = ""
-            default_donor = "Anonymous"
+            default_donor = ""
 
         # Item Name
         self.item_name = discord.ui.TextInput(label="Item Name", default=default_name, required=True)
