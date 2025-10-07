@@ -347,7 +347,7 @@ class ImageDetailsModal(discord.ui.Modal):
     async def on_submit(self, modal_interaction: discord.Interaction):
         item_name = self.item_name.value
         donated_by = self.donated_by.value or "Anonymous"
-        added_by =str(self.interation.user)
+        added_by =getattr(self, "added_by", str(interaction.user))
         if self.is_edit:
             await update_item_db(
                 guild_id=self.guild_id,
