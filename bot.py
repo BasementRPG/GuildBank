@@ -326,14 +326,6 @@ class ItemEntryView(discord.ui.View):
                 ephemeral=True
             )
         else:  # adding new item manually
-            # 1. Generate image with text on background
-            item_text = (
-                f"Name: {self.item_name}\n"
-                f"Type: {self.item_type} | {self.subtype}\n"
-                f"Stats: {self.stats or 'N/A'}\n"
-                f"Effects: {self.effects or 'N/A'}\n"
-                f"Donated by: {self.donated_by or 'Anonymous'}"
-            )
         
             # Select background
             bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
