@@ -339,10 +339,55 @@ class ItemEntryView(discord.ui.View):
             bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
             background = Image.open(bg_path).convert("RGBA")
         
-            # Draw text
-            draw = ImageDraw.Draw(background)
-            font = ImageFont.load_default()  # adjust font path & size
-            draw.multiline_text((50, 50), item_text, fill=(255, 255, 255), font=font)
+            def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
+                draw = ImageDraw.Draw(background)
+            
+                # Load a font
+                try:
+                    font_title = ImageFont.truetype("arialbd.ttf", 28)  # bold title
+                    font_text = ImageFont.truetype("arial.ttf", 22)     # normal text
+                except:
+                    font_title = ImageFont.load_default()
+                    font_text = ImageFont.load_default()
+            
+                width, height = background.size
+            
+                # Example positions:
+                x_margin = 30
+                y = 30  # start y
+            
+                # Name at top
+                draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
+                y += 50  # spacing after title
+            
+                # Type/Subtype
+                draw.text((x_margin, y), f"{item_type} | {subtype}", fill=(200, 200, 200), font=font_text)
+                y += 35
+            
+                # Stats
+                draw.text((x_margin, y), f"Stats: {stats or 'N/A'}", fill=(255, 255, 255), font=font_text)
+                y += 35
+            
+                # Effects
+                draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_text)
+                y += 35
+            
+                # Donated by at bottom-right
+                text_donor = f"Donated by: {donated_by or 'Anonymous'}"
+                text_width, text_height = draw.textsize(text_donor, font=font_text)
+                draw.text((width - text_width - x_margin, height - text_height - 20), text_donor, fill=(180, 180, 180), font=font_text)
+            
+                return background
+                
+            background = draw_item_text(
+                background,
+                self.item_name,
+                self.item_type,
+                self.subtype,
+                self.stats,
+                self.effects,
+                self.donated_by or "Anonymous"
+            )
         
             # Save to bytes
             image_bytes = io.BytesIO()
@@ -381,9 +426,6 @@ class ItemEntryView(discord.ui.View):
 
     
         self.stop()
-
-
-
 
 
     
