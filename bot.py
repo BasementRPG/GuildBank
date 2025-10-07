@@ -603,7 +603,7 @@ async def view_bank(interaction: discord.Interaction):
         view.add_item(ViewDetailsButton(item_row=row))
         await interaction.channel.send(embed=embed, view=view)
 
-    await interaction.followup.send_message(f"✅ Sent {len(rows)} items.", ephemeral=True)
+    await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
 
 
