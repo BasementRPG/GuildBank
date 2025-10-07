@@ -1,3 +1,4 @@
+
 import os
 import discord
 from discord import app_commands
@@ -481,6 +482,19 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
             self.attack_field.disabled = True
             self.add_item(self.attack_field)
 
+#----- AC --- 
+        
+         if item_row['type'] == "Armor":
+            self.attack_field = discord.ui.TextInput(
+                label="Type | Subtype | Armor Class",
+                style=discord.TextStyle.short,
+                default=f"{item_row['type']} | {item_row['subtype']} | {item_row['ac']}",
+                required=False
+            )
+            self.attack_field.disabled = True
+            self.add_item(self.attack_field)
+
+        
         # Read-only field for Stats
         self.stats_field = discord.ui.TextInput(
             label="Stats",
