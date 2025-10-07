@@ -306,7 +306,120 @@ class ItemEntryView(discord.ui.View):
 
 
 # ------ITEM DETAILS ----
+class ItemDetailsModal(discord.ui.Modal):
+    def __init__(self, view: ItemEntryView):
+        super().__init__(title=f"{view.item_type} Details")
+        self.view = view
 
+        # Weapon
+        if view.item_type == "Weapon":
+            self.item_name = discord.ui.TextInput(
+                label="Item Name", default=view.item_name, required=True
+            )
+            self.attack = discord.ui.TextInput(
+                label="Attack / Delay", default=view.attack or "", required=True
+            )
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.donated_by = discord.ui.TextInput(
+                label="Donated by", default=view.donated_by or "", required=False
+            )
+            self.add_item(self.item_name)
+            self.add_item(self.attack)
+            self.add_item(self.stats)
+            self.add_item(self.effects)
+            self.add_item(self.donated_by)
+
+        # Armor
+        elif view.item_type == "Armor":
+            self.item_name = discord.ui.TextInput(
+                label="Item Name", default=view.item_name, required=True
+            )
+            self.ac = discord.ui.TextInput(
+                label="Armor Class", default=view.ac or "", required=True
+            )
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.donated_by = discord.ui.TextInput(
+                label="Donated by", default=view.donated_by or "", required=False
+            )
+            self.add_item(self.item_name)
+            self.add_item(self.ac)
+            self.add_item(self.stats)
+            self.add_item(self.effects)
+            self.add_item(self.donated_by)
+
+        # Consumable
+        elif view.item_type == "Consumable":
+            self.item_name = discord.ui.TextInput(
+                label="Item Name", default=view.item_name, required=True
+            )
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )
+            self.donated_by = discord.ui.TextInput(
+                label="Donated by", default=view.donated_by or "", required=False
+            )
+            self.add_item(self.item_name)
+            self.add_item(self.stats)
+            self.add_item(self.effects)
+            self.add_item(self.donated_by)
+
+        # Crafting / Misc
+        else:
+            self.item_name = discord.ui.TextInput(
+                label="Item Name", default=view.item_name, required=True
+            )
+            self.stats = discord.ui.TextInput(
+                label="Info", default=view.stats or "", style=discord.TextStyle.paragraph, required=False
+            )
+            self.donated_by = discord.ui.TextInput(
+                label="Donated by", default=view.donated_by or "", required=False
+            )
+            self.add_item(self.item_name)
+            self.add_item(self.stats)
+            self.add_item(self.donated_by)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Save values back to the view
+        self.view.item_name = self.item_name.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
+
+        if self.view.item_type == "Weapon":
+            self.view.attack = self.attack.value
+            self.view.stats = self.stats.value
+            self.view.effects = self.effects.value
+        elif self.view.item_type == "Armor":
+            self.view.ac = self.ac.value
+            self.view.stats = self.stats.value
+            self.view.effects = self.effects.value
+        elif self.view.item_type == "Consumable":
+            self.view.stats = self.stats.value
+            self.view.effects = self.effects.value
+        else:  # Crafting / Misc
+            self.view.stats = self.stats.value
+
+        await interaction.response.send_message(
+            "✅ Details saved. Click Submit when ready.", ephemeral=True
+        )
+
+
+
+
+
+
+"""
 class ItemDetailsModal(discord.ui.Modal):
     def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
@@ -464,7 +577,7 @@ class ItemDetailsModal(discord.ui.Modal):
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
         )
-
+"""
 
 
 # ---------- /view_bank Command ----------
