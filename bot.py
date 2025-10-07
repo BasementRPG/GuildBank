@@ -349,6 +349,8 @@ class ItemEntryView(discord.ui.View):
             background.save(image_bytes, format="PNG")
             reated_image = image_bytes.getvalue()
             image_bytes.close()
+
+            created_images = image_bytes.read()
         
             # Optional: save to a file locally
             # with open(f"{self.item_name}_manual.png", "wb") as f:
