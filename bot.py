@@ -449,7 +449,9 @@ class ItemDetailsModal(discord.ui.Modal):
 
     
         else:
-
+            
+            #--- MISC --- 
+            self.view.stats = self.stats.value
 
             if self.donated_by.value.strip():
                 self.view.donated_by = self.donated_by.value
