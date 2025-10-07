@@ -508,7 +508,7 @@ async def view_bank(interaction: discord.Interaction):
             )
             embed.set_image(url=row['image'])
             # Field name is empty, text appears under the image
-            embed.set_footer(text=f"Donated_by: {donated_by} | {name}")
+            embed.set_footer(text=f"Donated by: {donated_by} | {name}")
             return embed
 
 
@@ -540,7 +540,7 @@ async def view_bank(interaction: discord.Interaction):
             case _:
                 desc += f"Info: {code_block(stats)}"
 
-        desc += f"\n**Donated by:** {donated_by}"
+        desc += f"\nDonated by: {donated_by}"
 
         embed = discord.Embed(
             title=f"{emoji} {name}",
