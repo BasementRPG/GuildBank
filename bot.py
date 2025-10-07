@@ -465,13 +465,13 @@ class ItemDetailsModal(discord.ui.Modal):
 
 # ---------- /view_bank Command ----------
 
-       TYPE_COLORS = {
-        "weapon": discord.Color.red(),
-        "armor": discord.Color.blue(),
-        "consumable": discord.Color.gold(),
-        "crafting": discord.Color.green(),
-        "misc": discord.Color.dark_gray(),
-    }
+TYPE_COLORS = {
+    "weapon": discord.Color.red(),
+    "armor": discord.Color.blue(),
+    "consumable": discord.Color.gold(),
+    "crafting": discord.Color.green(),
+    "misc": discord.Color.dark_gray(),
+}
 
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
