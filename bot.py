@@ -466,7 +466,7 @@ class ItemDetailsModal(discord.ui.Modal):
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
-        super().__init__(title=item_row['name'])
+        super().__init__(title=item_row['name'] \n item_row['type] )
 
         
         # Hard text display (read-only)
@@ -479,10 +479,20 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         self.type_field.disabled = True
         self.add_item(self.type_field)
 
+        # Read-only field for Attack
+        self.stats_field = discord.ui.TextInput(
+            label="Attack/Delay",
+            style=discord.TextStyle.short,
+            default=item_row['attack'],
+            required=False
+        )
+        self.stats_field.disabled = True
+        self.add_item(self.attack_field)
+
         # Read-only field for Stats
         self.stats_field = discord.ui.TextInput(
-            label="Details",
-            style=discord.TextStyle.paragraph,
+            label="Stats",
+            style=discord.TextStyle.short,
             default=item_row['stats'],
             required=False
         )
