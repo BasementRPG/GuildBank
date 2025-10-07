@@ -469,7 +469,7 @@ class ItemDetailsModal(discord.ui.Modal):
 async def view_bank(interaction: discord.Interaction):
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT * FROM inventory WHERE guild_id=$1 AND qty >= 1 ORDER BY name",
+            "SELECT * FROM inventory WHERE guild_id=$1 ORDER BY name",
             interaction.guild.id
         )
 
@@ -477,83 +477,68 @@ async def view_bank(interaction: discord.Interaction):
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    await interaction.response.defer(thinking=True)
+    items_with_image = [r for r in rows if r['image']]
+    items_without_image = [r for r in rows if not r['image']]
 
-    TYPE_COLORS = {
-        "weapon": discord.Color.red(),
-        "armor": discord.Color.blue(),
-        "consumable": discord.Color.gold(),
-        "crafting": discord.Color.green(),
-        "misc": discord.Color.dark_gray(),
-    }
-
-    def code_block(text: str) -> str:
-        """Wrap text in Discord code block if not empty."""
-        text = (text or "").strip()
-        return f"```{text}```" if text else "```None```"
-
-    def build_embed(row):
-        item_type = (row.get('type') or "Misc").lower()
-        emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
-        name = row.get('name', 'Unknown Item')
-        subtype = row.get('subtype', 'None')
+    # Items WITH images
+    for row in items_with_image:
         donated_by = row.get('donated_by') or "Anonymous"
-        stats = row.get('stats') or ""
-        effects = row.get('effects') or ""
+        name = row['name']
+        embed = discord.Embed(color=discord.Color.blue())
+        embed.set_image(url=row['image'])
+        embed.add_field(name="\u200b", value=f"{donated_by} | {name}", inline=False)
+        await interaction.channel.send(embed=embed)
 
-        # If item has image — simplified layout
-        if row.get('image'):
-            embed = discord.Embed(
-                color=TYPE_COLORS.get(item_type, discord.Color.blurple())
-            )
-            embed.set_image(url=row['image'])
-            embed.add_field(value=f"{donated_by} | {name}", inline=False)
-            return embed
-
-        # Otherwise show full info in text form
-        desc = f"**Type:** {row['type']} | **Subtype:** {subtype}\n"
-
-        match item_type:
-            case "weapon":
-                attack = row.get('attack') or "N/A"
-                desc += (
-                    f"**Attack / Delay:** {attack}\n"
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
-                )
-            case "armor":
-                ac = row.get('ac') or "N/A"
-                desc += (
-                    f"**AC:** {ac}\n"
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
-                )
-            case "consumable":
-                desc += (
-                    f"**Stats:** {code_block(stats)}"
-                    f"**Effects:** {code_block(effects)}"
-                )
-            case "crafting" | "misc":
-                desc += f"**Stats:** {code_block(stats)}"
-            case _:
-                desc += f"**Stats:** {code_block(stats)}"
-
-        desc += f"\n**Donated by:** {donated_by}"
-
+    # Items WITHOUT images
+    for row in items_without_image:
+        item_type = row['type']
+        emoji = ITEM_TYPE_EMOJIS.get(item_type, "")
         embed = discord.Embed(
-            title=f"{emoji} {name}",
-            description=desc,
-            color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+            title=f"{emoji} {row['name']}",
+            color=discord.Color.blue()
         )
-        return embed
+        # Common info
+        desc_lines = [f"{row['type']} | {row['subtype']}"]
 
-    # Send embeds
-    for row in rows:
-        await interaction.channel.send(embed=build_embed(row))
+        # Type-specific info
+        if item_type == "Weapon":
+            if row.get('attack'):
+                desc_lines.append(f"Attack / Delay: {row['attack']}")
+            if row.get('stats'):
+                desc_lines.append(f"Stats: {row['stats']}")
+            if row.get('effects'):
+                desc_lines.append(f"Effects: {row['effects']}")
 
-    await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
+        elif item_type == "Armor":
+            if row.get('ac'):
+                desc_lines.append(f"Armor Class: {row['ac']}")
+            if row.get('stats'):
+                desc_lines.append(f"Stats: {row['stats']}")
+            if row.get('effects'):
+                desc_lines.append(f"Effects: {row['effects']}")
 
+        elif item_type == "Consumable":
+            if row.get('stats'):
+                desc_lines.append(f"Stats: {row['stats']}")
+            if row.get('effects'):
+                desc_lines.append(f"Effects: {row['effects']}")
 
+        elif item_type == "Crafting":
+            if row.get('stats'):
+                desc_lines.append(f"Info: {row['stats']}")
+
+        else:  # Misc
+            if row.get('stats'):
+                desc_lines.append(f"Info: {row['stats']}")
+
+        # Add donated by at the bottom
+        donated_by = row.get('donated_by') or "Anonymous"
+        desc_lines.append(f"Donated By: {donated_by}")
+
+        embed.description = "\n".join(desc_lines)
+        await interaction.channel.send(embed=embed)
+
+    await interaction.response.send_message(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
 
 
