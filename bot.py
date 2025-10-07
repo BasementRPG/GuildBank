@@ -566,42 +566,92 @@ class ViewDetailsButton(discord.ui.Button):
 
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
 async def view_bank(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT * FROM inventory WHERE guild_id=$1 AND qty=1 ORDER BY name",
+            "SELECT * FROM inventory WHERE guild_id=$1 AND qty >= 1 ORDER BY name",
             interaction.guild.id
         )
-   
+
     if not rows:
         await interaction.response.send_message("Guild bank is empty.", ephemeral=True)
         return
 
-    # Split items into ones with and without images
-    items_with_image = sorted([r for r in rows if r['image']], key=lambda r: r['name'].lower())
-    items_without_image = sorted([r for r in rows if not r['image']], key=lambda r: r['name'].lower())
+    await interaction.response.defer(thinking=True)
 
-    # First, send items with images
-    
-    for row in sorted(items_with_image, key=lambda r: r['name'].lower()):
-        donated_by = row.get('donated_by') or "Anonymous"
-        embed = discord.Embed(color=discord.Color.blue())
-        embed.set_image(url=row['image'])
-        embed.set_footer(text=f"Donated By: {donated_by} | {row['name']} ")
-        await interaction.channel.send(embed=embed)  # ✅ inside async function
+    items_with_image = [r for r in rows if r['image']]
+    items_without_image = [r for r in rows if not r['image']]
 
-    
-    # Then, send items without images
-    for row in items_without_image:
+    TYPE_COLORS = {
+        "weapon": discord.Color.red(),
+        "armor": discord.Color.blue(),
+        "consumable": discord.Color.gold(),
+        "crafting": discord.Color.green(),
+        "misc": discord.Color.dark_gray(),
+    }
+
+    def code_block(text: str) -> str:
+        """Wrap text in Discord code block if not empty."""
+        text = text.strip()
+        return f"```{text}```" if text else "```None```"
+
+    def build_embed(row):
+        item_type = (row.get('type') or "Misc").lower()
         emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
+        name = row.get('name', 'Unknown Item')
+        subtype = row.get('subtype', 'None')
+        donated_by = row.get('donated_by') or "Anonymous"
+        stats = row.get('stats') or ""
+        effects = row.get('effects') or ""
+        qty = row.get('qty', 1)
+
+        desc = f"**Type:** {row['type']} | **Subtype:** {subtype}\n"
+
+        # Type-specific info with code blocks
+        match item_type:
+            case "weapon":
+                attack = row.get('attack') or "N/A"
+                desc += (
+                    f"**Attack / Delay:** {attack}\n"
+                    f"**Stats:** {code_block(stats)}"
+                    f"**Effects:** {code_block(effects)}"
+                )
+            case "armor":
+                ac = row.get('ac') or "N/A"
+                desc += (
+                    f"**AC:** {ac}\n"
+                    f"**Stats:** {code_block(stats)}"
+                    f"**Effects:** {code_block(effects)}"
+                )
+            case "consumable":
+                desc += (
+                    f"**Stats:** {code_block(stats)}"
+                    f"**Effects:** {code_block(effects)}"
+                )
+            case "crafting" | "misc":
+                desc += f"**Stats:** {code_block(stats)}"
+            case _:
+                desc += f"**Stats:** {code_block(stats)}"
+
+        desc += f"\n**Donated by:** {donated_by}"
+
         embed = discord.Embed(
-            title=f"{emoji} {row['name']}",
-            description=f"{row['type']} | {row['subtype']}\n Stats:{row['stats']}\n Donated By: {row.get('donated_by', 'Unknown')}", color=discord.Color.blue())
-        view = discord.ui.View()
-        view.add_item(ViewDetailsButton(item_row=row))
-        await interaction.channel.send(embed=embed, view=view)
+            title=f"{emoji} {name}",
+            description=desc,
+            color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+        )
+        embed.set_footer(text=f"Qty: {qty}")
+
+        if row.get('image'):
+            embed.set_image(url=row['image'])
+
+        return embed
+
+    # Send embeds
+    for row in items_with_image + items_without_image:
+        await interaction.channel.send(embed=build_embed(row))
 
     await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
+
 
 
 
