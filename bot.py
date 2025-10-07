@@ -822,7 +822,7 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
                     )
 """
                     
-                    return
+                return
 
                 # Save to DB
                 await add_item_db(
