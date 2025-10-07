@@ -206,6 +206,10 @@ class ItemEntryView(discord.ui.View):
             self.item_type = existing_data['type']
             self.subtype = existing_data['subtype']
             self.stats = existing_data['stats']
+            self.ac = existing_data['ac']
+            self.attack = existing_data['attack']
+            self.effects = existing_data['effects']
+            self.donated_by = existing_data['donated_by']
             self.usable_classes = existing_data['classes'].split(", ") if existing_data['classes'] else []
 
         self.subtype_select = SubtypeSelect(self)
