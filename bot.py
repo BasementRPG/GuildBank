@@ -578,9 +578,6 @@ async def view_bank(interaction: discord.Interaction):
 
     await interaction.response.defer(thinking=True)
 
-    items_with_image = [r for r in rows if r['image']]
-    items_without_image = [r for r in rows if not r['image']]
-
     TYPE_COLORS = {
         "weapon": discord.Color.red(),
         "armor": discord.Color.blue(),
@@ -591,7 +588,7 @@ async def view_bank(interaction: discord.Interaction):
 
     def code_block(text: str) -> str:
         """Wrap text in Discord code block if not empty."""
-        text = text.strip()
+        text = (text or "").strip()
         return f"```{text}```" if text else "```None```"
 
     def build_embed(row):
@@ -602,11 +599,19 @@ async def view_bank(interaction: discord.Interaction):
         donated_by = row.get('donated_by') or "Anonymous"
         stats = row.get('stats') or ""
         effects = row.get('effects') or ""
-        qty = row.get('qty', 1)
 
+        # If item has image — simplified layout
+        if row.get('image'):
+            embed = discord.Embed(
+                color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+            )
+            embed.set_image(url=row['image'])
+            embed.add_field(name="Info", value=f"{donated_by} | {name}", inline=False)
+            return embed
+
+        # Otherwise show full info in text form
         desc = f"**Type:** {row['type']} | **Subtype:** {subtype}\n"
 
-        # Type-specific info with code blocks
         match item_type:
             case "weapon":
                 attack = row.get('attack') or "N/A"
@@ -639,18 +644,14 @@ async def view_bank(interaction: discord.Interaction):
             description=desc,
             color=TYPE_COLORS.get(item_type, discord.Color.blurple())
         )
-        embed.set_footer(text=f"Qty: {qty}")
-
-        if row.get('image'):
-            embed.set_image(url=row['image'])
-
         return embed
 
     # Send embeds
-    for row in items_with_image + items_without_image:
+    for row in rows:
         await interaction.channel.send(embed=build_embed(row))
 
     await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
+
 
 
 
