@@ -469,25 +469,15 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         super().__init__(title=f"{item_row['name']}\n{item_row['type']} | {item_row['subtype']}")
 
         
-        # Hard text display (read-only)
-        self.type_field = discord.ui.TextInput(
-            label="Type | Subtype",
-            style=discord.TextStyle.short,
-            default=f"{item_row['type']} | {item_row['subtype']}",
-            required=False
-        )
-        self.type_field.disabled = True
-        self.add_item(self.type_field)
-
-        # Read-only field for Attack
-        self.stats_field = discord.ui.TextInput(
-            label="Attack/Delay",
-            style=discord.TextStyle.short,
-            default=item_row['attack'],
-            required=False
-        )
-        self.stats_field.disabled = True
-        self.add_item(self.attack_field)
+        if item_row['type'] == "Weapon":
+            self.attack_field = discord.ui.TextInput(
+                label="Attack / Delay",
+                style=discord.TextStyle.short,
+                default=item_row.get('attack', ''),
+                required=False
+            )
+            self.attack_field.disabled = True
+            self.add_item(self.attack_field)
 
         # Read-only field for Stats
         self.stats_field = discord.ui.TextInput(
