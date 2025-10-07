@@ -466,7 +466,7 @@ class ItemDetailsModal(discord.ui.Modal):
 # ---------- Read-Only Modal ----------
 class ReadOnlyDetailsModal(discord.ui.Modal):
     def __init__(self, item_row):
-        super().__init__(title=f"{item_row['name']}\n{item_row['type']} | {item_row['subtype']}")
+        super().__init__(title=f"{item_row['name']} \n {item_row['type']} | {item_row['subtype']}")
 
 
 #----- ATTACK ------
