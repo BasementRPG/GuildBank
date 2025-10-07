@@ -463,105 +463,6 @@ class ItemDetailsModal(discord.ui.Modal):
 
 
 
-
-# ---------- Read-Only Modal ----------
-class ReadOnlyDetailsModal(discord.ui.Modal):
-    def __init__(self, item_row):
-        super().__init__(title=item_row['name'])
-
-
-#----- ATTACK ------
-        
-        if item_row['type'] == "Weapon":
-            self.attack_field = discord.ui.TextInput(
-                label="Type | Subtype | Attack/Delay",
-                style=discord.TextStyle.short,
-                default=f"{item_row['type']} | {item_row['subtype']} | {item_row['attack']}",
-                required=False
-            )
-            self.attack_field.disabled = True
-            self.add_item(self.attack_field)
-
-#----- AC --- 
-        
-        if item_row['type'] == "Armor":
-            self.ac_field = discord.ui.TextInput(
-                label="Type | Subtype | Armor Class",
-                style=discord.TextStyle.short,
-                default=f"{item_row['type']} | {item_row['subtype']} | {item_row['ac']}",
-                required=False
-            )
-            self.ac_field.disabled = True
-            self.add_item(self.ac_field)
-
-        
-        # Read-only field for Stats
-        self.stats_field = discord.ui.TextInput(
-            label="Stats",
-            style=discord.TextStyle.paragraph,
-            default=item_row['stats'],
-            required=False
-        )
-        self.stats_field.disabled = True
-        self.add_item(self.stats_field)
-        
-# -------- EFFECT
-    
-        if item_row['type'] == "Weapon" or "Armor" or "Consumable":
-            self.effects_field = discord.ui.TextInput(
-                label="Effects",
-                style=discord.TextStyle.paragraph,
-                default=item_row['effects'],
-                required=False
-            )
-            self.effects_field.disabled = True
-            self.add_item(self.effects_field)
-
-        
-        # Read-only field for Classes
-        self.classes_field = discord.ui.TextInput(
-            label="Classes",
-            style=discord.TextStyle.short,
-            default=item_row['classes'],
-            required=False
-        )
-        
-        self.classes_field.disabled = True
-        self.add_item(self.classes_field)
-
-         # Hard text display (read-only)
-        self.type_field = discord.ui.TextInput(
-            label="Donated by",
-            style=discord.TextStyle.short,
-            default=f"{item_row['donated_by']}",
-            required=False
-        )
-        self.type_field.disabled = True
-        self.add_item(self.type_field) 
-
-    async def on_submit(self, interaction: discord.Interaction):
-        # Just close the modal; no need to process input
-        await interaction.response.send_message("✅ Closed.", ephemeral=True)
-
-
-# ---------- Button ----------
-class ViewDetailsButton(discord.ui.Button):
-    def __init__(self, item_row):
-        super().__init__(label="View Details", style=discord.ButtonStyle.secondary)
-        self.item_row = item_row
-
-    async def callback(self, interaction: discord.Interaction):
-        modal = ReadOnlyDetailsModal(self.item_row)
-        try:
-            await interaction.response.send_modal(modal)
-        except discord.HTTPException as e:
-            # Fallback if modal fails
-            await interaction.followup.send("⚠ Unable to open modal.", ephemeral=True)
-
-
-
-# ---------- /view_bank Command ----------
-
 # ---------- /view_bank Command ----------
 
 @bot.tree.command(name="view_bank", description="View all items in the guild bank.")
@@ -606,7 +507,7 @@ async def view_bank(interaction: discord.Interaction):
                 color=TYPE_COLORS.get(item_type, discord.Color.blurple())
             )
             embed.set_image(url=row['image'])
-            embed.add_field(name="Info", value=f"{donated_by} | {name}", inline=False)
+            embed.add_field(value=f"{donated_by} | {name}", inline=False)
             return embed
 
         # Otherwise show full info in text form
