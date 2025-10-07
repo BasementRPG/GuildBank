@@ -473,7 +473,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
             self.attack_field = discord.ui.TextInput(
                 label="Attack / Delay",
                 style=discord.TextStyle.short,
-                default=item_row.get('attack', ''),
+                default==item_row['attack'],
                 required=False
             )
             self.attack_field.disabled = True
@@ -482,7 +482,7 @@ class ReadOnlyDetailsModal(discord.ui.Modal):
         # Read-only field for Stats
         self.stats_field = discord.ui.TextInput(
             label="Stats",
-            style=discord.TextStyle.short,
+            style=discord.TextStyle.paragraph,
             default=item_row['stats'],
             required=False
         )
