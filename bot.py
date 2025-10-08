@@ -32,7 +32,7 @@ BG_FILES = {
     "Armor": "assets/backgrounds/bg_weapon.png",
     "Consumable": "assets/backgrounds/bg_weapon.png",
     "Crafting": "assets/backgrounds/bg_weapon.png",
-    "Misc": "assets/backgrounds/bg_weapon.png"
+    "Misc": "assets/backgrounds/bg_weapon.png",
     "Jewlery": "assests/backgrounds/bg_weapon.png"
 }
 
