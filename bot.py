@@ -326,10 +326,12 @@ class ItemEntryView(discord.ui.View):
                 ephemeral=True
             )
         else:  # adding new item manually
-        
+            EMBED_WIDTH = 600
+            EMBED_HEIGHT = 300
             # Select background
             bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
             background = Image.open(bg_path).convert("RGBA")
+            background = background.resize((EMBED_WIDTH, EMBEDZ_HEIGHT))
         
             def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
