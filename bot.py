@@ -42,8 +42,8 @@ ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
 CONSUMABLE_SUBTYPES = ["Drink", "Food", "Other", "Potion", "Scroll"]
 CRAFTING_SUBTYPES = ["Unknown", "Raw", "Refined"]
 MISC_SUBTYPES = ["Quest Item", "Unknown"]
-
-CLASS_OPTIONS = ["Archer", "Bard", "Beastmaster", "Cleric", "Druid", "Elementalist", "Enchanter", "Fighter", "Inquisitor", "Monk", "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman", "Spellblade", "Wizard"]
+RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
+CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -51,17 +51,17 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
+async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ''', guild_id, name, type_, subtype, stats, classes, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ''', guild_id, name, type_, subtype, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
+        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
 async def get_item_by_name(guild_id, name):
@@ -232,6 +232,38 @@ class ClassesSelect(discord.ui.Select):
 
         await interaction.response.edit_message(view=self.view)
 
+class RaceSelect(discord.ui.Select):
+    def __init__(self, parent_view):
+        self.parent_view = parent_view
+
+        # Always show all options
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for r in RACE_OPTIONS]
+
+        super().__init__(
+            placeholder="Select usable race (multi)",
+            options=options,
+            min_values=0,
+            max_values=len(options)
+        )
+
+        # Preselect current race
+        if self.parent_view.usable_race:
+            self.default = True
+
+    async def callback(self, interaction: discord.Interaction):
+        # If All is selected, ignore other selections
+        if "All" in self.values:
+            self.view.usable_race = ["All"]
+        else:
+            # If other race selected while All is in previous selection, remove All
+            self.view.usable_race = self.values
+
+        # Update the dropdown so selections are visible
+        for option in self.options:
+            option.default = option.label in self.view.usable_race
+
+        await interaction.response.edit_message(view=self.view)
+
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
         super().__init__(timeout=None)
@@ -239,6 +271,7 @@ class ItemEntryView(discord.ui.View):
         self.item_type = item_type
         self.subtype = None
         self.usable_classes = []
+        self.usable_race = []
         self.item_name = ""
         self.stats = ""
         self.item_id = item_id
@@ -258,13 +291,16 @@ class ItemEntryView(discord.ui.View):
             self.effects = existing_data['effects']
             self.donated_by = existing_data['donated_by']
             self.usable_classes = existing_data['classes'].split(", ") if existing_data['classes'] else []
+            self.usable_race = existing_data['race'].split(", ") if existing_data['race'] else []
 
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
 
         self.classes_select = ClassesSelect(self)
         self.add_item(self.classes_select)
-
+        
+        self.race_select = RaceSelect(self)
+        self.add_item(self.race_select)
  
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
@@ -294,6 +330,7 @@ class ItemEntryView(discord.ui.View):
     async def submit_item(self, interaction: discord.Interaction):
         # Ensure all fields are up-to-date from the modal
         classes_str = ", ".join(self.usable_classes)
+        race_str = ", ".join(self.usable_race)
         donor = self.donated_by or "Anonymous"
         added_by = str(interaction.user)
     
@@ -304,6 +341,7 @@ class ItemEntryView(discord.ui.View):
             "subtype": self.subtype,
             "stats": self.stats,
             "classes": classes_str,
+            "race": race_str,
             "donated_by": donor,
             "added_by": added_by
         }
@@ -345,10 +383,11 @@ class ItemEntryView(discord.ui.View):
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 20)   # for effects
-                font_ac = ImageFont.truetype("assets/Winthorpe.ttf", 18)     # for ac by
+                font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for ac by
                 font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 18)     # for attack by
-                font_class = ImageFont.truetype("assets/Winthorpe.ttf", 18)     # for class by
-            
+                font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for class by
+                font_race = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for race by
+                
                 width, height = background.size
             
                 # Example positions:
@@ -371,17 +410,26 @@ class ItemEntryView(discord.ui.View):
                     draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                     y += 25
 
-                
-                # Stats
-                draw.text((x, y), f"STR: +1: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
-                y += 25
+                if self.stats != "":
+                    # Stats
+                    draw.text((x, y), f"STR: +1: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
+                    y += 25
 
                 if self.effects != "":
                     # Effects
                     draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                     y += 25
-                
-                        
+                if self.classes != "":
+                    # Effects
+                    draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
+                    y += 25
+                if self.race != "":
+                    # Effects
+                    draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
+                    y += 25
+
+
+                    
                 return background
                 
             background = draw_item_text(
@@ -410,8 +458,9 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
-                image=cdn_url,  # original image field empty
-                created_images=None,
+                race=", ".join(self.usable_race) or "All",
+                image=NONE
+                created_images=cdn_url,  # original image field empty
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
                 added_by=str(interaction.user),
@@ -490,6 +539,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 subtype="Image",
                 stats="",
                 classes="All",
+                race="All",
                 image=self.view.image,
                 donated_by=donated_by,
                 qty=1,
@@ -664,36 +714,10 @@ async def view_bank(interaction: discord.Interaction):
             embed.set_image(url=row['image'])
             return embed, None
 
-        # Otherwise, text-only
-        desc = f"{row['type']} | {subtype}\n"
-        match item_type:
-            case "weapon":
-                attack = row.get('attack') or "N/A"
-                desc += (
-                    f"Attack / Delay: {attack}\n"
-                    f"Stats: {code_block(stats)}"
-                    f"Effects: {code_block(effects)}"
-                )
-            case "armor":
-                ac = row.get('ac') or "N/A"
-                desc += (
-                    f"AC: {ac}\n"
-                    f"Stats: {code_block(stats)}"
-                    f"Effects: {code_block(effects)}"
-                )
-            case "consumable":
-                desc += (
-                    f"Stats: {code_block(stats)}"
-                    f"Effects: {code_block(effects)}"
-                )
-            case "crafting" | "misc":
-                desc += f"Info: {code_block(stats)}"
-            case _:
-                desc += f"Info: {code_block(stats)}"
-
-        desc += f"\nDonated by: {donated_by}"
-        embed.description = desc
-        return embed, None
+              # Handle uploaded created_images (URL)
+        if row.get('created_images'):
+            embed.set_image(url=row['created_images'])
+            return embed, None
 
     # Send embeds
     for row in rows:
