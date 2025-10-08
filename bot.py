@@ -407,7 +407,12 @@ class ItemEntryView(discord.ui.View):
                 color=discord.Color.blue()
             )
             embed.set_image(url=f"attachment://{self.item_name}_preview.png")
-        
+
+            # --- Upload preview to Discord temporarily to get a CDN URL ---
+            message = await interaction.channel.send(file=file, delete_after=1)  # deletes after 1s
+            cdn_url = message.attachments[0].url
+
+            
             # 6. Save item to DB including full-size image
             await add_item_db(
                 guild_id=interaction.guild.id,
@@ -416,8 +421,8 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
-                image=None,  # original image field empty
-                created_images=created_images_bytes,  # full-size bytes for DB
+                image=cdn_url,  # original image field empty
+                created_images=None,
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
                 added_by=str(interaction.user),
@@ -427,10 +432,11 @@ class ItemEntryView(discord.ui.View):
             )
         
             # 7. Send embed with resized preview
+            # --- Send the embed using the CDN URL ---
+            embed.set_image(url=cdn_url)
             await interaction.response.send_message(
                 content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
                 embed=embed,
-                file=file,
                 ephemeral=True
             )
         self.stop()
