@@ -174,10 +174,6 @@ class SubtypeSelect(discord.ui.Select):
         if not self.parent_view.item_type:
             print("ERROR: item_type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
-        elif self.parent_view.item_type == "Weapon":
-            options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
-        elif self.parent_view.item_type == "Equipment":
-            options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
         elif self.parent_view.item_type == "Crafting":
             options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
         elif self.parent_view.item_type == "Consumable":
@@ -192,6 +188,31 @@ class SubtypeSelect(discord.ui.Select):
 
         super().__init__(placeholder="Select Subtype", options=options)
 
+class SlotSelect(discord.ui.Select):
+    def __init__(self, parent_view):
+        self.parent_view = parent_view
+        
+        # Add debugging
+        print(f"DEBUG: SlotSelect init - item_type: {self.parent_view.item_type}")
+        
+        # Add safety check
+        if not self.parent_view.item_type:
+            print("ERROR: item_type is None!")
+            options = [discord.SelectOption(label="Error", value="error")]
+        elif self.parent_view.item_type == "Weapon":
+            options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
+        elif self.parent_view.item_type == "Equipment":
+            options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
+
+        # ✅ Mark selected subtype as default
+        for opt in options:
+            if opt.label == self.parent_view.subtype:
+                opt.default = True
+
+        super().__init__(placeholder="Select Slot", options=options)
+
+
+    
     async def callback(self, interaction: discord.Interaction):
         try:
             print(f"DEBUG: SubtypeSelect callback - values: {self.values}")
@@ -280,6 +301,7 @@ class ItemEntryView(discord.ui.View):
         self.author = author
         self.item_type = item_type
         self.subtype = None
+        self.slot = None
         self.usable_classes = []
         self.usable_race = []
         self.item_name = ""
@@ -295,6 +317,7 @@ class ItemEntryView(discord.ui.View):
             self.item_name = existing_data['name']
             self.item_type = existing_data['type']
             self.subtype = existing_data['subtype']
+            self.slot = existing_data['slot']
             self.stats = existing_data['stats']
             self.ac = existing_data['ac']
             self.attack = existing_data['attack']
@@ -303,11 +326,16 @@ class ItemEntryView(discord.ui.View):
             self.usable_classes = existing_data['classes'].split(", ") if existing_data['classes'] else []
             self.usable_race = existing_data['race'].split(", ") if existing_data['race'] else []
 
-        self.subtype_select = SubtypeSelect(self)
-        self.add_item(self.subtype_select)
+        if self.item_type in ["Crafting","Consumable","Misc"]
+            self.subtype_select = SubtypeSelect(self)
+            self.add_item(self.subtype_select)
 
         
         if self.item_type in ["Weapon", "Equipment"]:
+            
+            self.slot_select = SlotSelect(self)
+            self.add_item(self.slot_select)
+            
             self.classes_select = ClassesSelect(self)
             self.add_item(self.classes_select)
             
