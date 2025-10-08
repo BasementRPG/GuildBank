@@ -406,7 +406,12 @@ class ItemEntryView(discord.ui.View):
                 effects=self.effects,
                 ac=self.ac
             )
-
+            embed = discord.Embed(
+                title=f"{self.item_name}",
+                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
+                color=discord.Color.blue()
+            )
+            embed.set_image(url=cdn_url)
             
             await interaction.response.send_message(
                 content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
