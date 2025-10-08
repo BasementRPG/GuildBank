@@ -47,7 +47,7 @@ MISC_SUBTYPES = ["Quest Item", "Unknown"]
 EQUIPMENT_SUBTYPES = ["Ammo","Back","Chest","Ear","Face","Feet","Finger","Hands","Head","Legs","Neck","Primary","Range","Secondary","Shirt","Shoulders","Waist","Wrist"]
 WEAPON_SUBTYPES = ["Ammo","Primary", "Range","Secondary"]
 WEAPON_SKILLTYPE = ["One Handed", "Two Handed"]
-WEAPON_SKILL = ["ARC","BLG",""SLA","STA","THR"]
+WEAPON_SKILL = ["ARC","BLG","SLA","STA","THR"]
 
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
