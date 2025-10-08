@@ -20,7 +20,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 ITEM_TYPE_EMOJIS = {
     "Weapon": "⚔️",
     "Crafting": "⚒️",
-    "Armor": "🛡️",
+    "Equipment": "🛡️",
     "Consumable": "🧪",
     "Misc": "🔑",
     "Funds": "💰"
@@ -29,7 +29,7 @@ ITEM_TYPE_EMOJIS = {
 
 BG_FILES = {
     "Weapon": "assets/backgrounds/bg_weapon.png",
-    "Armor": "assets/backgrounds/bg_weapon.png",
+    "Equipment": "assets/backgrounds/bg_weapon.png",
     "Consumable": "assets/backgrounds/bg_weapon.png",
     "Crafting": "assets/backgrounds/bg_weapon.png",
     "Misc": "assets/backgrounds/bg_weapon.png",
@@ -38,15 +38,20 @@ BG_FILES = {
 
 
 
-ITEM_TYPES = ["Armor", "Crafting", "Consumable", "Misc", "Weapon"]
-WEAPON_SUBTYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
-ARMOR_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
+ITEM_TYPES = ["Equipment", "Crafting", "Consumable", "Equipment", "Misc", "Weapon"]
+WEAPON_TYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
+ARMORTYPES_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
 CONSUMABLE_SUBTYPES = ["Drink", "Food", "Other", "Potion", "Scroll"]
 CRAFTING_SUBTYPES = ["Unknown", "Raw", "Refined"]
 MISC_SUBTYPES = ["Quest Item", "Unknown"]
+EQUIPMENT_SUBTYPES = ["Ammo","Back","Chest","Ear","Face","Feet","Finger","Hands","Head","Legs","Neck","Primary","Range","Secondary","Shirt","Shoulders","Waist","Wrist"]
+WEAPON_SUBTYPES = ["Ammo","Primary", "Range","Secondary"]
+WEAPON_SKILLTYPE = ["One Handed", "Two Handed"]
+WEAPON_SKILL = ["ARC","BLG",""SLA","STA","THR"]
+
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
-
+SLOT_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 
 
 intents = discord.Intents.default()
@@ -171,8 +176,8 @@ class SubtypeSelect(discord.ui.Select):
             options = [discord.SelectOption(label="Error", value="error")]
         elif self.parent_view.item_type == "Weapon":
             options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
-        elif self.parent_view.item_type == "Armor":
-            options = [discord.SelectOption(label=s, value=s) for s in ARMOR_SUBTYPES]
+        elif self.parent_view.item_type == "Equipment":
+            options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
         elif self.parent_view.item_type == "Crafting":
             options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
         elif self.parent_view.item_type == "Consumable":
@@ -302,7 +307,7 @@ class ItemEntryView(discord.ui.View):
         self.add_item(self.subtype_select)
 
         
-        if self.item_type in ["Weapon", "Armor"]:
+        if self.item_type in ["Weapon", "Equipment"]:
             self.classes_select = ClassesSelect(self)
             self.add_item(self.classes_select)
             
@@ -356,7 +361,7 @@ class ItemEntryView(discord.ui.View):
         if self.item_type == "Weapon":
             fields_to_update["attack"] = self.attack
             fields_to_update["effects"] = self.effects
-        elif self.item_type == "Armor":
+        elif self.item_type == "Equipment":
             fields_to_update["ac"] = self.ac
             fields_to_update["effects"] = self.effects
         elif self.item_type == "Consumable":
@@ -406,7 +411,7 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
                 x = 110
 
-                if self.item_type == "Armor":
+                if self.item_type == "Equipment":
                     # Slot
                     ac = self.ac
                     draw.text((x, y), f"Slot: {ac}", fill=(255, 255, 255), font=font_ac)
@@ -591,8 +596,8 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.effects)
             self.add_item(self.donated_by)
 
-        # Armor
-        elif view.item_type == "Armor":
+        # Equipment
+        elif view.item_type == "Equipment":
             self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
             )
@@ -657,7 +662,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.view.attack = self.attack.value
             self.view.stats = self.stats.value
             self.view.effects = self.effects.value
-        elif self.view.item_type == "Armor":
+        elif self.view.item_type == "Equipment":
             self.view.ac = self.ac.value
             self.view.stats = self.stats.value
             self.view.effects = self.effects.value
@@ -696,7 +701,7 @@ async def view_bank(interaction: discord.Interaction):
 
     TYPE_COLORS = {
         "weapon": discord.Color.red(),
-        "armor": discord.Color.blue(),
+        "equipment": discord.Color.blue(),
         "consumable": discord.Color.gold(),
         "crafting": discord.Color.green(),
         "misc": discord.Color.dark_gray(),
@@ -749,7 +754,7 @@ async def view_bank(interaction: discord.Interaction):
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
 @app_commands.describe(item_type="Type of the item", image="Optional image upload")
 @app_commands.choices(item_type=[
-    app_commands.Choice(name="Armor", value="Armor"),
+    app_commands.Choice(name="Equipment", value="Equipment"),
     app_commands.Choice(name="Crafting", value="Crafting"),
     app_commands.Choice(name="Consumable", value="Consumable"),
     app_commands.Choice(name="Misc", value="Misc"),
