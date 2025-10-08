@@ -300,6 +300,9 @@ class ItemEntryView(discord.ui.View):
 
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
+
+    async def item_type_changed(self, interaction: discord.Interaction, new_type: str):
+        self.item_type = new_type
         
         if self.item_type in ["Weapon" or "Armor"]:
             self.classes_select = ClassesSelect(self)
