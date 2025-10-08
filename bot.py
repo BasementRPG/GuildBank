@@ -336,7 +336,7 @@ class ItemEntryView(discord.ui.View):
             
                 # Load a fontWry
                 # Example fonts
-                font_title = ImageFont.truetype("assets/WinthorpeSc.ttf", 30)   # for the item name
+                font_title = ImageFont.truetype("assets/WinthorpeSc.ttf", 28)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 24)      # for type/subtype
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 18)   # for effects
@@ -363,7 +363,7 @@ class ItemEntryView(discord.ui.View):
                 # Effects
                 draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                 y += 35
-            
+            """
                 # Donated by at bottom-right
                 text_donor = f"Donated by: {donated_by or 'Anonymous'}"
                 
@@ -372,7 +372,7 @@ class ItemEntryView(discord.ui.View):
                 text_height = bbox[3] - bbox[1]
                 
                 draw.text((width - text_width - x_margin, height - text_height - 20), text_donor, fill=(180, 180, 180), font=font_donor)
-            
+            """
                 return background
                 
             background = draw_item_text(
