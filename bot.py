@@ -384,31 +384,7 @@ class ItemEntryView(discord.ui.View):
             created_images = io.BytesIO()
             background.save(created_images, format="PNG")
             created_images.seek(0)
-            created_images_bytes = created_images.read()
-            created_images.close()
-        
-            # 4. Resize image for embed preview
-            max_width = 700
-            max_height = 300
-            ratio = min(max_width / background.width, max_height / background.height)
-            embed_width = int(background.width * ratio)
-            embed_height = int(background.height * ratio)
-            background_preview = background.resize((embed_width, embed_height), Image.Resampling.LANCZOS)
-        
-            embed_bytes = io.BytesIO()
-            background_preview.save(embed_bytes, format="PNG")
-            embed_bytes.seek(0)
-        
-            # 5. Create Discord embed with preview image
-            file = discord.File(embed_bytes, filename=f"{self.item_name}.png")
-            embed = discord.Embed(
-                title=f"{self.item_name}",
-                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
-                color=discord.Color.blue()
-            )
-            embed.set_image(url=f"attachment://{self.item_name}_preview.png")
-
-            # --- Upload preview to Discord temporarily to get a CDN URL ---
+            file = discord.File(created_image, filename=f"{self.item_name}.png")
             message = await interaction.channel.send(file=file, delete_after=1)  # deletes after 1s
             cdn_url = message.attachments[0].url
 
@@ -430,9 +406,7 @@ class ItemEntryView(discord.ui.View):
                 effects=self.effects,
                 ac=self.ac
             )
-        
-            # 7. Send embed with resized preview
-            # --- Send the embed using the CDN URL ---
+
             embed.set_image(url=cdn_url)
             await interaction.response.send_message(
                 content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
