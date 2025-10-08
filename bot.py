@@ -378,23 +378,34 @@ class ItemEntryView(discord.ui.View):
                 self.donated_by or "Anonymous"
             )
         
-            MAX_EMBED_WIDTH = 600
-            MAX_EMBED_HEIGHT = 300
-            width, height = background.size
-            ratio = min(MAX_EMBED_WIDTH / width, MAX_EMBED_HEIGHT / height, 1.0)
-            embed_image = background.resize((int(width * ratio), int(height * ratio)), Image.Resampling.LANCZOS)
-    
-            # Convert both images to bytes
-            full_bytes = io.BytesIO()
-            background.save(full_bytes, format="PNG")
-            full_bytes.seek(0)
-    
+            created_images = io.BytesIO()
+            background.save(created_images, format="PNG")
+            created_images.seek(0)
+            created_images_bytes = created_images.read()
+            created_images.close()
+        
+            # 4. Resize image for embed preview
+            max_width = 700
+            max_height = 300
+            ratio = min(max_width / background.width, max_height / background.height)
+            embed_width = int(background.width * ratio)
+            embed_height = int(background.height * ratio)
+            background_preview = background.resize((embed_width, embed_height), Image.Resampling.LANCZOS)
+        
             embed_bytes = io.BytesIO()
-            embed_image.save(embed_bytes, format="PNG")
-            created_images=embed_bytes.read()
+            background_preview.save(embed_bytes, format="PNG")
             embed_bytes.seek(0)
         
-            # 2. Save all info to database, including created_images
+            # 5. Create Discord embed with preview image
+            file = discord.File(embed_bytes, filename=f"{self.item_name}.png")
+            embed = discord.Embed(
+                title=f"{self.item_name}",
+                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
+                color=discord.Color.blue()
+            )
+            embed.set_image(url=f"attachment://{self.item_name}.png")
+        
+            # 6. Save item to DB including full-size image
             await add_item_db(
                 guild_id=interaction.guild.id,
                 name=self.item_name,
@@ -403,7 +414,7 @@ class ItemEntryView(discord.ui.View):
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
                 image=None,  # original image field empty
-                created_images=created_images,  # store bytes directly
+                created_images=created_images_bytes,  # full-size bytes for DB
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
                 added_by=str(interaction.user),
@@ -411,30 +422,14 @@ class ItemEntryView(discord.ui.View):
                 effects=self.effects,
                 ac=self.ac
             )
-           file = discord.File(io.BytesIO(created_images), filename=f"{self.item_name}.png")
         
-            embed = discord.Embed(
-                title=f"{self.item_name}",
-                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
-                color=discord.Color.blue()
-            )
-            embed.set_image(url=f"attachment://{self.item_name}.png")
+            # 7. Send embed with resized preview
             await interaction.response.send_message(
-                f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
+                content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
+                embed=embed,
+                file=file,
                 ephemeral=True
             )
-
-    
-        self.stop()
-
-
-    
-    async def reset_entry(self, interaction: discord.Interaction):
-        self.subtype = None
-        self.usable_classes = []
-        self.item_name = ""
-        self.stats = ""
-        await interaction.response.send_message("Entry canceled and reset.", ephemeral=True)
         self.stop()
 
 
