@@ -301,7 +301,7 @@ class ItemEntryView(discord.ui.View):
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
         
-        if self.item_type in ["Weapon" or "Armor"]:
+        if self.item_type == ["Weapon" or "Armor"]:
             self.classes_select = ClassesSelect(self)
             self.add_item(self.classes_select)
             
