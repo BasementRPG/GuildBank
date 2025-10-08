@@ -60,17 +60,17 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
+async def add_item_db(guild_id, name, type_, subtype=None, slot=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        ''', guild_id, name, type_, subtype, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, name, type, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ''', guild_id, name, type_, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
+        rows = await conn.fetch("SELECT id, name, type, subtype, slot, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
 async def get_item_by_name(guild_id, name):
@@ -126,7 +126,7 @@ async def delete_item_db(guild_id, item_id):
 
 
 
-async def generate_item_image(item_name, item_type, subtype, stats, effects, donated_by):
+async def generate_item_image(item_name, item_type, subtype, slot, stats, effects, donated_by):
     # Create a base image
     width, height = 512, 256
     background_color = (30, 30, 30)  # dark gray
@@ -206,7 +206,7 @@ class SlotSelect(discord.ui.Select):
 
         # ✅ Mark selected subtype as default
         for opt in options:
-            if opt.label == self.parent_view.subtype:
+            if opt.label == self.parent_view.slot:
                 opt.default = True
 
         super().__init__(placeholder="Select Slot", options=options)
@@ -379,6 +379,7 @@ class ItemEntryView(discord.ui.View):
             "name": self.item_name,
             "type": self.item_type,
             "subtype": self.subtype,
+            "slot": self.slot,
             "stats": self.stats,
             "classes": classes_str,
             "race": race_str,
@@ -414,13 +415,14 @@ class ItemEntryView(discord.ui.View):
             background = Image.open(bg_path).convert("RGBA")
             
         
-            def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
+            def draw_item_text(background, item_name, item_type, subtype, slot, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
             
                 # Load a fontWry
                 # Example fonts
                 font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
+                font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
                 font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
@@ -481,6 +483,7 @@ class ItemEntryView(discord.ui.View):
                 self.item_name,
                 self.item_type,
                 self.subtype,
+                self.slot,
                 self.stats,
                 self.effects,
                 self.donated_by or "Anonymous"
@@ -500,6 +503,7 @@ class ItemEntryView(discord.ui.View):
                 name=self.item_name,
                 type_=self.item_type,
                 subtype=self.subtype,
+                slot=self.slot,
                 stats=self.stats,
                 classes=", ".join(self.usable_classes),
                 race=", ".join(self.usable_race),
@@ -581,6 +585,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 name=item_name,
                 type_="Image",
                 subtype="Image",
+                slot="",
                 stats="",
                 classes="",
                 race="",
