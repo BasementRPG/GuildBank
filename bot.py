@@ -28,10 +28,10 @@ ITEM_TYPE_EMOJIS = {
 
 BG_FILES = {
     "Weapon": "assets/backgrounds/bg_weapon.png",
-    "Armor": "assets/backgrounds/bg_armor.png",
-    "Consumable": "assets/backgrounds/bg_consumable.png",
-    "Crafting": "assets/backgrounds/bg_crafting.png",
-    "Misc": "assets/backgrounds/bg_misc.png"
+    "Armor": "assets/backgrounds/bg_weapon.png",
+    "Consumable": "assets/backgrounds/bg_weapon.png",
+    "Crafting": "assets/backgrounds/bg_weapon.png",
+    "Misc": "assets/backgrounds/bg_weapon.png"
 }
 
 
