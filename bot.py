@@ -286,7 +286,10 @@ class ItemEntryView(discord.ui.View):
         modal = ItemDetailsModal(self)
         await interaction.response.send_modal(modal)
 
-    
+    async def reset_entry(self, interaction: discord.Interaction):
+        """Cancel the item entry and close the view."""
+        await interaction.response.send_message("❌ Item entry canceled.", ephemeral=True)
+        self.stop()    
  
     async def submit_item(self, interaction: discord.Interaction):
         # Ensure all fields are up-to-date from the modal
