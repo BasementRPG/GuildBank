@@ -459,7 +459,7 @@ class ItemEntryView(discord.ui.View):
                 stats=self.stats,
                 classes=", ".join(self.usable_classes) or "All",
                 race=", ".join(self.usable_race) or "All",
-                image=NONE,
+                image=None,
                 created_images=cdn_url,  # original image field empty
                 donated_by=self.donated_by or "Anonymous",
                 qty=1,
