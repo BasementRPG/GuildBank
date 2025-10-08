@@ -371,7 +371,7 @@ class ItemEntryView(discord.ui.View):
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]
                 
-                draw.text((width - text_width - x_margin, height - text_height - 20), text_donor, fill=(180, 180, 180), font=font_text)
+                draw.text((width - text_width - x_margin, height - text_height - 20), text_donor, fill=(180, 180, 180), font=font_donor)
             
                 return background
                 
