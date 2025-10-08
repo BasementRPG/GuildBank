@@ -388,8 +388,8 @@ class ItemEntryView(discord.ui.View):
             created_images.close()
         
             # 4. Resize image for embed preview
-            max_width = 350
-            max_height = 150
+            max_width = 700
+            max_height = 300
             ratio = min(max_width / background.width, max_height / background.height)
             embed_width = int(background.width * ratio)
             embed_height = int(background.height * ratio)
@@ -666,9 +666,40 @@ async def view_bank(interaction: discord.Interaction):
 
         # Handle created_images (raw bytes)
         if row.get('created_images'):
-            file = discord.File(io.BytesIO(row['created_images']), filename=f"{name}.png")
-            embed.set_image(url=f"attachment://{name}.png")
-            return embed, file
+            try:
+                image_bytes = io.BytesIO(row['created_images'])
+                full_image = Image.open(image_bytes)
+
+                # --- Resize image for preview (safe for embeds) ---
+                max_width = 400
+                max_height = 200
+                ratio = min(max_width / full_image.width, max_height / full_image.height)
+                preview_image = full_image.resize(
+                    (int(full_image.width * ratio), int(full_image.height * ratio)),
+                    Image.Resampling.LANCZOS
+                )
+
+                # Save both preview and full image
+                preview_bytes = io.BytesIO()
+                preview_image.save(preview_bytes, format="PNG")
+                preview_bytes.seek(0)
+
+                full_bytes = io.BytesIO()
+                full_image.save(full_bytes, format="PNG")
+                full_bytes.seek(0)
+
+                preview_file = discord.File(preview_bytes, filename=f"{name}_preview.png")
+                full_file = discord.File(full_bytes, filename=f"{name}_full.png")
+
+                # --- Embed setup ---
+                embed.set_image(url=f"attachment://{name}_preview.png")
+                embed.add_field(
+                    name="Full Image",
+                    value=f"[Click to view full size](attachment://{name}_full.png)",
+                    inline=False
+                )
+
+                return embed, [preview_file, full_file]
 
         # Handle uploaded images (URL)
         if row.get('image'):
