@@ -362,7 +362,8 @@ class ItemEntryView(discord.ui.View):
 
                 if self.item_type == "Armor":
                     # AC
-                    draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_stats)
+                    ac = self.ac
+                    draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                     y += 35
 
                 
