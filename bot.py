@@ -407,9 +407,7 @@ class ItemEntryView(discord.ui.View):
                 ac=self.ac
             )
             embed = discord.Embed(
-                title=f"{self.item_name}",
-                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
-                color=discord.Color.blue()
+                title=f"{self.item_name}", color=discord.Color.blue()
             )
             embed.set_image(url=cdn_url)
             
