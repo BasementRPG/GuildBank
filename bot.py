@@ -353,21 +353,21 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
             
                 # Type/Subtype
-                draw.text((x_margin, y), f"{item_type} | {subtype}", fill=(200, 200, 200), font=font_text)
+                draw.text((x_margin, y), f"{item_type} | {subtype}", fill=(200, 200, 200), font=font_type)
                 y += 35
             
                 # Stats
-                draw.text((x_margin, y), f"Stats: {stats or 'N/A'}", fill=(255, 255, 255), font=font_text)
+                draw.text((x_margin, y), f"Stats: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
                 y += 35
             
                 # Effects
-                draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_text)
+                draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                 y += 35
             
                 # Donated by at bottom-right
                 text_donor = f"Donated by: {donated_by or 'Anonymous'}"
                 
-                bbox = draw.textbbox((0, 0), text_donor, font=font_text)
+                bbox = draw.textbbox((0, 0), text_donor, font=font_donor)
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]
                 
