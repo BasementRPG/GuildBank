@@ -740,12 +740,14 @@ async def view_bank(interaction: discord.Interaction):
         return embed, None
 
     # Send embeds
-    for row in rows:
-        embed, file = await build_embed_with_file(row)
-        if file:
-            await interaction.channel.send(embed=embed, file=file)
-        else:
-            await interaction.channel.send(embed=embed)
+for row in rows:
+    embed, files = await build_embed_with_file(row)
+    if isinstance(files, list):
+        await interaction.channel.send(embed=embed, files=files)
+    elif isinstance(files, discord.File):
+        await interaction.channel.send(embed=embed, file=files)
+    else:
+        await interaction.channel.send(embed=embed)
 
     await interaction.followup.send(f"✅ Sent {len(rows)} items.", ephemeral=True)
 
