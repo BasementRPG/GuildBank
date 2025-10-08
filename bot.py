@@ -237,7 +237,7 @@ class RaceSelect(discord.ui.Select):
         self.parent_view = parent_view
 
         # Always show all options
-        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for r in RACE_OPTIONS]
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=r) for r in RACE_OPTIONS]
 
         super().__init__(
             placeholder="Select usable race (multi)",
