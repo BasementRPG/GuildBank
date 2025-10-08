@@ -326,7 +326,7 @@ class ItemEntryView(discord.ui.View):
             self.usable_classes = existing_data['classes'].split(", ") if existing_data['classes'] else []
             self.usable_race = existing_data['race'].split(", ") if existing_data['race'] else []
 
-        if self.item_type in ["Crafting","Consumable","Misc"]
+        if self.item_type in ["Crafting","Consumable","Misc"]:
             self.subtype_select = SubtypeSelect(self)
             self.add_item(self.subtype_select)
 
