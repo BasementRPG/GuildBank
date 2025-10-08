@@ -363,16 +363,9 @@ class ItemEntryView(discord.ui.View):
                 # Effects
                 draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                 y += 35
-            """
-                # Donated by at bottom-right
-                text_donor = f"Donated by: {donated_by or 'Anonymous'}"
-                
-                bbox = draw.textbbox((0, 0), text_donor, font=font_donor)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                
-                draw.text((width - text_width - x_margin, height - text_height - 20), text_donor, fill=(180, 180, 180), font=font_donor)
-            """
+            
+
+            
                 return background
                 
             background = draw_item_text(
