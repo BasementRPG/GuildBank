@@ -388,8 +388,8 @@ class ItemEntryView(discord.ui.View):
             created_images.close()
         
             # 4. Resize image for embed preview
-            max_width = 700
-            max_height = 300
+            max_width = 350
+            max_height = 150
             ratio = min(max_width / background.width, max_height / background.height)
             embed_width = int(background.width * ratio)
             embed_height = int(background.height * ratio)
@@ -406,7 +406,7 @@ class ItemEntryView(discord.ui.View):
                 description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
                 color=discord.Color.blue()
             )
-            embed.set_image(url=f"attachment://{self.item_name}.png")
+            embed.set_image(url=f"attachment://{self.item_name}_preview.png")
         
             # 6. Save item to DB including full-size image
             await add_item_db(
