@@ -411,9 +411,14 @@ class ItemEntryView(discord.ui.View):
                 effects=self.effects,
                 ac=self.ac
             )
-            file_for_embed = discord.File(fp=embed_bytes, filename="item_preview.png")
-            embed = discord.Embed(title=self.item_name, description=f"{self.item_type} | {self.subtype}")
-            embed.set_image(url=f"attachment://item_preview.png")
+           file = discord.File(io.BytesIO(created_images), filename=f"{self.item_name}.png")
+        
+            embed = discord.Embed(
+                title=f"{self.item_name}",
+                description=f"Type: {self.item_type} | {self.subtype}\nStats: {self.stats or 'N/A'}\nEffects: {self.effects or 'N/A'}\nDonated by: {self.donated_by or 'Anonymous'}",
+                color=discord.Color.blue()
+            )
+            embed.set_image(url=f"attachment://{self.item_name}.png")
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
                 ephemeral=True
