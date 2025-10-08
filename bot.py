@@ -384,7 +384,7 @@ class ItemEntryView(discord.ui.View):
             created_images = io.BytesIO()
             background.save(created_images, format="PNG")
             created_images.seek(0)
-            file = discord.File(created_image, filename=f"{self.item_name}.png")
+            file = discord.File(created_images, filename=f"{self.item_name}.png")
             message = await interaction.channel.send(file=file, delete_after=1)  # deletes after 1s
             cdn_url = message.attachments[0].url
 
