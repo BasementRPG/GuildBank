@@ -443,7 +443,7 @@ class ItemEntryView(discord.ui.View):
 
                 if self.item_type == "Equipment":
                     # Slot
-                    ac = self.ac
+                    ac = self.slot
                     draw.text((x, y), f"Slot: {ac}", fill=(255, 255, 255), font=font_ac)
                     y += 25
                     
@@ -463,12 +463,12 @@ class ItemEntryView(discord.ui.View):
                     y += 25
                 if self.usable_classes:
                     # Classes
-                    classes=", ".join(sorted(self.classes_sorted))
+                    classes=", ".join(sorted(self.usabled_classes))
                     draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                 if self.usable_race:
                     # Race
-                    race=", ".join(sorted(self.race_sorted))
+                    race=", ".join(sorted(self.usabled_race))
                     draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
                     y += 25
 
