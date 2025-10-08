@@ -671,7 +671,7 @@ async def view_bank(interaction: discord.Interaction):
             full_image = Image.open(full_bytes)
         
             # Resize just for embed display (Discord auto-click full)
-            max_width, max_height = 700, 300
+            max_width, max_height = 400, 200
             ratio = min(max_width / full_image.width, max_height / full_image.height)
             preview = full_image.resize(
                 (int(full_image.width * ratio), int(full_image.height * ratio)),
