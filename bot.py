@@ -700,7 +700,9 @@ async def view_bank(interaction: discord.Interaction):
                 )
 
                 return embed, [preview_file, full_file]
-
+            except Exception as e:
+                print(f"Error processing image for {name}: {e}")
+                
         # Handle uploaded images (URL)
         if row.get('image'):
             embed.set_image(url=row['image'])
