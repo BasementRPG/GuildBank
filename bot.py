@@ -419,7 +419,7 @@ class ItemEntryView(discord.ui.View):
                     # Effects
                     draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                     y += 25
-                if self.usable_classe:
+                if self.usable_classes:
                     # Classes
                     draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                     y += 25
