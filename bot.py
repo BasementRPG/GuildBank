@@ -337,10 +337,10 @@ class ItemEntryView(discord.ui.View):
                 # Load a fontWry
                 # Example fonts
                 font_title = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 42)   # for the item name
-                font_type = ImageFont.truetype("arial.ttf", 24)      # for type/subtype
-                font_stats = ImageFont.truetype("arial.ttf", 20)     # for stats
-                font_effects = ImageFont.truetype("arial.ttf", 18)   # for effects
-                font_donor = ImageFont.truetype("arial.ttf", 16)     # for donated by
+                font_type = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 24)      # for type/subtype
+                font_stats = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 20)     # for stats
+                font_effects = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 18)   # for effects
+                font_donor = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 16)     # for donated by
             
                 width, height = background.size
             
