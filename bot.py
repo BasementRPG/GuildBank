@@ -463,14 +463,12 @@ class ItemEntryView(discord.ui.View):
                     y += 25
                 if self.usable_classes:
                     # Classes
-                    classes_sorted = sorted(self.usable_classes)
-                    classes=", ".join(self.classes_sorted)
+                    classes=", ".join(sorted(self.classes_sorted))
                     draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                 if self.usable_race:
                     # Race
-                    race_sorted = sorted(self.usable_race)
-                    race=", ".join(self.race_sorted)
+                    race=", ".join(sorted(self.race_sorted))
                     draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
                     y += 25
 
