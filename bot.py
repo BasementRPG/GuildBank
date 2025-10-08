@@ -341,7 +341,7 @@ class ItemEntryView(discord.ui.View):
             
                 # Load a fontWry
                 # Example fonts
-                font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 30)   # for the item name
+                font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 20)   # for effects
@@ -353,27 +353,33 @@ class ItemEntryView(discord.ui.View):
             
                 # Example positions:
                 x_margin = 40
-                y = 5  # start y
+                y = 3  # start y
             
                 # Name at top
                 draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
                 y += 50  # spacing after title
-                x = 90
+                x = 110
 
                 if self.item_type == "Armor":
+                    # Slot
+                    ac = self.ac
+                    draw.text((x, y), f"Slot: {ac}", fill=(255, 255, 255), font=font_ac)
+                    y += 25
+                    
                     # AC
                     ac = self.ac
                     draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
-                    y += 35
+                    y += 25
 
                 
                 # Stats
-                draw.text((x, y), f"Stats: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
-                y += 35
-            
-                # Effects
-                draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
-                y += 35
+                draw.text((x, y), f"Stats: {STR: or 'N/A'}", fill=(255, 255, 255), font=font_stats)
+                y += 25
+
+                if self.self.effects != "":
+                    # Effects
+                    draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
+                    y += 25
                 
                         
                 return background
