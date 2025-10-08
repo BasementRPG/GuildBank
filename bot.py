@@ -199,7 +199,7 @@ class SubtypeSelect(discord.ui.Select):
                 await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
             except:
                 pass
-
+if self.item_type == "Weapon" or "Armor":
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
@@ -295,12 +295,13 @@ class ItemEntryView(discord.ui.View):
 
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
-
-        self.classes_select = ClassesSelect(self)
-        self.add_item(self.classes_select)
         
-        self.race_select = RaceSelect(self)
-        self.add_item(self.race_select)
+        if self.item_type == "Weapon" or "Armor":
+            self.classes_select = ClassesSelect(self)
+            self.add_item(self.classes_select)
+            
+            self.race_select = RaceSelect(self)
+            self.add_item(self.race_select)
  
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
@@ -381,12 +382,12 @@ class ItemEntryView(discord.ui.View):
                 # Example fonts
                 font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
-                font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
-                font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 20)   # for effects
-                font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for ac by
-                font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 18)     # for attack by
-                font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for class by
-                font_race = ImageFont.truetype("assets/WinthorpeB.ttf", 18)     # for race by
+                font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
+                font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
+                font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
+                font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for attack by
+                font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for class by
+                font_race = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for race by
                 
                 width, height = background.size
             
@@ -421,12 +422,14 @@ class ItemEntryView(discord.ui.View):
                     y += 25
                 if self.usable_classes:
                     # Classes
-                    classes=", ".join(self.usable_classes)
+                    classes_sorted = sorted(self.usable_classes)
+                    classes=", ".join(self.classes_sorted)
                     draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                 if self.usable_race:
                     # Race
-                    race=", ".join(self.usable_race)
+                    race_sorted = sorted(self.usable_race)
+                    race=", ".join(self.race_sorted)
                     draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
                     y += 25
 
