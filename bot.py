@@ -301,16 +301,14 @@ class ItemEntryView(discord.ui.View):
         self.subtype_select = SubtypeSelect(self)
         self.add_item(self.subtype_select)
 
-    async def item_type_changed(self, interaction: discord.Interaction, new_type: str):
-        self.item_type = new_type
         
-        if self.item_type in ["Weapon" or "Armor"]:
+        if self.item_type in ["Weapon", "Armor"]:
             self.classes_select = ClassesSelect(self)
             self.add_item(self.classes_select)
             
             self.race_select = RaceSelect(self)
             self.add_item(self.race_select)
- 
+     
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
