@@ -204,70 +204,70 @@ class SubtypeSelect(discord.ui.Select):
             except:
                 pass
                 
-if self.parent_view.item_type == "Weapon" or "Armor":
-    class ClassesSelect(discord.ui.Select):
-        def __init__(self, parent_view):
-            self.parent_view = parent_view
+
+class ClassesSelect(discord.ui.Select):
+    def __init__(self, parent_view):
+        self.parent_view = parent_view
     
-            # Always show all options
-            options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
+        # Always show all options
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
     
-            super().__init__(
-                placeholder="Select usable classes (multi)",
-                options=options,
-                min_values=0,
-                max_values=len(options)
-            )
+        super().__init__(
+             placeholder="Select usable classes (multi)",
+             options=options,
+             min_values=0,
+             max_values=len(options)
+        )
     
-            # Preselect current classes
-            if self.parent_view.usable_classes:
-                self.default = True
+        # Preselect current classes
+        if self.parent_view.usable_classes:
+            self.default = True
     
-        async def callback(self, interaction: discord.Interaction):
-            # If All is selected, ignore other selections
-            if "All" in self.values:
+    async def callback(self, interaction: discord.Interaction):
+        # If All is selected, ignore other selections
+        if "All" in self.values:
                 self.view.usable_classes = ["All"]
-            else:
-                # If other classes selected while All is in previous selection, remove All
-                self.view.usable_classes = self.values
+        else:
+            # If other classes selected while All is in previous selection, remove All
+            self.view.usable_classes = self.values
     
-            # Update the dropdown so selections are visible
-            for option in self.options:
-                option.default = option.label in self.view.usable_classes
+        # Update the dropdown so selections are visible
+        for option in self.options:
+            option.default = option.label in self.view.usable_classes
     
-            await interaction.response.edit_message(view=self.view)
+        await interaction.response.edit_message(view=self.view)
     
-    class RaceSelect(discord.ui.Select):
-        def __init__(self, parent_view):
-            self.parent_view = parent_view
+class RaceSelect(discord.ui.Select):
+    def __init__(self, parent_view):
+        self.parent_view = parent_view
     
-            # Always show all options
-            options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=r) for r in RACE_OPTIONS]
+        # Always show all options
+        options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=r) for r in RACE_OPTIONS]
     
-            super().__init__(
-                placeholder="Select usable race (multi)",
-                options=options,
-                min_values=0,
-                max_values=len(options)
-            )
+        super().__init__(
+            placeholder="Select usable race (multi)",
+            options=options,
+            min_values=0,
+            max_values=len(options)
+        )
     
-            # Preselect current race
-            if self.parent_view.usable_race:
-                self.default = True
+        # Preselect current race
+        if self.parent_view.usable_race:
+            self.default = True
     
-        async def callback(self, interaction: discord.Interaction):
-            # If All is selected, ignore other selections
-            if "All" in self.values:
-                self.view.usable_race = ["All"]
-            else:
-                # If other race selected while All is in previous selection, remove All
-                self.view.usable_race = self.values
+    async def callback(self, interaction: discord.Interaction):
+        # If All is selected, ignore other selections
+        if "All" in self.values:
+            self.view.usable_race = ["All"]
+        else:
+            # If other race selected while All is in previous selection, remove All
+            self.view.usable_race = self.values
     
-            # Update the dropdown so selections are visible
-            for option in self.options:
-                option.default = option.label in self.view.usable_race
+        # Update the dropdown so selections are visible
+        for option in self.options:
+            option.default = option.label in self.view.usable_race
     
-            await interaction.response.edit_message(view=self.view)
+        await interaction.response.edit_message(view=self.view)
 
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
