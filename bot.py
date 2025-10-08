@@ -334,19 +334,19 @@ class ItemEntryView(discord.ui.View):
             def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
             
-                # Load a font
-                try:
-                    font_title = ImageFont.truetype("arialbd.ttf", 28)  # bold title
-                    font_text = ImageFont.truetype("arial.ttf", 22)     # normal text
-                except:
-                    font_title = ImageFont.load_default()
-                    font_text = ImageFont.load_default()
+                # Load a fontWry
+                # Example fonts
+                font_title = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 42)   # for the item name
+                font_type = ImageFont.truetype("arial.ttf", 24)      # for type/subtype
+                font_stats = ImageFont.truetype("arial.ttf", 20)     # for stats
+                font_effects = ImageFont.truetype("arial.ttf", 18)   # for effects
+                font_donor = ImageFont.truetype("arial.ttf", 16)     # for donated by
             
                 width, height = background.size
             
                 # Example positions:
-                x_margin = 50
-                y = 20  # start y
+                x_margin = 40
+                y = 15  # start y
             
                 # Name at top
                 draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
