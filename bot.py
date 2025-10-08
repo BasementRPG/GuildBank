@@ -642,37 +642,9 @@ async def view_bank(interaction: discord.Interaction):
         effects = row.get('effects') or ""
 
         embed = discord.Embed(
-            title=f"{emoji} {name}",
             color=TYPE_COLORS.get(item_type, discord.Color.blurple())
         )
         embed.set_footer(text=f"Donated by: {donated_by} | {name}")
-
-        # Handle created_images (raw bytes)
-        if row.get('created_images'):
-            # Open full image
-            full_bytes = io.BytesIO(row['created_images'])
-            full_image = Image.open(full_bytes)
-        
-            # Resize just for embed display (Discord auto-click full)
-            max_width, max_height = 400, 200
-            ratio = min(max_width / full_image.width, max_height / full_image.height)
-            preview = full_image.resize(
-                (int(full_image.width * ratio), int(full_image.height * ratio)),
-                Image.Resampling.LANCZOS
-            )
-        
-            # Save resized preview
-            preview_bytes = io.BytesIO()
-            preview.save(preview_bytes, format="PNG")
-            preview_bytes.seek(0)
-        
-            # Send resized preview as attachment — Discord auto-links fullsize when clicked
-            file = discord.File(preview_bytes, filename=f"{name}.png")
-            embed.set_image(url=f"attachment://{name}.png")
-        
-            return embed, file
-
-
                             
         # Handle uploaded images (URL)
         if row.get('image'):
