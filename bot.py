@@ -336,7 +336,7 @@ class ItemEntryView(discord.ui.View):
             
                 # Load a fontWry
                 # Example fonts
-                font_title = ImageFont.truetype("assets/WinthorpeSc.ttf", 28)   # for the item name
+                font_title = ImageFont.truetype("assets/WinthorpeSc.ttf", 24)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 24)      # for type/subtype
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 18)   # for effects
