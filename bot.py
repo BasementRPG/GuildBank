@@ -419,12 +419,12 @@ class ItemEntryView(discord.ui.View):
                     # Effects
                     draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                     y += 25
-                if self.classes != "":
-                    # Effects
+                if self.usable_classe:
+                    # Classes
                     draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                     y += 25
-                if self.race != "":
-                    # Effects
+                if self.usable_race:
+                    # Race
                     draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
                     y += 25
 
@@ -457,8 +457,8 @@ class ItemEntryView(discord.ui.View):
                 type_=self.item_type,
                 subtype=self.subtype,
                 stats=self.stats,
-                classes=", ".join(self.usable_classes) or "All",
-                race=", ".join(self.usable_race) or "All",
+                classes=", ".join(self.usable_classes),
+                race=", ".join(self.usable_race),
                 image=None,
                 created_images=cdn_url,  # original image field empty
                 donated_by=self.donated_by or "Anonymous",
@@ -538,8 +538,8 @@ class ImageDetailsModal(discord.ui.Modal):
                 type_="Image",
                 subtype="Image",
                 stats="",
-                classes="All",
-                race="All",
+                classes="",
+                race="",
                 image=self.view.image,
                 donated_by=donated_by,
                 qty=1,
