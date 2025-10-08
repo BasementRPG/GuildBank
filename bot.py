@@ -380,13 +380,13 @@ class ItemEntryView(discord.ui.View):
         
             MAX_EMBED_WIDTH = 600
             MAX_EMBED_HEIGHT = 300
-            width, height = full_image.size
+            width, height = background.size
             ratio = min(MAX_EMBED_WIDTH / width, MAX_EMBED_HEIGHT / height, 1.0)
             embed_image = background.resize((int(width * ratio), int(height * ratio)), Image.Resampling.LANCZOS)
     
             # Convert both images to bytes
             full_bytes = io.BytesIO()
-            full_image.save(full_bytes, format="PNG")
+            background.save(full_bytes, format="PNG")
             full_bytes.seek(0)
     
             embed_bytes = io.BytesIO()
