@@ -391,7 +391,7 @@ class ItemEntryView(discord.ui.View):
     
             embed_bytes = io.BytesIO()
             embed_image.save(embed_bytes, format="PNG")
-            created_images=image_bytes.read()
+            created_images=embed_bytes.read()
             embed_bytes.seek(0)
         
             # 2. Save all info to database, including created_images
