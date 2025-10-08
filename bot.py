@@ -360,7 +360,7 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
                 x = 90
 
-                if view.item_type == "Armor":
+                if self.item_type == "Armor":
                     # AC
                     draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_stats)
                     y += 35
