@@ -331,7 +331,7 @@ class ItemEntryView(discord.ui.View):
             # Select background
             bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
             background = Image.open(bg_path).convert("RGBA")
-            background = background.resize((EMBED_WIDTH, EMBEDZ_HEIGHT))
+            background = background.resize((EMBED_WIDTH, EMBED_HEIGHT))
         
             def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
