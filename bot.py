@@ -373,7 +373,7 @@ class ItemEntryView(discord.ui.View):
 
                 
                 # Stats
-                draw.text((x, y), f"Stats: {STR: or 'N/A'}", fill=(255, 255, 255), font=font_stats)
+                draw.text((x, y), f"STR: +1: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
                 y += 25
 
                 if self.self.effects != "":
