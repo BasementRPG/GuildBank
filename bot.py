@@ -326,12 +326,12 @@ class ItemEntryView(discord.ui.View):
                 ephemeral=True
             )
         else:  # adding new item manually
-            EMBED_WIDTH = 600
-            EMBED_HEIGHT = 300
+
+            
             # Select background
             bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
             background = Image.open(bg_path).convert("RGBA")
-            background = background.resize((EMBED_WIDTH, EMBED_HEIGHT))
+            
         
             def draw_item_text(background, item_name, item_type, subtype, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
@@ -365,12 +365,10 @@ class ItemEntryView(discord.ui.View):
                 # Effects
                 draw.text((x_margin, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                 y += 35
-            
-
-            
+                        
                 return background
                 
-            background = draw_item_text(
+            full_image = draw_item_text(
                 background,
                 self.item_name,
                 self.item_type,
@@ -380,17 +378,20 @@ class ItemEntryView(discord.ui.View):
                 self.donated_by or "Anonymous"
             )
         
-            # Save to bytes
-            image_bytes = io.BytesIO()
-            background.save(image_bytes, format="PNG")
-            image_bytes.seek(0)
-            created_images = image_bytes.read()
-            image_bytes.close()
-
-            
-            # Optional: save to a file locally
-            # with open(f"{self.item_name}_manual.png", "wb") as f:
-            #     f.write(image_bytes.getbuffer())
+            MAX_EMBED_WIDTH = 600
+            MAX_EMBED_HEIGHT = 300
+            width, height = full_image.size
+            ratio = min(MAX_EMBED_WIDTH / width, MAX_EMBED_HEIGHT / height, 1.0)
+            embed_image = full_image.resize((int(width * ratio), int(height * ratio)), Image.ANTIALIAS)
+    
+            # Convert both images to bytes
+            full_bytes = io.BytesIO()
+            full_image.save(full_bytes, format="PNG")
+            full_bytes.seek(0)
+    
+            embed_bytes = io.BytesIO()
+            embed_image.save(embed_bytes, format="PNG")
+            embed_bytes.seek(0)
         
             # 2. Save all info to database, including created_images
             await add_item_db(
@@ -409,7 +410,9 @@ class ItemEntryView(discord.ui.View):
                 effects=self.effects,
                 ac=self.ac
             )
-        
+            file_for_embed = discord.File(fp=embed_bytes, filename="item_preview.png")
+            embed = discord.Embed(title=self.item_name, description=f"{self.item_type} | {self.subtype}")
+            embed.set_image(url=f"attachment://item_preview.png")
             await interaction.response.send_message(
                 f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
                 ephemeral=True
