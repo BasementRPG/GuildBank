@@ -33,6 +33,7 @@ BG_FILES = {
     "Consumable": "assets/backgrounds/bg_weapon.png",
     "Crafting": "assets/backgrounds/bg_weapon.png",
     "Misc": "assets/backgrounds/bg_weapon.png"
+    "Jewlery":"assest/background/bg_weapon.png"
 }
 
 
@@ -202,7 +203,8 @@ class SubtypeSelect(discord.ui.Select):
                 await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
             except:
                 pass
-if self.parent_view.item_type == "Weapon" or "Armor:
+                
+if self.parent_view.item_type == "Weapon" or "Armor":
     class ClassesSelect(discord.ui.Select):
         def __init__(self, parent_view):
             self.parent_view = parent_view
