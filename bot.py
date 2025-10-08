@@ -24,6 +24,7 @@ ITEM_TYPE_EMOJIS = {
     "Consumable": "🧪",
     "Misc": "🔑",
     "Funds": "💰"
+    
 }
 
 BG_FILES = {
