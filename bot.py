@@ -45,6 +45,8 @@ MISC_SUBTYPES = ["Quest Item", "Unknown"]
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
 
+
+
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 db_pool: asyncpg.Pool = None
@@ -199,7 +201,7 @@ class SubtypeSelect(discord.ui.Select):
                 await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
             except:
                 pass
-if self.item_type == "Weapon" or "Armor":
+
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
