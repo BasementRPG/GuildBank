@@ -336,17 +336,17 @@ class ItemEntryView(discord.ui.View):
             
                 # Load a fontWry
                 # Example fonts
-                font_title = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 42)   # for the item name
-                font_type = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 24)      # for type/subtype
-                font_stats = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 20)     # for stats
-                font_effects = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 18)   # for effects
-                font_donor = ImageFont.truetype("assets/ArchiveGaramondExp.ttf", 16)     # for donated by
+                font_title = ImageFont.truetype("assets/WinthorpeSc.ttf", 42)   # for the item name
+                font_type = ImageFont.truetype("assets/Winthorpe.ttf", 24)      # for type/subtype
+                font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 20)     # for stats
+                font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 18)   # for effects
+                font_donor = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for donated by
             
                 width, height = background.size
             
                 # Example positions:
                 x_margin = 40
-                y = 15  # start y
+                y = 5  # start y
             
                 # Name at top
                 draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
