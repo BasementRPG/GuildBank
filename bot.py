@@ -666,31 +666,29 @@ async def view_bank(interaction: discord.Interaction):
 
         # Handle created_images (raw bytes)
         if row.get('created_images'):
-            image_bytes = io.BytesIO(row['created_images'])
-            full_image = Image.open(image_bytes)
+            # Open full image
+            full_bytes = io.BytesIO(row['created_images'])
+            full_image = Image.open(full_bytes)
         
-            # --- Resize image for preview ---
-            max_width, max_height = 700, 300
+            # Resize just for embed display (Discord auto-click full)
+            max_width, max_height = 400, 100
             ratio = min(max_width / full_image.width, max_height / full_image.height)
-            preview_image = full_image.resize(
+            preview = full_image.resize(
                 (int(full_image.width * ratio), int(full_image.height * ratio)),
                 Image.Resampling.LANCZOS
             )
         
-            # Save both preview and full image
+            # Save resized preview
             preview_bytes = io.BytesIO()
-            preview_image.save(preview_bytes, format="PNG")
+            preview.save(preview_bytes, format="PNG")
             preview_bytes.seek(0)
         
-            full_bytes = io.BytesIO()
-            full_image.save(full_bytes, format="PNG")
-            full_bytes.seek(0)
+            # Send resized preview as attachment — Discord auto-links fullsize when clicked
+            file = discord.File(preview_bytes, filename=f"{name}.png")
+            embed.set_image(url=f"attachment://{name}.png")
         
-            preview_file = discord.File(preview_bytes, filename=f"{name}_preview.png")
-            full_file = discord.File(full_bytes, filename=f"{name}_full.png")
-        
-            embed.set_image(url=f"attachment://{name}_preview.png")
-            return embed, [preview_file, full_file]
+            return embed, file
+
 
                             
         # Handle uploaded images (URL)
