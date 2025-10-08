@@ -407,7 +407,7 @@ class ItemEntryView(discord.ui.View):
                 ac=self.ac
             )
 
-            embed.set_image(url=cdn_url)
+            
             await interaction.response.send_message(
                 content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
                 embed=embed,
