@@ -376,7 +376,7 @@ class ItemEntryView(discord.ui.View):
                 draw.text((x, y), f"STR: +1: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
                 y += 25
 
-                if self.self.effects != "":
+                if self.effects != "":
                     # Effects
                     draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
                     y += 25
