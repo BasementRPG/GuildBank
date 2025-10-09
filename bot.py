@@ -403,7 +403,7 @@ class ItemEntryView(discord.ui.View):
         self.size_select = SizeSelect(self)
         self.add_item(self.size_select)
      
-        self.details_button = discord.ui.Button(label="Required Detials", style=discord.ButtonStyle.secondary)
+        self.details_button = discord.ui.Button(label="Required Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
 
@@ -728,17 +728,6 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.ac)
 
 
-
-        #  EFFECTS
-        if parent_view.item_type == "Weapon" or "Equipment" or "Consumable":
-
-            self.effects = discord.ui.TextInput(
-                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
-            )
-
-            self.add_item(self.effects)
-
-
         self.weight = discord.ui.TextInput(
                     label="Weight", default=parent_view.weight or "", required=False, style=discord.TextStyle.paragraph
         )
@@ -761,83 +750,46 @@ class ItemDetailsModal(discord.ui.Modal):
             self.parent_view.attack = self.attack.value
         if self.parent_view.item_type == "Equipment":
             self.parent_view.ac = self.ac.value           
-        if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
-            self.parent_view.effects = self.effects.value
 
-        modal2 = ItemDetailsModal2(self.parent_view)
-        await interaction.response.send_modal(modal2)
-        """
+
         await interaction.response.send_message(
-            "✅ Details saved. Click Submit when ready.", ephemeral=True
-        )"""
+            "✅ Details saved. Click Submit when ready or Stat Details.", ephemeral=True
 
+
+            
 class ItemDetailsModal2(discord.ui.Modal):
     def __init__(self, parent_view):
         super().__init__(title=f"{parent_view.item_type} Details")
         
         self.parent_view = parent_view
-        
-        self.item_name = discord.ui.TextInput(
-                label="Item Name", default=parent_view.item_name, required=True
-        )
-        
-        # Weapon ATTACK/DELAY
-        if parent_view.item_type == "Weapon":
 
-            self.attack = discord.ui.TextInput(
-                label="Attack / Delay", default=parent_view.attack or "", required=True
-            )
-
-            self.add_item(self.attack)
-
-
-        # Equipment AC
-        if parent_view.item_type == "Equipment":
-
-            self.ac = discord.ui.TextInput(
-                label="Armor Class", default=parent_view.ac or "", required=True
-            )
-            self.add_item(self.ac)
-
-
-
-        #  EFFECTS
+         #  STATS
         if parent_view.item_type == "Weapon" or "Equipment" or "Consumable":
+
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+    
+        #  EFFECTS
 
             self.effects = discord.ui.TextInput(
                 label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
             )
 
+            
+            self.add_item(self.stats)
             self.add_item(self.effects)
 
 
-        self.weight = discord.ui.TextInput(
-                    label="Weight", default=parent_view.weight or "", required=False, style=discord.TextStyle.paragraph
-        )
-        self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=parent_view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
-        )
- 
-        self.add_item(self.item_name)
-        self.add_item(self.weight)
-        self.add_item(self.donated_by)
-
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Save values back to the view
-        self.parent_view.item_name = self.item_name.value
-        self.parent_view.weight = self.weight.value
-        self.parent_view.donated_by = self.donated_by.value or "Anonymous"
-
-        if self.parent_view.item_type == "Weapon":
-            self.parent_view.attack = self.attack.value
-        if self.parent_view.item_type == "Equipment":
-            self.parent_view.ac = self.ac.value           
+        # Save values back to the view   
         if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
+            self.parent_view.stats = self.stats.value
             self.parent_view.effects = self.effects.value
 
         await interaction.response.send_message(
-            "✅ Details saved. Click Submit when ready.", ephemeral=True
+            "✅ Details saved. Click Submit when ready, or Add Required Details.", ephemeral=True
         )
 
 
