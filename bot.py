@@ -39,6 +39,7 @@ EQUIPMENT_SUBTYPES = ["Ammo","Back","Chest","Ear","Face","Feet","Finger","Hands"
 WEAPON_SUBTYPES = ["Ammo","Primary", "Range","Secondary"]
 WEAPON_SKILLTYPE = ["One Handed", "Two Handed"]
 WEAPON_SKILL = ["ARC","BLG","SLA","STA","THR"]
+
 SIZE = ["Large","Medium","Small"]
 
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
@@ -691,9 +692,10 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView):
+    def __init__(self, parent_view):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
+        self.parent_view=parent_view
         
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
@@ -714,10 +716,10 @@ class ItemDetailsModal(discord.ui.Modal):
         
 
 class ItemDetailsModal2(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView):
+    def __init__(self, parent_view):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-        
+        self.parent_view=parent_view
         # Weapon ATTACK/DELAY
         if view.item_type == "Weapon":
             
