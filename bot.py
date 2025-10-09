@@ -565,7 +565,7 @@ class ItemEntryView(discord.ui.View):
                     # Measure how tall the rendered text block actually is
                     bbox = draw.textbbox((x, y), stats_text, font=font_stats)
                     text_height = bbox[3] - bbox[1]
-                    y += text_height + 10  # Add a little padding
+                    y += text_height + 15  # Add a little padding
 
 
                 if self.effects != "":
@@ -574,9 +574,15 @@ class ItemEntryView(discord.ui.View):
                     y += 25
                     
                 if self.item_type == "Equipment" or "Weapon":
-                    if self.size != "":
+                    if self.size != "" and self.weight !="":
                         # Size
                         draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25
+                    if self.size !="" and self.weight=="":
+                        draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25                       
+                    if self. size =="" and self.weight !="":
+                        draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
                         y += 25
                 else:
                     if self.weight != "":
