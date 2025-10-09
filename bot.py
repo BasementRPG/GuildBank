@@ -823,7 +823,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.stats)
             self.add_item(self.effects)
 
-        else: 
+        if self.parent_view.item_type in ("Crafting","Misc"):
         # STATS
             self.stats = discord.ui.TextInput(
                 label="Info", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
@@ -864,7 +864,7 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.parent_view.item_type == "Equipment":
             self.parent_view.ac = self.ac.value
         
-        if self.item_type in ("Crafting", "Consumable","Misc"):
+        if self.parent_view.item_type in ("Crafting", "Consumable","Misc"):
       
             self.parent_view.stats = self.stats.value
             self.parent_view.effects = self.effects.value
