@@ -863,7 +863,9 @@ class ItemDetailsModal(discord.ui.Modal):
             self.parent_view.delay = self.delay.value
         if self.parent_view.item_type == "Equipment":
             self.parent_view.ac = self.ac.value
-        if self.parent_view.item_type == "Crafting" or "Consumable" or "Misc":
+        
+        if self.item_type in ("Crafting", "Consumable","Misc"):
+      
             self.parent_view.stats = self.stats.value
             self.parent_view.effects = self.effects.value
 
