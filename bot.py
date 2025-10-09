@@ -423,10 +423,11 @@ class ItemEntryView(discord.ui.View):
         self.details_button = discord.ui.Button(label="Required Details", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
-
-        self.details_button1 = discord.ui.Button(label="Stat Details", style=discord.ButtonStyle.secondary)
-        self.details_button1.callback = self.open_item_details1
-        self.add_item(self.details_button1)
+        
+        if self.item_type == "Weapon" or "Equipment":
+            self.details_button1 = discord.ui.Button(label="Stat Details", style=discord.ButtonStyle.secondary)
+            self.details_button1.callback = self.open_item_details1
+            self.add_item(self.details_button1)
         
         self.submit_button = discord.ui.Button(label="Submit", style=discord.ButtonStyle.success)
         self.submit_button.callback = self.submit_item
@@ -544,6 +545,14 @@ class ItemEntryView(discord.ui.View):
                         ac = self.ac
                         draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                         y += 25
+
+                         if self.stats != "":
+                            stats_text = stats.upper()
+                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                            # Measure how tall the rendered text block actually is
+                            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                            text_height = bbox[3] - bbox[1]
+                            y += text_height + 15  # Add a little padding
                         
 
                 if self.item_type == "Weapon":
@@ -559,13 +568,13 @@ class ItemEntryView(discord.ui.View):
                         y += 25
 
                 
-                if self.stats != "":
-                    stats_text = stats.upper()
-                    draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                    # Measure how tall the rendered text block actually is
-                    bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                    text_height = bbox[3] - bbox[1]
-                    y += text_height + 15  # Add a little padding
+                    if self.stats != "":
+                        stats_text = stats.upper()
+                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        # Measure how tall the rendered text block actually is
+                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                        text_height = bbox[3] - bbox[1]
+                        y += text_height + 15  # Add a little padding
 
 
                 if self.effects != "":
@@ -589,10 +598,19 @@ class ItemEntryView(discord.ui.View):
                         # Size
                         draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_weight)
                         y += 25
+                        
                     if self.size != "":
                         # Size
                         draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
                         y += 25
+
+                    if self.stats != "":
+                        stats_text = stats.upper()
+                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        # Measure how tall the rendered text block actually is
+                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                        text_height = bbox[3] - bbox[1]
+                        y += text_height + 15  # Add a little padding
                     
                 if self.item_type == "Equipment" or "Weapon":    
                     if self.usable_classes:
@@ -600,6 +618,7 @@ class ItemEntryView(discord.ui.View):
                         classes=" ".join(sorted(self.usable_classes))
                         draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
                         y += 25
+                        
                     if self.usable_race:
                         # Race
                         race=" ".join(sorted(self.usable_race))
