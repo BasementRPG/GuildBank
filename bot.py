@@ -698,15 +698,15 @@ class ItemDetailsModal(discord.ui.Modal):
         self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
-                label="Item Name", default=view.item_name, required=True
+                label="Item Name", default=parent_view.item_name, required=True
         )
         self.add_item(self.item_name)
         
         # Weapon ATTACK/DELAY
-        if view.item_type == "Weapon":
+        if parent_view.item_type == "Weapon":
 
             self.attack = discord.ui.TextInput(
-                label="Attack / Delay", default=view.attack or "", required=True
+                label="Attack / Delay", default=parent_view.attack or "", required=True
             )
 
             self.add_item(self.attack)
@@ -716,27 +716,27 @@ class ItemDetailsModal(discord.ui.Modal):
         if view.item_type == "Equipment":
 
             self.ac = discord.ui.TextInput(
-                label="Armor Class", default=view.ac or "", required=True
+                label="Armor Class", default=parent_view.ac or "", required=True
             )
             self.add_item(self.ac)
 
 
 
         #  EFFECTS
-        if view.item_type == "Weapon" or "Equipment" or "Consumable":
+        if parent_view.item_type == "Weapon" or "Equipment" or "Consumable":
 
             self.effects = discord.ui.TextInput(
-                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
+                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
             )
 
             self.add_item(self.effects)
 
 
         self.weight = discord.ui.TextInput(
-                    label="Weight", default=view.weight or "", required=False, style=discord.TextStyle.paragraph
+                    label="Weight", default=parent_view.weight or "", required=False, style=discord.TextStyle.paragraph
         )
         self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+                label="Donated By", default=parent_view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
         )
  
        
@@ -746,16 +746,16 @@ class ItemDetailsModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
-        self.view.item_name = self.item_name.value
-        self.view.weight = self.weight.value
-        self.view.donated_by = self.donated_by.value or "Anonymous"
+        self.parent_view.item_name = self.item_name.value
+        self.parent_view.weight = self.weight.value
+        self.parent_view.donated_by = self.donated_by.value or "Anonymous"
 
-        if self.view.item_type == "Weapon":
-            self.view.attack = self.attack.value
-        if self.view.item_type == "Equipment":
-            self.view.ac = self.ac.value           
-        if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
-            self.view.effects = self.effects.value
+        if self.parent_view.item_type == "Weapon":
+            self.parent_view.attack = self.attack.value
+        if self.parent_view.item_type == "Equipment":
+            self.parent_view.ac = self.ac.value           
+        if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
+            self.parent_view.effects = self.effects.value
 
         modal2 = ItemDetailsModal2(self.parent_view)
         await interaction.response.send_modal(modal2)
