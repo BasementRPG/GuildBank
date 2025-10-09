@@ -565,7 +565,7 @@ class ItemEntryView(discord.ui.View):
                     # Measure how tall the rendered text block actually is
                     bbox = draw.textbbox((x, y), stats_text, font=font_stats)
                     text_height = bbox[3] - bbox[1]
-                    y += text_height + 5  # Add a little padding
+                    y += text_height + 10  # Add a little padding
 
 
                 if self.effects != "":
