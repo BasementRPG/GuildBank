@@ -477,7 +477,7 @@ class ItemEntryView(discord.ui.View):
             background = Image.open(bg_path).convert("RGBA")
             
         
-            def draw_item_text(background, item_name, item_type, subtype, slot, stats, effects, donated_by):
+            def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, effects, donated_by):
                 draw = ImageDraw.Draw(background)
             
                 # Load a fontWry
