@@ -596,7 +596,6 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
                         y += 25
 
-
                     
                 return background
                 
