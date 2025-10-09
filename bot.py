@@ -584,10 +584,7 @@ class ItemEntryView(discord.ui.View):
                     y += 25
                     
                 if self.item_type == "Equipment" or "Weapon":
-                    if self.size != "" and self.weight !="":
-                        # Size
-                        draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-                        y += 25
+
                     if self.size !="" and self.weight=="":
                         draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
                         y += 25                       
@@ -847,7 +844,10 @@ class ItemDetailsModal(discord.ui.Modal):
             self.parent_view.attack = self.attack.value
             self.parent_view.delay = self.delay.value
         if self.parent_view.item_type == "Equipment":
-            self.parent_view.ac = self.ac.value           
+            self.parent_view.ac = self.ac.value
+        if self.parent_view.item_type == "Crafting" or "Consumable" or "Misc":
+            self.parent_view.stats = self.stats.value
+            self.parent_view.effects = self.effects.value
 
 
         await interaction.response.send_message(
