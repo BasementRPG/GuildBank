@@ -419,7 +419,7 @@ class ItemEntryView(discord.ui.View):
         
         if self.item_type in ["Weapon", "Equipment"]:
             
-            self.stats_data = {"STR": 0, "STA": 0, "AGI": 0, "DEX": 0, "WIS": 0, "INT": 0, "CHA": 0}
+            self.stats_data = {"STR", "STA", "AGI", "DEX", "WIS", "INT", "CHA"}
             stat_names = list(self.stats_data.keys())
             for i, stat_name in enumerate(stat_names):
                 select = StatsSelect(self, stat_name)
