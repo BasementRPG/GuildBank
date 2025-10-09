@@ -533,22 +533,30 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
                 x = 110
 
-                if self.item_type == "Equipment" or "Weapon":
+                if self.item_type == "Equipment":
                     # Slot
                     slot=" ".join(sorted(self.slot)).upper()
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
-                if self.item_type == "Equipment":    
-                    # AC
-                    ac = self.ac
-                    draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
-                    y += 25
+                
+                    if self.ac !="":    
+                        # AC
+                        ac = self.ac
+                        draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
+                        y += 25
+                        
 
                 if self.item=="Weapon":
-                    #Attack/Delay
-                    attack = self.ac
-                    draw.text((x, y), f"Weapon DMG: {attack} ATK Delay:{delay}", fill=(255, 255, 255), font=font_attack)
+                    # Slot
+                    slot=" ".join(sorted(self.slot)).upper()
+                    draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
+                    if self.attack !="":
+                        #Attack/Delay
+                        attack = self.attack
+                        delay = self.delay
+                        draw.text((x, y), f"Weapon DMG: {attack} ATK Delay:{delay}", fill=(255, 255, 255), font=font_attack)
+                        y += 25
 
                 if self.stats != "":
                     # Stats
@@ -561,7 +569,7 @@ class ItemEntryView(discord.ui.View):
                     draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                     
-                if self.item_type == "Equipment":
+                if self.item_type == "Equipment" or "Weapon":
                     if self.size != "":
                         # Size
                         draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
@@ -576,17 +584,17 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
                         y += 25
                     
-                    
-                if self.usable_classes:
-                    # Classes
-                    classes=" ".join(sorted(self.usable_classes))
-                    draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
-                    y += 25
-                if self.usable_race:
-                    # Race
-                    race=" ".join(sorted(self.usable_race))
-                    draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
-                    y += 25
+                if self.item_type == "Equipment" or "Weapon":    
+                    if self.usable_classes:
+                        # Classes
+                        classes=" ".join(sorted(self.usable_classes))
+                        draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
+                        y += 25
+                    if self.usable_race:
+                        # Race
+                        race=" ".join(sorted(self.usable_race))
+                        draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
+                        y += 25
 
 
                     
