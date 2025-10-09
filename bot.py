@@ -562,7 +562,7 @@ class ItemEntryView(discord.ui.View):
                         y += 25
 
                 
-                if self.item_type in ("Equipment", "Weapon", "Consumable"): 
+                if self.item_type in ("Equipment", "Weapon"): 
 
                     if self.stats != "":
                         stats_text = stats.upper()
@@ -576,7 +576,28 @@ class ItemEntryView(discord.ui.View):
                         # Effects
                         draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
-                         
+
+                if self.item_type in ("Consumable"): 
+
+                    if self.stats != "":
+                        stats_text = stats.upper()
+                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        # Measure how tall the rendered text block actually is
+                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                        text_height = bbox[3] - bbox[1]
+                        y += text_height + 15  # Add a little padding
+
+                    if self.subtype in ("Potion", "Scroll")
+                        if self.effects != "":
+                            # Effects
+                            draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
+                            y += 25
+                    if self.subtype in ("Drink","Food", "Other"): 
+                        if self.effects != "":
+                            # Effects
+                            draw.text((x, y), f"{effects}", fill=(255, 255, 255), font=font_effects)
+                            y += 25
+                            
              
                 if self.item_type in ("Crafting", "Misc"):
                     if self.effects != "":
