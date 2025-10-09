@@ -698,6 +698,25 @@ class ItemDetailsModal(discord.ui.Modal):
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
         )
+        self.donated_by = discord.ui.TextInput(
+                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.item_name)
+        self.add_item(self.donated_by)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        # Save values back to the view
+        self.view.item_name = self.item_name.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
+
+
+        await interaction.response.send_message(ItemDetailsItemDetailsModal2(self.parent_view))
+        
+
+class ItemDetailsModal2(discord.ui.Modal):
+    def __init__(self, view: ItemEntryView):
+        super().__init__(title=f"{view.item_type} Details")
+        self.view = view
         
         # Weapon ATTACK/DELAY
         if view.item_type == "Weapon":
@@ -736,19 +755,14 @@ class ItemDetailsModal(discord.ui.Modal):
         self.weight = discord.ui.TextInput(
                     label="Weight", default=view.weight or "", required=False, style=discord.TextStyle.paragraph
         )
-        self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
-        )
+
         self.add_item(self.stats) 
-        self.add_item(self.item_name)
         self.add_item(self.weight)
-        self.add_item(self.donated_by)
+
     
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
-        self.view.item_name = self.item_name.value
         self.view.weight = self.weight.value
-        self.view.donated_by = self.donated_by.value or "Anonymous"
         self.view.stats = self.stats.value
 
         if self.view.item_type == "Weapon":
@@ -761,8 +775,6 @@ class ItemDetailsModal(discord.ui.Modal):
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
         )
-
-
 
 
 
