@@ -478,7 +478,7 @@ class ItemEntryView(discord.ui.View):
     
         if self.item_type == "Weapon":
             fields_to_update["attack"] = self.attack
-            field_to_upade["delay"] = self.delay
+            field_to_update["delay"] = self.delay
             fields_to_update["effects"] = self.effects
         elif self.item_type == "Equipment":
             fields_to_update["ac"] = self.ac
