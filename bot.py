@@ -421,8 +421,8 @@ class ItemEntryView(discord.ui.View):
             
             stat_names = ["STR:0", "STA:0", "AGI:0", "DEX:0", "WIS:0", "INT:0", "CHA:0"]
             
-            for i, stat_name in enumerate(stat_names):
-                select = StatsSelect(self, stat_name, row=i)
+            for i, stat in enumerate(stat_names):
+                select = StatsSelect(self, stat_name=stat, row=i)
                 self.add_item(select)
 
 
