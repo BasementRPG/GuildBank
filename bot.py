@@ -531,6 +531,12 @@ class ItemEntryView(discord.ui.View):
                     # Effects
                     draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                     y += 25
+                    
+                if self.size != "":
+                    # Size
+                    draw.text((x, y), f"Size: {size}".upper(), fill=(255, 255, 255), font=font_stats)
+                    y += 25
+                    
                 if self.usable_classes:
                     # Classes
                     classes=" ".join(sorted(self.usable_classes))
