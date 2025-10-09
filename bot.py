@@ -425,8 +425,8 @@ class ItemEntryView(discord.ui.View):
         
         if self.item_type in ["Weapon", "Equipment"]:
             
-            self.slot_str = StrSelect(self)
-            self.add_item(self.slot_select)
+            self.str_select = StrSelect(self)
+            self.add_item(self.str_select)
 
 
             
