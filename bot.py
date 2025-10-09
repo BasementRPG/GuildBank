@@ -420,7 +420,7 @@ class ItemEntryView(discord.ui.View):
         return interaction.user == self.author
     
     async def open_item_details(self, interaction: discord.Interaction):
-        modal = ItemDetailsModal(self, parent_view)
+        modal = ItemDetailsModal(self)
         await interaction.response.send_modal(modal)
 
     async def reset_entry(self, interaction: discord.Interaction):
@@ -692,10 +692,10 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView, parent_view):
+    def __init__(self, view: ItemEntryVieww):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-        self.parent_view = parent_view
+      
         
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
@@ -746,18 +746,18 @@ class ItemDetailsModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
-        self.parent_view.item_name = self.item_name.value
-        self.parent_view.weight = self.weight.value
-        self.parent_view.donated_by = self.donated_by.value or "Anonymous"
+        self.view.item_name = self.item_name.value
+        self.view.weight = self.weight.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
 
-        if self.parent_view.item_type == "Weapon":
-            self.parent_view.attack = self.attack.value
-        if self.parent_view.item_type == "Equipment":
-            self.parent_view.ac = self.ac.value           
-        if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
-            self.parent_view.effects = self.effects.value
+        if self.view.item_type == "Weapon":
+            self.view.attack = self.attack.value
+        if self.view.item_type == "Equipment":
+            self.view.ac = self.ac.value           
+        if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
+            self.view.effects = self.effects.value
 
-        modal2 = ItemDetailsModal2(self.parent_view)
+        modal2 = ItemDetailsModal2(self)
         await interaction.response.send_modal(modal2)
         """
         await interaction.response.send_message(
@@ -765,10 +765,10 @@ class ItemDetailsModal(discord.ui.Modal):
         )"""
 
 class ItemDetailsModal2(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView, parent_view):
+    def __init__(self, view: ItemEntryView:
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-        self.parent_view = parent_view
+        
         
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
@@ -818,16 +818,16 @@ class ItemDetailsModal2(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
-        self.parent_view.item_name = self.item_name.value
-        self.parent_view.weight = self.weight.value
-        self.parent_view.donated_by = self.donated_by.value or "Anonymous"
+        self.view.item_name = self.item_name.value
+        self.view.weight = self.weight.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
 
-        if self.parent_view.item_type == "Weapon":
-            self.parent_view.attack = self.attack.value
-        if self.parent_view.item_type == "Equipment":
-            self.parent_view.ac = self.ac.value           
-        if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
-            self.parent_view.effects = self.effects.value
+        if self.view.item_type == "Weapon":
+            self.view.attack = self.attack.value
+        if self.view.item_type == "Equipment":
+            self.view.ac = self.ac.value           
+        if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
+            self.view.effects = self.effects.value
 
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
