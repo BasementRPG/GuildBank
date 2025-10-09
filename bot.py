@@ -572,14 +572,14 @@ class ItemEntryView(discord.ui.View):
                         text_height = bbox[3] - bbox[1]
                         y += text_height + 15  # Add a little padding
     
-                     if self.effects != "":
+                    if self.effects != "":
                         # Effects
                         draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
                          
                 if self.item_type == "Crafting" or "Misc":
 
-                     if self.effects != "":
+                    if self.effects != "":
                         # Effects
                         draw.text((x, y), f"{effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
