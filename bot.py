@@ -700,7 +700,8 @@ class ItemDetailsModal(discord.ui.Modal):
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
         )
-         self.add_item(self.item_name)
+        self.add_item(self.item_name)
+        
         # Weapon ATTACK/DELAY
         if view.item_type == "Weapon":
 
