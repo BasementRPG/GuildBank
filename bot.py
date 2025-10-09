@@ -349,30 +349,38 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class StatsSelect(discord.ui.Select):
-    def __init__(self, parent_view, stat_name):
+    def __init__(self, parent_view, stat_name, row=None):
         self.parent_view = parent_view
         self.stat_name = stat_name
 
-        options = [
-            discord.SelectOption(label=f"{i:+}", value=str(i), default=(i == 0))
-            for i in range(-10, 11)
-        ]
+        options = [discord.SelectOption(label=str(i), value=str(i)) for i in range(-10, 11)]
+        # Default to 0
+        for opt in options:
+            if opt.value == "0":
+                opt.default = True
 
-        super().__init__(
-            placeholder=f"{stat_name}",
-            options=options,            
-        )
+        super().__init__(placeholder=stat_name, options=options, row=row)
 
     async def callback(self, interaction: discord.Interaction):
         try:
             value = int(self.values[0])
-            self.parent_view.stats_data[self.stat_name] = value
-            await interaction.response.defer()
+            if value != 0:
+                # Update the stats string
+                stats_dict = {s.split(":")[0]: int(s.split(":")[1]) for s in self.parent_view.stats.split() if ":" in s} if self.parent_view.stats else {}
+                stats_dict[self.stat_name] = value
+                self.parent_view.stats = " ".join(f"{k}:{v}" for k, v in stats_dict.items())
+            else:
+                # Remove stat if 0
+                if self.stat_name in self.parent_view.stats:
+                    stats_dict = {s.split(":")[0]: int(s.split(":")[1]) for s in self.parent_view.stats.split() if ":" in s}
+                    stats_dict.pop(self.stat_name, None)
+                    self.parent_view.stats = " ".join(f"{k}:{v}" for k, v in stats_dict.items())
+            await interaction.response.edit_message(view=self.parent_view)
         except Exception as e:
-            print(f"ERROR in StatsSelect callback ({self.stat_name}): {e}")
-            await interaction.response.send_message(
-                f"Error updating {self.stat_name}", ephemeral=True
-            )
+            print(f"ERROR in StatsSelect callback: {e}")
+            import traceback
+            traceback.print_exc()
+
 
 
 
