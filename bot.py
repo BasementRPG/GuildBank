@@ -440,7 +440,7 @@ class ItemEntryView(discord.ui.View):
         classes_str = " ".join(self.usable_classes)
         race_str = " ".join(self.usable_race)
         slot_str = " ".join(self.slot)
-        stats_str = " ".join([f"{k}:{v:+}" for k, v in self.stats_date.items() if v !=0])
+
         donor = self.donated_by or "Anonymous"
         added_by = str(interaction.user)
     
@@ -451,7 +451,6 @@ class ItemEntryView(discord.ui.View):
             "subtype": self.subtype,
             "slot": slot_str,
             "size":self.size,
-            "stats":stats_str,
             "stats": self.stats,
             "weight": self.weight,
             "classes": classes_str,
@@ -598,7 +597,7 @@ class ItemEntryView(discord.ui.View):
                 size=self.size,
                 subtype=self.subtype,
                 slot=" ".join(self.slot),
-                stats=" ".join(self.stats),
+                stats="",
                 weight=self.weight,
                 classes=" ".join(self.usable_classes),
                 race=" ".join(self.usable_race),
