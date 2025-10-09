@@ -348,38 +348,36 @@ class SizeSelect(discord.ui.Select):
             except:
                 pass
                 
-class StatsSelect(discord.ui.Select):
-    def __init__(self, parent_view, stat_name, row=None):
+class StrSelect(discord.ui.Select):
+    def __init__(self, parent_view):
         self.parent_view = parent_view
-        self.stat_name = stat_name
 
-        options = [discord.SelectOption(label=str(i), value=str(i)) for i in range(-10, 11)]
-        # Default to 0
-        for opt in options:
-            if opt.value == "0":
-                opt.default = True
+        # Create options -10 to 10 with 0 default
+        options = [
+            discord.SelectOption(label=str(i), value=str(i), default=(i == 0))
+            for i in range(-10, 11)
+        ]
 
-        super().__init__(placeholder=stat_name, options=options, row=row)
+        super().__init__(placeholder="STR", options=options, row=0)  # row 0
 
     async def callback(self, interaction: discord.Interaction):
         try:
             value = int(self.values[0])
+            # Only save non-zero values
             if value != 0:
-                # Update the stats string
-                stats_dict = {s.split(":")[0]: int(s.split(":")[1]) for s in self.parent_view.stats.split() if ":" in s} if self.parent_view.stats else {}
-                stats_dict[self.stat_name] = value
-                self.parent_view.stats = " ".join(f"{k}:{v}" for k, v in stats_dict.items())
+                self.parent_view.stats = f"STR:{value}"
             else:
-                # Remove stat if 0
-                if self.stat_name in self.parent_view.stats:
-                    stats_dict = {s.split(":")[0]: int(s.split(":")[1]) for s in self.parent_view.stats.split() if ":" in s}
-                    stats_dict.pop(self.stat_name, None)
-                    self.parent_view.stats = " ".join(f"{k}:{v}" for k, v in stats_dict.items())
+                self.parent_view.stats = ""
+            
             await interaction.response.edit_message(view=self.parent_view)
         except Exception as e:
-            print(f"ERROR in StatsSelect callback: {e}")
+            print(f"ERROR in StrSelect callback: {e}")
             import traceback
             traceback.print_exc()
+            try:
+                await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
+            except:
+                pass
 
 
 
@@ -427,13 +425,8 @@ class ItemEntryView(discord.ui.View):
         
         if self.item_type in ["Weapon", "Equipment"]:
             
-            stat_names = ["STR", "STA", "AGI", "DEX", "WIS", "INT", "CHA"]
-            
-            for i, stat in enumerate(stat_names):
-                select = StatsSelect(self, stat_name=stat)
-                select.row = i  # Each select on its own row
-                self.add_item(select)
-
+            self.slot_str = StrSelect(self)
+            self.add_item(self.slot_select)
 
 
             
