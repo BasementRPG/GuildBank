@@ -419,16 +419,16 @@ class ItemEntryView(discord.ui.View):
         
         if self.item_type in ["Weapon", "Equipment"]:
             
-            self.stats_data = {"STR", "STA", "AGI", "DEX", "WIS", "INT", "CHA"}
-            stat_names = list(self.stats_data.keys())
+            stat_names = ["STR", "STA", "AGI", "DEX", "WIS", "INT", "CHA"]
+
+            # Maximum 5 per row
+            max_per_row = 5
+            
             for i, stat_name in enumerate(stat_names):
                 select = StatsSelect(self, stat_name)
-                if i < 5:
-                    select.row = 0
-                else:
-                    select.row = 1
-                
+                select.row = i // max_per_row  # automatically assign row 0,1,... based on index
                 self.add_item(select)
+
 
             
             self.slot_select = SlotSelect(self)
