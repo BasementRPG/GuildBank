@@ -719,10 +719,6 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.ac)
 
 
-        self.stats = discord.ui.TextInput(
-                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
-        )
-
 
         #  EFFECTS
         if view.item_type == "Weapon" or "Equipment" or "Consumable":
@@ -740,8 +736,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.donated_by = discord.ui.TextInput(
                 label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
         )
-
-        self.add_item(self.stats) 
+ 
         self.add_item(self.item_name)
         self.add_item(self.weight)
         self.add_item(self.donated_by)
@@ -752,7 +747,6 @@ class ItemDetailsModal(discord.ui.Modal):
         self.view.item_name = self.item_name.value
         self.view.weight = self.weight.value
         self.view.donated_by = self.donated_by.value or "Anonymous"
-        self.view.stats = self.stats.value
 
         if self.view.item_type == "Weapon":
             self.view.attack = self.attack.value
