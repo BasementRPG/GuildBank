@@ -53,6 +53,21 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
+async def ensure_upload_channel(guild: discord.Guild):
+    for ch in guild.text_channels:
+        if ch.name == "guildbankbot-uploads":
+            return ch
+    # create hidden channel
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(view_channel=False),
+        guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+    }
+    return await guild.create_text_channel("guildbankbot-uploads", overwrites=overwrites)
+
+
+
+
+
 async def add_item_db(guild_id, name, type_, subtype=None, size=None, slot=None, stats=None, weight=None,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
@@ -584,8 +599,9 @@ class ItemEntryView(discord.ui.View):
             created_images = io.BytesIO()
             background.save(created_images, format="PNG")
             created_images.seek(0)
+            upload_channel = await ensure_upload_channel(interaction.guild)
             file = discord.File(created_images, filename=f"{self.item_name}.png")
-            message = await interaction.channel.send(file=file, delete_after=1)  # deletes after 1s
+            message = await upload.channel.send(file=file)
             cdn_url = message.attachments[0].url
 
             
