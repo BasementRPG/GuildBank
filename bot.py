@@ -48,6 +48,7 @@ EQUIPMENT_SUBTYPES = ["Ammo","Back","Chest","Ear","Face","Feet","Finger","Hands"
 WEAPON_SUBTYPES = ["Ammo","Primary", "Range","Secondary"]
 WEAPON_SKILLTYPE = ["One Handed", "Two Handed"]
 WEAPON_SKILL = ["ARC","BLG","SLA","STA","THR"]
+SIZE = ["Large","Medium","Small"]
 
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
@@ -60,17 +61,17 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, slot=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
+async def add_item_db(guild_id, name, type_, subtype=None, size=None, slot=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, type, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-        ''', guild_id, name, type_, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, name, size, type, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ''', guild_id, name, type_, size, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, slot, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
+        rows = await conn.fetch("SELECT id, name, type, subtype, slot, size, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
 async def get_item_by_name(guild_id, name):
@@ -320,6 +321,44 @@ class RaceSelect(discord.ui.Select):
     
         await interaction.response.edit_message(view=self.view)
 
+
+class SizeSelect(discord.ui.Select):
+    def __init__(self, parent_view):
+        self.parent_view = parent_view
+        
+        # Use the global SIZE list
+        options = [discord.SelectOption(label=s, value=s) for s in SIZE]
+
+        # ✅ Mark selected size as default
+        for opt in options:
+            if opt.label == self.parent_view.size:
+                opt.default = True
+
+        super().__init__(placeholder="Select Size", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            print(f"DEBUG: SizeSelect callback - values: {self.values}")
+            # Save to size column
+            self.parent_view.size = self.values[0]
+
+            # Update which option is default so it stays highlighted
+            for opt in self.options:
+                opt.default = (opt.label == self.values[0])
+
+            await interaction.response.edit_message(view=self.parent_view)
+        except Exception as e:
+            print(f"ERROR in SizeSelect callback: {e}")
+            import traceback
+            traceback.print_exc()
+            try:
+                await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
+            except:
+                pass
+
+
+
+
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
         super().__init__(timeout=None)
@@ -327,6 +366,7 @@ class ItemEntryView(discord.ui.View):
         self.item_type = item_type
         self.subtype = None
         self.slot = []
+        self.size=""
         self.usable_classes = []
         self.usable_race = []
         self.item_name = ""
@@ -342,6 +382,7 @@ class ItemEntryView(discord.ui.View):
             self.item_name = existing_data['name']
             self.item_type = existing_data['type']
             self.subtype = existing_data['subtype']
+            self.size = existing_data['size']
             self.slot = existing_data['slot'].split(" ") if existing_data['slot'] else []
             self.stats = existing_data['stats']
             self.ac = existing_data['ac']
@@ -406,6 +447,7 @@ class ItemEntryView(discord.ui.View):
             "type": self.item_type,
             "subtype": self.subtype,
             "slot": slot_str,
+            "size":self.size,
             "stats": self.stats,
             "classes": classes_str,
             "race": race_str,
@@ -449,6 +491,7 @@ class ItemEntryView(discord.ui.View):
                 font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
                 font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
                 font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
+                font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
                 font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
@@ -480,12 +523,13 @@ class ItemEntryView(discord.ui.View):
 
                 if self.stats != "":
                     # Stats
-                    draw.text((x, y), f"STR: +1: {stats or 'N/A'}", fill=(255, 255, 255), font=font_stats)
+                    
+                    draw.text((x, y), f"{stats}".upper(), fill=(255, 255, 255), font=font_stats)
                     y += 25
 
                 if self.effects != "":
                     # Effects
-                    draw.text((x, y), f"Effects: {effects or 'N/A'}", fill=(255, 255, 255), font=font_effects)
+                    draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                 if self.usable_classes:
                     # Classes
@@ -507,6 +551,7 @@ class ItemEntryView(discord.ui.View):
                 self.item_name,
                 self.item_type,
                 self.subtype,
+                self.size,
                 self.slot,
                 self.stats,
                 self.effects,
@@ -526,6 +571,7 @@ class ItemEntryView(discord.ui.View):
                 guild_id=interaction.guild.id,
                 name=self.item_name,
                 type_=self.item_type,
+                size=self.size,
                 subtype=self.subtype,
                 slot=" ".join(self.slot),
                 stats=self.stats,
@@ -609,6 +655,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 name=item_name,
                 type_="Image",
                 subtype="Image",
+                size="",
                 slot="",
                 stats="",
                 classes="",
