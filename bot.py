@@ -535,7 +535,7 @@ class ItemEntryView(discord.ui.View):
 
                 if self.item_type == "Equipment":
                     # Slot
-                    slot=" ".join(sorted(self.slot)).upper()
+                    slot=" ".join(sorted(self.slot))
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
                 
@@ -555,14 +555,18 @@ class ItemEntryView(discord.ui.View):
                         #Attack/Delay
                         attack = self.attack
                         delay = self.delay
-                        draw.text((x, y), f"Weapon DMG: {attack} ATK Delay:{delay}", fill=(255, 255, 255), font=font_attack)
+                        draw.text((x, y), f"Weapon DMG: {attack} ATK Delay: {delay}", fill=(255, 255, 255), font=font_attack)
                         y += 25
 
+                
                 if self.stats != "":
-                    # Stats
-                    
-                    draw.text((x, y), f"{stats}".upper(), fill=(255, 255, 255), font=font_stats)
-                    y += 25
+                    stats_text = stats.upper()
+                    draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                    # Measure how tall the rendered text block actually is
+                    bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                    text_height = bbox[3] - bbox[1]
+                    y += text_height + 5  # Add a little padding
+
 
                 if self.effects != "":
                     # Effects
@@ -764,7 +768,7 @@ class ItemDetailsModal(discord.ui.Modal):
 
 
         self.weight = discord.ui.TextInput(
-                    label="Weight", default=parent_view.weight or "", required=False, style=discord.TextStyle.paragraph
+                    label="Weight", default=parent_view.weight or "", required=False
         )
         self.donated_by = discord.ui.TextInput(
                 label="Donated By", default=parent_view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
