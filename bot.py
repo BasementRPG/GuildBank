@@ -692,7 +692,7 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryVieww):
+    def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
       
@@ -765,7 +765,7 @@ class ItemDetailsModal(discord.ui.Modal):
         )"""
 
 class ItemDetailsModal2(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView:
+    def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
         
