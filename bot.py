@@ -424,7 +424,7 @@ class ItemEntryView(discord.ui.View):
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
         
-        if self.item_type in ["Weapon" or "Equipment"]:
+        if self.item_type in ["Weapon", "Equipment"]:
             self.details_button1 = discord.ui.Button(label="Stat Details", style=discord.ButtonStyle.secondary)
             self.details_button1.callback = self.open_item_details1
             self.add_item(self.details_button1)
