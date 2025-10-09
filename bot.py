@@ -405,7 +405,7 @@ class ItemEntryView(discord.ui.View):
             "name": self.item_name,
             "type": self.item_type,
             "subtype": self.subtype,
-            "slot": slot_str
+            "slot": slot_str,
             "stats": self.stats,
             "classes": classes_str,
             "race": race_str,
