@@ -535,7 +535,7 @@ class ItemEntryView(discord.ui.View):
                         # Size
                         draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
                         y += 25
-                elif
+                else:
                     if self.weight != "":
                         # Size
                         draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_weight)
