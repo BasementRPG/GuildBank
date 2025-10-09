@@ -52,17 +52,17 @@ db_pool: asyncpg.Pool = None
 
 # ---------- DB Helpers ----------
 
-async def add_item_db(guild_id, name, type_, subtype=None, size=None, slot=None, stats=None, classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
+async def add_item_db(guild_id, name, type_, subtype=None, size=None, slot=None, stats=None, weight=none,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, size, type, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-        ''', guild_id, name, type_, size, subtype, slot, stats, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        ''', guild_id, name, type_, size, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, name, type, subtype, slot, size, stats, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
+        rows = await conn.fetch("SELECT id, name, type, subtype, slot, size, stats, weight, classes, race, image, donated_by FROM inventory WHERE guild_id=$1 ORDER BY id", guild_id)
     return rows
 
 async def get_item_by_name(guild_id, name):
@@ -362,6 +362,7 @@ class ItemEntryView(discord.ui.View):
         self.usable_race = []
         self.item_name = ""
         self.stats = ""
+        self.weight = ""
         self.item_id = item_id
         self.donated_by = ""
         self.attack = ""
@@ -376,6 +377,7 @@ class ItemEntryView(discord.ui.View):
             self.size = existing_data['size']
             self.slot = existing_data['slot'].split(" ") if existing_data['slot'] else []
             self.stats = existing_data['stats']
+            self.weight = existing_data['weight']
             self.ac = existing_data['ac']
             self.attack = existing_data['attack']
             self.effects = existing_data['effects']
@@ -443,6 +445,7 @@ class ItemEntryView(discord.ui.View):
             "slot": slot_str,
             "size":self.size,
             "stats": self.stats,
+            "weight": self.weight,
             "classes": classes_str,
             "race": race_str,
             "donated_by": donor,
@@ -477,7 +480,7 @@ class ItemEntryView(discord.ui.View):
             background = Image.open(bg_path).convert("RGBA")
             
         
-            def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, effects, donated_by):
+            def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, weight, effects, donated_by):
                 draw = ImageDraw.Draw(background)
             
                 # Load a fontWry
@@ -487,6 +490,7 @@ class ItemEntryView(discord.ui.View):
                 font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
                 font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
                 font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
+                font_weight = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for weight
                 font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
                 font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
                 font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for attack by
@@ -526,10 +530,21 @@ class ItemEntryView(discord.ui.View):
                     draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                     y += 25
                     
-                if self.size != "":
-                    # Size
-                    draw.text((x, y), f"Size: {size}".upper(), fill=(255, 255, 255), font=font_stats)
-                    y += 25
+                if self.item_type == "Equipment":
+                    if self.size != "":
+                        # Size
+                        draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25
+                elif
+                    if self.weight != "":
+                        # Size
+                        draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_weight)
+                        y += 25
+                    if self.size != "":
+                        # Size
+                        draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25
+                    
                     
                 if self.usable_classes:
                     # Classes
@@ -554,6 +569,7 @@ class ItemEntryView(discord.ui.View):
                 self.size,
                 self.slot,
                 self.stats,
+                self.weight,
                 self.effects,
                 self.donated_by or "Anonymous"
             )
@@ -575,6 +591,7 @@ class ItemEntryView(discord.ui.View):
                 subtype=self.subtype,
                 slot=" ".join(self.slot),
                 stats=self.stats,
+                weight=self.weight,
                 classes=" ".join(self.usable_classes),
                 race=" ".join(self.usable_race),
                 image=None,
@@ -658,6 +675,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 size="",
                 slot="",
                 stats="",
+                weight="",
                 classes="",
                 race="",
                 image=self.view.image,
@@ -676,105 +694,69 @@ class ItemDetailsModal(discord.ui.Modal):
     def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-
-        # Weapon
-        if view.item_type == "Weapon":
-            self.item_name = discord.ui.TextInput(
+        
+        self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
-            )
+        )
+        
+        # Weapon ATTACK/DELAY
+        if view.item_type == "Weapon":
+            
             self.attack = discord.ui.TextInput(
                 label="Attack / Delay", default=view.attack or "", required=True
             )
-            self.stats = discord.ui.TextInput(
-                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
-            )
-            self.donated_by = discord.ui.TextInput(
-                label="Donated by", default=view.donated_by or "", required=False
-            )
-            self.add_item(self.item_name)
+            
             self.add_item(self.attack)
-            self.add_item(self.stats)
-            self.add_item(self.effects)
-            self.add_item(self.donated_by)
+                       
+        
+        # Equipment AC
+        if view.item_type == "Equipment":
 
-        # Equipment
-        elif view.item_type == "Equipment":
-            self.item_name = discord.ui.TextInput(
-                label="Item Name", default=view.item_name, required=True
-            )
             self.ac = discord.ui.TextInput(
                 label="Armor Class", default=view.ac or "", required=True
             )
-            self.stats = discord.ui.TextInput(
-                label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
-            )
-            self.effects = discord.ui.TextInput(
-                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
-            )
-            self.donated_by = discord.ui.TextInput(
-                label="Donated by", default=view.donated_by or "", required=False
-            )
-            self.add_item(self.item_name)
             self.add_item(self.ac)
-            self.add_item(self.stats)
-            self.add_item(self.effects)
-            self.add_item(self.donated_by)
 
-        # Consumable
-        elif view.item_type == "Consumable":
-            self.item_name = discord.ui.TextInput(
-                label="Item Name", default=view.item_name, required=True
-            )
-            self.stats = discord.ui.TextInput(
+    
+        self.stats = discord.ui.TextInput(
                 label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
-            )
+        )
+        
+
+        #  EFFECTS
+        if view.item_type == "Weapon" or "Equipment" or "Consumable":
+            
             self.effects = discord.ui.TextInput(
                 label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
             )
-            self.donated_by = discord.ui.TextInput(
-                label="Donated by", default=view.donated_by or "", required=False
-            )
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
+
             self.add_item(self.effects)
-            self.add_item(self.donated_by)
-
-        # Crafting / Misc
-        else:
-            self.item_name = discord.ui.TextInput(
-                label="Item Name", default=view.item_name, required=True
-            )
-            self.stats = discord.ui.TextInput(
-                label="Info", default=view.stats or "", style=discord.TextStyle.paragraph, required=False
-            )
-            self.donated_by = discord.ui.TextInput(
-                label="Donated by", default=view.donated_by or "", required=False
-            )
-            self.add_item(self.item_name)
-            self.add_item(self.stats)
-            self.add_item(self.donated_by)
-
+    
+                  
+        self.weight = discord.ui.TextInput(
+                    label="Weight", default=view.weight or "", required=False, style=discord.TextStyle.paragraph
+        )
+        self.donated_by = discord.ui.TextInput(
+                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.stats) 
+        self.add_item(self.item_name)
+        self.add_item(self.weight)
+        self.add_item(self.donated_by)
+    
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
         self.view.item_name = self.item_name.value
+        self.view.weight = self.weight.value
         self.view.donated_by = self.donated_by.value or "Anonymous"
+        self.view.stats = self.stats.value
 
         if self.view.item_type == "Weapon":
             self.view.attack = self.attack.value
-            self.view.stats = self.stats.value
+        if self.view.item_type == "Equipment":
+            self.view.ac = self.ac.value           
+        if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
             self.view.effects = self.effects.value
-        elif self.view.item_type == "Equipment":
-            self.view.ac = self.ac.value
-            self.view.stats = self.stats.value
-            self.view.effects = self.effects.value
-        elif self.view.item_type == "Consumable":
-            self.view.stats = self.stats.value
-            self.view.effects = self.effects.value
-        else:  # Crafting / Misc
-            self.view.stats = self.stats.value
 
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
