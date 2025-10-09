@@ -799,12 +799,10 @@ async def view_bank(interaction: discord.Interaction):
 
     async def build_embed_with_file(row):
         item_type = (row.get('type') or "Misc").lower()
-        emoji = ITEM_TYPE_EMOJIS.get(row['type'], "")
-        name = row.get('name', 'Unknown Item')
-        subtype = row.get('subtype', 'None')
+        name = row.get('name')
+
         donated_by = row.get('donated_by') or "Anonymous"
-        stats = row.get('stats') or ""
-        effects = row.get('effects') or ""
+
 
         embed = discord.Embed(
             color=TYPE_COLORS.get(item_type, discord.Color.blurple())
