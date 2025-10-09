@@ -420,7 +420,7 @@ class ItemEntryView(discord.ui.View):
         return interaction.user == self.author
     
     async def open_item_details(self, interaction: discord.Interaction):
-        modal = ItemDetailsModal(self)
+        modal = ItemDetailsModal(parent_view=self)
         await interaction.response.send_modal(modal)
 
     async def reset_entry(self, interaction: discord.Interaction):
@@ -692,9 +692,9 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView, parent_view):
-        super().__init__(title=f"{view.item_type} Details")
-        self.view = view
+    def __init__(self, parent_view):
+        super().__init__(title=f"{parent_view.item_type} Details")
+        
         self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
