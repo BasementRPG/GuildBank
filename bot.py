@@ -347,6 +347,36 @@ class SizeSelect(discord.ui.Select):
                 await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
             except:
                 pass
+                
+class StatsSelect(discord.ui.Select):
+    def __init__(self, parent_view, stat_name, row):
+        self.parent_view = parent_view
+        self.stat_name = stat_name
+
+        options = [
+            discord.SelectOption(label=f"{i:+}", value=str(i), default=(i == 0))
+            for i in range(-10, 11)
+        ]
+
+        super().__init__(
+            placeholder=f"{stat_name}",
+            options=options,
+            min_values=1,
+            max_values=1,
+            custom_id=f"select_{stat_name}",
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            value = int(self.values[0])
+            self.parent_view.stats_data[self.stat_name] = value
+            await interaction.response.defer()
+        except Exception as e:
+            print(f"ERROR in StatsSelect callback ({self.stat_name}): {e}")
+            await interaction.response.send_message(
+                f"Error updating {self.stat_name}", ephemeral=True
+            )
 
 
 
@@ -393,6 +423,13 @@ class ItemEntryView(discord.ui.View):
         
         if self.item_type in ["Weapon", "Equipment"]:
             
+            self.stats_data = {"STR": 0, "STA": 0, "AGI": 0, "DEX": 0, "WIS": 0, "INT": 0, "CHA": 0}
+            stat_names = list(self.stats_data.keys())
+            for i, stat_name in enumerate(stat_names):
+                row = i // 3  # 3 per row
+                select = StatsSelect(self, stat_name, row=row)
+                self.add_item(select)
+            
             self.slot_select = SlotSelect(self)
             self.add_item(self.slot_select)
             
@@ -435,6 +472,7 @@ class ItemEntryView(discord.ui.View):
         classes_str = " ".join(self.usable_classes)
         race_str = " ".join(self.usable_race)
         slot_str = " ".join(self.slot)
+        stats_str = " ".join([f"{k}:{v:+}" for k, v in self.stats_date.items() if v !=0])
         donor = self.donated_by or "Anonymous"
         added_by = str(interaction.user)
     
@@ -445,6 +483,7 @@ class ItemEntryView(discord.ui.View):
             "subtype": self.subtype,
             "slot": slot_str,
             "size":self.size,
+            "stats":stats_str,
             "stats": self.stats,
             "weight": self.weight,
             "classes": classes_str,
@@ -591,7 +630,7 @@ class ItemEntryView(discord.ui.View):
                 size=self.size,
                 subtype=self.subtype,
                 slot=" ".join(self.slot),
-                stats=self.stats,
+                stats=" ".join(self.stats),
                 weight=self.weight,
                 classes=" ".join(self.usable_classes),
                 race=" ".join(self.usable_race),
