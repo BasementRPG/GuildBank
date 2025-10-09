@@ -692,44 +692,24 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, parent_view):
+    def __init__(self, view: ItemEntryView):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-        self.parent_view=parent_view
-        
+
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
         )
-        self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=view.donated_by or "", required=False
-        )
-        self.add_item(self.item_name)
-        self.add_item(self.donated_by)
-    
-    async def on_submit(self, interaction: discord.Interaction):
-        # Save values back to the view
-        self.view.item_name = self.item_name.value
-        self.view.donated_by = self.donated_by.value or "Anonymous"
-
-
-        await interaction.response.send_message(ItemDetailsModal2(self.parent_view))
         
-
-class ItemDetailsModal2(discord.ui.Modal):
-    def __init__(self, parent_view):
-        super().__init__(title=f"{view.item_type} Details")
-        self.view = view
-        self.parent_view=parent_view
         # Weapon ATTACK/DELAY
         if view.item_type == "Weapon":
-            
+
             self.attack = discord.ui.TextInput(
                 label="Attack / Delay", default=view.attack or "", required=True
             )
-            
+
             self.add_item(self.attack)
-                       
-        
+
+
         # Equipment AC
         if view.item_type == "Equipment":
 
@@ -738,33 +718,40 @@ class ItemDetailsModal2(discord.ui.Modal):
             )
             self.add_item(self.ac)
 
-    
+
         self.stats = discord.ui.TextInput(
                 label="Stats", default=view.stats or "", required=False, style=discord.TextStyle.paragraph
         )
-        
+
 
         #  EFFECTS
         if view.item_type == "Weapon" or "Equipment" or "Consumable":
-            
+
             self.effects = discord.ui.TextInput(
                 label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
             )
 
             self.add_item(self.effects)
-    
-                  
+
+
         self.weight = discord.ui.TextInput(
                     label="Weight", default=view.weight or "", required=False, style=discord.TextStyle.paragraph
         )
+        self.donated_by = discord.ui.TextInput(
+                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+        )
 
         self.add_item(self.stats) 
+        self.add_item(self.item_name)
         self.add_item(self.weight)
+        self.add_item(self.donated_by)
 
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view
+        self.view.item_name = self.item_name.value
         self.view.weight = self.weight.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
         self.view.stats = self.stats.value
 
         if self.view.item_type == "Weapon":
@@ -777,7 +764,6 @@ class ItemDetailsModal2(discord.ui.Modal):
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
         )
-
 
 
 
