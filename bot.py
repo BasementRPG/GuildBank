@@ -424,7 +424,7 @@ class ItemEntryView(discord.ui.View):
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
         
-        if self.item_type == "Weapon" or "Equipment":
+        if self.item_type in ["Weapon" or "Equipment"]:
             self.details_button1 = discord.ui.Button(label="Stat Details", style=discord.ButtonStyle.secondary)
             self.details_button1.callback = self.open_item_details1
             self.add_item(self.details_button1)
@@ -792,14 +792,7 @@ class ItemDetailsModal(discord.ui.Modal):
             )
             self.add_item(self.ac)
 
-
-        self.weight = discord.ui.TextInput(
-                    label="Weight", default=parent_view.weight or "", required=False
-        )
-        self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=parent_view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
-        )
-
+         
         if parent_view.item_type == "Consumable":
          # STATS
             self.stats = discord.ui.TextInput(
@@ -810,7 +803,11 @@ class ItemDetailsModal(discord.ui.Modal):
 
             self.effects = discord.ui.TextInput(
                 label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
-            )   
+            )  
+
+            self.add_item(self.stats)
+            self.add_item(self.effects)
+
         else: 
         # STATS
             self.stats = discord.ui.TextInput(
@@ -822,10 +819,18 @@ class ItemDetailsModal(discord.ui.Modal):
             self.effects = discord.ui.TextInput(
                 label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
             )
-
-            
+                        
             self.add_item(self.stats)
             self.add_item(self.effects)
+
+        
+
+        self.weight = discord.ui.TextInput(
+                    label="Weight", default=parent_view.weight or "", required=False
+        )
+        self.donated_by = discord.ui.TextInput(
+                label="Donated By", default=parent_view.donated_by or "Anonymous", required=False
+        )
 
        
         self.add_item(self.weight)
