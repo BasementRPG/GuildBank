@@ -755,9 +755,12 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
             self.view.effects = self.effects.value
 
+        modal2 = ItemDetailsModal2(self.parent_view)
+        await interaction.response.send_modal(modal2)
+        """
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready.", ephemeral=True
-        )
+        )"""
 
 class ItemDetailsModal2(discord.ui.Modal):
     def __init__(self, view: ItemEntryView):
