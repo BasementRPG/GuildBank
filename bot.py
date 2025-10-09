@@ -692,10 +692,10 @@ class ImageDetailsModal(discord.ui.Modal):
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView):
+    def __init__(self, view: ItemEntryView, parent_view):
         super().__init__(title=f"{view.item_type} Details")
         self.view = view
-      
+        self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
@@ -757,7 +757,7 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
             self.view.effects = self.effects.value
 
-        modal2 = ItemDetailsModal2(self)
+        modal2 = ItemDetailsModal2(self.parent_view)
         await interaction.response.send_modal(modal2)
         """
         await interaction.response.send_message(
@@ -765,10 +765,10 @@ class ItemDetailsModal(discord.ui.Modal):
         )"""
 
 class ItemDetailsModal2(discord.ui.Modal):
-    def __init__(self, view: ItemEntryView):
+    def __init__(self, view):
         super().__init__(title=f"{view.item_type} Details")
-        self.view = view
         
+        self.parent_view = view
         
         self.item_name = discord.ui.TextInput(
                 label="Item Name", default=view.item_name, required=True
