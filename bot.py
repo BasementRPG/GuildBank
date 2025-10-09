@@ -55,14 +55,14 @@ db_pool: asyncpg.Pool = None
 
 async def ensure_upload_channel(guild: discord.Guild):
     for ch in guild.text_channels:
-        if ch.name == "guildbankbot-uploads":
+        if ch.name == "guild-bank-upload-log":
             return ch
     # create hidden channel
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),
         guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
     }
-    return await guild.create_text_channel("guildbankbot-uploads", overwrites=overwrites)
+    return await guild.create_text_channel("guild-bank-upload-log", overwrites=overwrites)
 
 
 
