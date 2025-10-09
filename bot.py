@@ -188,6 +188,24 @@ class SubtypeSelect(discord.ui.Select):
 
         super().__init__(placeholder="Select Subtype", options=options)
 
+    async def callback(self, interaction: discord.Interaction):
+            try:
+                print(f"DEBUG: SubtypeSelect callback - values: {self.values}")
+                self.parent_view.subtype = self.values[0]
+                # update which option is default so it stays highlighted
+                for opt in self.options:
+                    opt.default = (opt.label == self.values[0])
+                await interaction.response.edit_message(view=self.parent_view)
+            except Exception as e:
+                print(f"ERROR in SubtypeSelect callback: {e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
+                except:
+                    pass
+
+
 class SlotSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
@@ -215,14 +233,14 @@ class SlotSelect(discord.ui.Select):
     
     async def callback(self, interaction: discord.Interaction):
         try:
-            print(f"DEBUG: SubtypeSelect callback - values: {self.values}")
+            print(f"DEBUG: SlotSelect callback - values: {self.values}")
             self.parent_view.subtype = self.values[0]
             # update which option is default so it stays highlighted
             for opt in self.options:
                 opt.default = (opt.label == self.values[0])
             await interaction.response.edit_message(view=self.parent_view)
         except Exception as e:
-            print(f"ERROR in SubtypeSelect callback: {e}")
+            print(f"ERROR in SlotSelect callback: {e}")
             import traceback
             traceback.print_exc()
             try:
