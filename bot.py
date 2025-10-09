@@ -699,7 +699,7 @@ class ItemDetailsModal(discord.ui.Modal):
                 label="Item Name", default=view.item_name, required=True
         )
         self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+                label="Donated By", default=view.donated_by or "", required=False
         )
         self.add_item(self.item_name)
         self.add_item(self.donated_by)
@@ -710,7 +710,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.view.donated_by = self.donated_by.value or "Anonymous"
 
 
-        await interaction.response.send_message(ItemDetailsItemDetailsModal2(self.parent_view))
+        await interaction.response.send_message(ItemDetailsModal2(self.parent_view))
         
 
 class ItemDetailsModal2(discord.ui.Modal):
