@@ -1053,7 +1053,7 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
 
         # Set qty to 0 instead of deleting
         await conn.execute(
-            "UPDATE inventory SET qty=0 WHERE item_id=$1",
+            "UPDATE inventory SET qty=0 WHERE id=$1",
             item['id']
         )
 
