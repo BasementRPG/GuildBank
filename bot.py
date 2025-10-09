@@ -575,9 +575,9 @@ class ItemEntryView(discord.ui.View):
                     if self.effects != "":
                         # Effects
                         effects_text = effects
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
                         # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_effects)
+                        bbox = draw.textbbox((x, y), effects_text, font=font_effects)
                         text_height = bbox[3] - bbox[1]
                         y += text_height + 15  # Add a little padding
 
@@ -599,9 +599,9 @@ class ItemEntryView(discord.ui.View):
                     if self.subtype in ("Drink","Food", "Other"): 
                         if self.effects != "":
                             effects_text = effects
-                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                            draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
                             # Measure how tall the rendered text block actually is
-                            bbox = draw.textbbox((x, y), stats_text, font=font_effects)
+                            bbox = draw.textbbox((x, y), effects_text, font=font_effects)
                             text_height = bbox[3] - bbox[1]
                             y += text_height + 15  # Add a little padding
                             
@@ -610,11 +610,11 @@ class ItemEntryView(discord.ui.View):
                    
                     if self.effects != "":
                         effects_text = effects
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
                         # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_effects)
+                        bbox = draw.textbbox((x, y), effects_text, font=font_effects)
                         text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
+                        y += text_height + 15  # Add a little paddingg
                         
                     
                 if self.size !="" and self.weight!="":
@@ -643,13 +643,13 @@ class ItemEntryView(discord.ui.View):
                     if self.usable_classes:
                         # Classes
                         classes=" ".join(sorted(self.usable_classes))
-                        draw.text((x, y), f"Class: {classes}", fill=(255, 255, 255), font=font_effects)
+                        draw.text((x, y), f"Class: {classes.upper()}", fill=(255, 255, 255), font=font_effects)
                         y += 25
                         
                     if self.usable_race:
                         # Race
                         race=" ".join(sorted(self.usable_race))
-                        draw.text((x, y), f"Race: {race}", fill=(255, 255, 255), font=font_effects)
+                        draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
                         y += 25
 
                     
