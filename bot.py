@@ -545,15 +545,7 @@ class ItemEntryView(discord.ui.View):
                         ac = self.ac
                         draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                         y += 25
-
-                    if self.stats != "":
-                        stats_text = stats.upper()
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
-                        
+                    
 
                 if self.item_type == "Weapon":
                     # Slot
@@ -569,6 +561,9 @@ class ItemEntryView(discord.ui.View):
                         y += 25
 
                 
+                   
+                if self.item_type == "Equipment" or "Weapon" or "Consumable":
+
                     if self.stats != "":
                         stats_text = stats.upper()
                         draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
@@ -576,32 +571,34 @@ class ItemEntryView(discord.ui.View):
                         bbox = draw.textbbox((x, y), stats_text, font=font_stats)
                         text_height = bbox[3] - bbox[1]
                         y += text_height + 15  # Add a little padding
-
-
-                if self.effects != "":
-                    # Effects
-                    draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
-                    y += 25
-                    
-                if self.item_type == "Equipment" or "Weapon":
-
-                    
-                    if self.size !="" and self.weight=="":
-                        draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-                        y += 25                       
-                    if self. size =="" and self.weight !="":
-                        draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
+    
+                     if self.effects != "":
+                        # Effects
+                        draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
-                if self.item_type == "Crafting" or "Consumable" or "Misc":
-                    if self.weight != "":
-                        # Size
-                        draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_weight)
+                         
+                if self.item_type == "Crafting" or "Misc":
+
+                     if self.effects != "":
+                        # Effects
+                        draw.text((x, y), f"{effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
                         
-                    if self.size != "":
-                        # Size
-                        draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-                        y += 25
+                    
+                if self.size !="" and self.weight!="":
+                    draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                    y += 25                      
+                    
+                if self.size !="" and self.weight=="":
+                    draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                    y += 25                       
+                if self. size =="" and self.weight !="":
+                    draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
+                    y += 25
+
+                
+                if self.item_type == "Crafting" or  "Misc":
+                    
 
                     if self.stats != "":
                         stats_text = stats.upper()
@@ -610,6 +607,8 @@ class ItemEntryView(discord.ui.View):
                         bbox = draw.textbbox((x, y), stats_text, font=font_stats)
                         text_height = bbox[3] - bbox[1]
                         y += text_height + 15  # Add a little padding
+
+                
                     
                 if self.item_type == "Equipment" or "Weapon":    
                     if self.usable_classes:
