@@ -592,7 +592,7 @@ class ItemEntryView(discord.ui.View):
                     if self. size =="" and self.weight !="":
                         draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
                         y += 25
-                if self.intem_type == "Crafting" or "Consumable" or "Misc":
+                if self.item_type == "Crafting" or "Consumable" or "Misc":
                     if self.weight != "":
                         # Size
                         draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_weight)
