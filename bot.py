@@ -348,41 +348,6 @@ class SizeSelect(discord.ui.Select):
             except:
                 pass
                 
-class StrSelect(discord.ui.Select):
-    def __init__(self, parent_view):
-        self.parent_view = parent_view
-
-        # Create options -10 to 10 with 0 default
-        options = [
-            discord.SelectOption(label=str(i), value=str(i), default=(i == 0))
-            for i in range(-10, 11)
-        ]
-
-        super().__init__(placeholder="STR", options=options, row=0)  # row 0
-
-    async def callback(self, interaction: discord.Interaction):
-        try:
-            value = int(self.values[0])
-            # Only save non-zero values
-            if value != 0:
-                self.parent_view.stats = f"STR:{value}"
-            else:
-                self.parent_view.stats = ""
-            
-            await interaction.response.edit_message(view=self.parent_view)
-        except Exception as e:
-            print(f"ERROR in StrSelect callback: {e}")
-            import traceback
-            traceback.print_exc()
-            try:
-                await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
-            except:
-                pass
-
-
-
-
-
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, item_type=None, item_id=None, existing_data=None):
         super().__init__(timeout=None)
@@ -794,6 +759,73 @@ class ItemDetailsModal(discord.ui.Modal):
             "✅ Details saved. Click Submit when ready.", ephemeral=True
         )
 
+class ItemDetailsModal2(discord.ui.Modal):
+    def __init__(self, view: ItemEntryView):
+        super().__init__(title=f"{view.item_type} Details")
+        self.view = view
+
+        self.item_name = discord.ui.TextInput(
+                label="Item Name", default=view.item_name, required=True
+        )
+        
+        # Weapon ATTACK/DELAY
+        if view.item_type == "Weapon":
+
+            self.attack = discord.ui.TextInput(
+                label="Attack / Delay", default=view.attack or "", required=True
+            )
+
+            self.add_item(self.attack)
+
+
+        # Equipment AC
+        if view.item_type == "Equipment":
+
+            self.ac = discord.ui.TextInput(
+                label="Armor Class", default=view.ac or "", required=True
+            )
+            self.add_item(self.ac)
+
+
+
+        #  EFFECTS
+        if view.item_type == "Weapon" or "Equipment" or "Consumable":
+
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )
+
+            self.add_item(self.effects)
+
+
+        self.weight = discord.ui.TextInput(
+                    label="Weight", default=view.weight or "", required=False, style=discord.TextStyle.paragraph
+        )
+        self.donated_by = discord.ui.TextInput(
+                label="Donated By", default=view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
+        )
+ 
+        self.add_item(self.item_name)
+        self.add_item(self.weight)
+        self.add_item(self.donated_by)
+
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Save values back to the view
+        self.view.item_name = self.item_name.value
+        self.view.weight = self.weight.value
+        self.view.donated_by = self.donated_by.value or "Anonymous"
+
+        if self.view.item_type == "Weapon":
+            self.view.attack = self.attack.value
+        if self.view.item_type == "Equipment":
+            self.view.ac = self.ac.value           
+        if self.view.item_type == "Weapon" or "Equipment" or"Consumable":
+            self.view.effects = self.effects.value
+
+        await interaction.response.send_message(
+            "✅ Details saved. Click Submit when ready.", ephemeral=True
+        )
 
 
 
