@@ -547,7 +547,7 @@ class ItemEntryView(discord.ui.View):
                 if self.item=="Weapon":
                     #Attack/Delay
                     attack = self.ac
-                    draw.text((x, y), f"Weapon DMG: {attack}" ATK Delay:{delay}, fill=(255, 255, 255), font=font_attack)
+                    draw.text((x, y), f"Weapon DMG: {attack} ATK Delay:{delay}", fill=(255, 255, 255), font=font_attack)
                     y += 25
 
                 if self.stats != "":
