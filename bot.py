@@ -587,7 +587,7 @@ class ItemEntryView(discord.ui.View):
                         text_height = bbox[3] - bbox[1]
                         y += text_height + 15  # Add a little padding
 
-                    if self.subtype in ("Potion", "Scroll")
+                    if self.subtype in ("Potion", "Scroll"):
                         if self.effects != "":
                             # Effects
                             draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
