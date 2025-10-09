@@ -534,7 +534,7 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
                 x = 110
                 
-                if self.item_type in ("Equipment",):
+                if self.item_type in ("Equipment"):
                 
                     # Slot
                     slot=" ".join(sorted(self.slot))
@@ -547,7 +547,7 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                         y += 25
                     
-                if self.item_type in ("Weapon",):
+                if self.item_type in ("Weapon"):
                 
                     # Slot
                     slot=" ".join(sorted(self.slot)).upper()
