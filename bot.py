@@ -399,7 +399,7 @@ class ItemEntryView(discord.ui.View):
             self.race_select = RaceSelect(self)
             self.add_item(self.race_select)
 
-        self.race_select = SizeSelect(self)
+        self.size_select = SizeSelect(self)
         self.add_item(self.size_select)
      
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
