@@ -71,9 +71,9 @@ async def ensure_upload_channel(guild: discord.Guild):
 async def add_item_db(guild_id, name, type_, subtype=None, size=None, slot=None, stats=None, weight=None,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-        ''', guild_id, name, type_, size, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        ''', guild_id, name, type_, size, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
@@ -379,6 +379,7 @@ class ItemEntryView(discord.ui.View):
         self.item_id = item_id
         self.donated_by = ""
         self.attack = ""
+        self.delay = ""
         self.effects = ""
         self.ac = ""
 
@@ -393,6 +394,7 @@ class ItemEntryView(discord.ui.View):
             self.weight = existing_data['weight']
             self.ac = existing_data['ac']
             self.attack = existing_data['attack']
+            self.delay = existing_data['delay']
             self.effects = existing_data['effects']
             self.donated_by = existing_data['donated_by']
             self.usable_classes = existing_data['classes'].split(" ") if existing_data['classes'] else []
@@ -476,6 +478,7 @@ class ItemEntryView(discord.ui.View):
     
         if self.item_type == "Weapon":
             fields_to_update["attack"] = self.attack
+            field_to_upade["delay"] = self.delay
             fields_to_update["effects"] = self.effects
         elif self.item_type == "Equipment":
             fields_to_update["ac"] = self.ac
@@ -530,15 +533,21 @@ class ItemEntryView(discord.ui.View):
                 y += 50  # spacing after title
                 x = 110
 
-                if self.item_type == "Equipment":
+                if self.item_type == "Equipment" or "Weapon":
                     # Slot
                     slot=" ".join(sorted(self.slot)).upper()
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
-                    
+                if self.item_type == "Equipment":    
                     # AC
                     ac = self.ac
                     draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
+                    y += 25
+
+                if self.item=="Weapon":
+                    #Attack/Delay
+                    attack = self.ac
+                    draw.text((x, y), f"Weapon DMG: {attack}" ATK Delay:{delay}, fill=(255, 255, 255), font=font_attack)
                     y += 25
 
                 if self.stats != "":
@@ -623,6 +632,7 @@ class ItemEntryView(discord.ui.View):
                 qty=1,
                 added_by=str(interaction.user),
                 attack=self.attack,
+                delay=self.delay,
                 effects=self.effects,
                 ac=self.ac
             )
@@ -728,10 +738,13 @@ class ItemDetailsModal(discord.ui.Modal):
         if parent_view.item_type == "Weapon":
 
             self.attack = discord.ui.TextInput(
-                label="Attack / Delay", default=parent_view.attack or "", required=True
+                label="Damage", default=parent_view.attack or "", required=False
             )
-
+            self.delay = discord.ui.TextInput(
+                label="Delay", default=parent_view.delay or "", required=False
+            )
             self.add_item(self.attack)
+            self.add_item(self.delay)
 
 
         # Equipment AC
@@ -763,6 +776,7 @@ class ItemDetailsModal(discord.ui.Modal):
 
         if self.parent_view.item_type == "Weapon":
             self.parent_view.attack = self.attack.value
+            self.parent_view.delay = self.delay.value
         if self.parent_view.item_type == "Equipment":
             self.parent_view.ac = self.ac.value           
 
