@@ -622,7 +622,7 @@ class ItemEntryView(discord.ui.View):
                 size=self.size,
                 subtype=self.subtype,
                 slot=" ".join(self.slot),
-                stats="self.stats",
+                stats=self.stats,
                 weight=self.weight,
                 classes=" ".join(self.usable_classes),
                 race=" ".join(self.usable_race),
