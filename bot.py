@@ -428,9 +428,12 @@ class ItemEntryView(discord.ui.View):
         if self.item_type in ["Weapon", "Equipment"]:
             
             stat_names = ["STR", "STA", "AGI", "DEX", "WIS", "INT", "CHA"]
-            for stat in stat_names:
-                select = StatsSelect(self, stat_name=stat)  # no row
+            
+            for i, stat in enumerate(stat_names):
+                select = StatsSelect(self, stat_name=stat)
+                select.row = i  # Each select on its own row
                 self.add_item(select)
+
 
 
             
