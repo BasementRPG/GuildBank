@@ -546,13 +546,13 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                         y += 25
 
-                         if self.stats != "":
-                            stats_text = stats.upper()
-                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                            # Measure how tall the rendered text block actually is
-                            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                            text_height = bbox[3] - bbox[1]
-                            y += text_height + 15  # Add a little padding
+                    if self.stats != "":
+                        stats_text = stats.upper()
+                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                        # Measure how tall the rendered text block actually is
+                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                        text_height = bbox[3] - bbox[1]
+                        y += text_height + 15  # Add a little padding
                         
 
                 if self.item_type == "Weapon":
@@ -560,6 +560,7 @@ class ItemEntryView(discord.ui.View):
                     slot=" ".join(sorted(self.slot)).upper()
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
+                   
                     if self.attack !="":
                         #Attack/Delay
                         attack = self.attack
@@ -798,7 +799,34 @@ class ItemDetailsModal(discord.ui.Modal):
         self.donated_by = discord.ui.TextInput(
                 label="Donated By", default=parent_view.donated_by or "Anonymous", required=False, style=discord.TextStyle.paragraph
         )
- 
+
+        if parent_view.item_type == "Consumable":
+         # STATS
+            self.stats = discord.ui.TextInput(
+                label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+    
+        #  EFFECTS
+
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )   
+        else 
+        # STATS
+            self.stats = discord.ui.TextInput(
+                label="Info", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+            )
+    
+        #  EFFECTS
+
+            self.effects = discord.ui.TextInput(
+                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
+            )
+
+            
+            self.add_item(self.stats)
+            self.add_item(self.effects)
+
        
         self.add_item(self.weight)
         self.add_item(self.donated_by)
