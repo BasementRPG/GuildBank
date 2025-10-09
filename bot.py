@@ -754,7 +754,7 @@ class ItemDetailsModal(discord.ui.Modal):
 
         await interaction.response.send_message(
             "✅ Details saved. Click Submit when ready or Stat Details.", ephemeral=True
-
+        )
 
             
 class ItemDetailsModal2(discord.ui.Modal):
