@@ -811,7 +811,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.effects = discord.ui.TextInput(
                 label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
             )   
-        else 
+        else: 
         # STATS
             self.stats = discord.ui.TextInput(
                 label="Info", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
