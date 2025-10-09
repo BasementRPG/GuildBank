@@ -533,8 +533,9 @@ class ItemEntryView(discord.ui.View):
                 draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
                 y += 50  # spacing after title
                 x = 110
-
-                if self.item_type == "Equipment":
+                
+                if self.item_type in ("Equipment",):
+                
                     # Slot
                     slot=" ".join(sorted(self.slot))
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
@@ -546,8 +547,8 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                         y += 25
                     
-
-                if self.item_type == "Weapon":
+                if self.item_type in ("Weapon",):
+                
                     # Slot
                     slot=" ".join(sorted(self.slot)).upper()
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
@@ -561,8 +562,7 @@ class ItemEntryView(discord.ui.View):
                         y += 25
 
                 
-                   
-                if self.item_type == "Equipment" or "Weapon" or "Consumable":
+                if self.item_type in ("Equipment", "Weapon", "Consumable"): 
 
                     if self.stats != "":
                         stats_text = stats.upper()
@@ -577,8 +577,8 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
                         y += 25
                          
-                if self.item_type == "Crafting" or "Misc":
-
+             
+                if self.item_type in ("Crafting", "Misc"):
                     if self.effects != "":
                         # Effects
                         draw.text((x, y), f"{effects}", fill=(255, 255, 255), font=font_effects)
@@ -596,10 +596,7 @@ class ItemEntryView(discord.ui.View):
                     draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
                     y += 25
 
-                
-                if self.item_type == "Crafting" or  "Misc":
-                    
-
+                if self.item_type in ("Crafting", "Misc"):                
                     if self.stats != "":
                         stats_text = stats.upper()
                         draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
@@ -609,8 +606,8 @@ class ItemEntryView(discord.ui.View):
                         y += text_height + 15  # Add a little padding
 
                 
-                    
-                if self.item_type == "Equipment" or "Weapon":    
+                if self.item_type in ("Equipment", "Weapon"):    
+                  
                     if self.usable_classes:
                         # Classes
                         classes=" ".join(sorted(self.usable_classes))
@@ -764,7 +761,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
-                label="Item Name", default=parent_view.item_name, required=True
+                label="Item Name", placeholder="", default=parent_view.item_name, required=True
         )
         self.add_item(self.item_name)
         
