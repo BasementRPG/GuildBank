@@ -51,7 +51,7 @@ WEAPON_SKILL = ["ARC","BLG","SLA","STA","THR"]
 
 RACE_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
 CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", "MNK", "NEC", "PAL", "RNG", "ROG", "SHD", "SHM", "SPB", "WIZ"]
-SLOT_OPTIONS = ["DDF","DEF","DGN","DWF","ELF","GNM","GOB","HFL","HIE","HUM","ORG","TRL"]
+
 
 
 intents = discord.Intents.default()
@@ -205,39 +205,45 @@ class SubtypeSelect(discord.ui.Select):
                 except:
                     pass
 
-
 class SlotSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
         
-        # Add debugging
         print(f"DEBUG: SlotSelect init - item_type: {self.parent_view.item_type}")
         
-        # Add safety check
         if not self.parent_view.item_type:
             print("ERROR: item_type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
         elif self.parent_view.item_type == "Weapon":
             options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
-        elif self.parent_view.item_type == "Equipment":
+        elif self.parent_view.item_type in ["Equipment", "Armor"]:
             options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
-
-        # ✅ Mark selected subtype as default
+        else:
+            options = [discord.SelectOption(label="N/A", value="N/A")]
+        
+        # ✅ Mark selected slots as default
         for opt in options:
-            if opt.label == self.parent_view.slot:
+            if hasattr(self.parent_view, "slot") and opt.label in (self.parent_view.slot or []):
                 opt.default = True
 
-        super().__init__(placeholder="Select Slot", options=options)
+        # ✅ Multi-select enabled here
+        super().__init__(
+            placeholder="Select Slot(s)",
+            options=options,
+            min_values=1,
+            max_values=len(options)
+        )
 
-
-    
     async def callback(self, interaction: discord.Interaction):
         try:
             print(f"DEBUG: SlotSelect callback - values: {self.values}")
-            self.parent_view.slot = self.values[0]
-            # update which option is default so it stays highlighted
+            # ✅ Store as a list of slots instead of single string
+            self.parent_view.slot = self.values  
+            
+            # Keep selections highlighted
             for opt in self.options:
-                opt.default = (opt.label == self.values[0])
+                opt.default = (opt.value in self.values)
+            
             await interaction.response.edit_message(view=self.parent_view)
         except Exception as e:
             print(f"ERROR in SlotSelect callback: {e}")
@@ -247,7 +253,8 @@ class SlotSelect(discord.ui.Select):
                 await interaction.response.send_message(f"Error: {str(e)}", ephemeral=True)
             except:
                 pass
-                
+
+
 
 class ClassesSelect(discord.ui.Select):
     def __init__(self, parent_view):
@@ -319,7 +326,7 @@ class ItemEntryView(discord.ui.View):
         self.author = author
         self.item_type = item_type
         self.subtype = None
-        self.slot = None
+        self.slot = []
         self.usable_classes = []
         self.usable_race = []
         self.item_name = ""
@@ -335,14 +342,14 @@ class ItemEntryView(discord.ui.View):
             self.item_name = existing_data['name']
             self.item_type = existing_data['type']
             self.subtype = existing_data['subtype']
-            self.slot = existing_data['slot']
+            self.slot = existing_data['slot'].split(" ") if existing_data['slot'] else []
             self.stats = existing_data['stats']
             self.ac = existing_data['ac']
             self.attack = existing_data['attack']
             self.effects = existing_data['effects']
             self.donated_by = existing_data['donated_by']
-            self.usable_classes = existing_data['classes'].split(", ") if existing_data['classes'] else []
-            self.usable_race = existing_data['race'].split(", ") if existing_data['race'] else []
+            self.usable_classes = existing_data['classes'].split(" ") if existing_data['classes'] else []
+            self.usable_race = existing_data['race'].split(" ") if existing_data['race'] else []
 
         if self.item_type in ["Crafting","Consumable","Misc"]:
             self.subtype_select = SubtypeSelect(self)
@@ -387,8 +394,9 @@ class ItemEntryView(discord.ui.View):
  
     async def submit_item(self, interaction: discord.Interaction):
         # Ensure all fields are up-to-date from the modal
-        classes_str = ", ".join(self.usable_classes)
-        race_str = ", ".join(self.usable_race)
+        classes_str = " ".join(self.usable_classes)
+        race_str = " ".join(self.usable_race)
+        slot_str = " ".join(self.slot)
         donor = self.donated_by or "Anonymous"
         added_by = str(interaction.user)
     
@@ -397,7 +405,7 @@ class ItemEntryView(discord.ui.View):
             "name": self.item_name,
             "type": self.item_type,
             "subtype": self.subtype,
-            "slot": self.slot,
+            "slot": slot_str
             "stats": self.stats,
             "classes": classes_str,
             "race": race_str,
@@ -519,10 +527,10 @@ class ItemEntryView(discord.ui.View):
                 name=self.item_name,
                 type_=self.item_type,
                 subtype=self.subtype,
-                slot=self.slot,
+                slot=" ".join(self.slot),
                 stats=self.stats,
-                classes=", ".join(self.usable_classes),
-                race=", ".join(self.usable_race),
+                classes=" ".join(self.usable_classes),
+                race=" ".join(self.usable_race),
                 image=None,
                 created_images=cdn_url,  # original image field empty
                 donated_by=self.donated_by or "Anonymous",
