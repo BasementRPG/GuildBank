@@ -234,7 +234,7 @@ class SlotSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         try:
             print(f"DEBUG: SlotSelect callback - values: {self.values}")
-            self.parent_view.subtype = self.values[0]
+            self.parent_view.slot = self.values[0]
             # update which option is default so it stays highlighted
             for opt in self.options:
                 opt.default = (opt.label == self.values[0])
