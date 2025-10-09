@@ -349,7 +349,7 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class StatsSelect(discord.ui.Select):
-    def __init__(self, parent_view, stat_name, row):
+    def __init__(self, parent_view, stat_name):
         self.parent_view = parent_view
         self.stat_name = stat_name
 
@@ -360,11 +360,7 @@ class StatsSelect(discord.ui.Select):
 
         super().__init__(
             placeholder=f"{stat_name}",
-            options=options,
-            min_values=1,
-            max_values=1,
-            custom_id=f"select_{stat_name}",
-            row=row
+            options=options,            
         )
 
     async def callback(self, interaction: discord.Interaction):
