@@ -713,7 +713,7 @@ class ItemDetailsModal(discord.ui.Modal):
 
 
         # Equipment AC
-        if view.item_type == "Equipment":
+        if parent_view.item_type == "Equipment":
 
             self.ac = discord.ui.TextInput(
                 label="Armor Class", default=parent_view.ac or "", required=True
