@@ -17,15 +17,6 @@ print("discord.py version:", discord.__version__)
 TOKEN = os.getenv("DISCORD_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-ITEM_TYPE_EMOJIS = {
-    "Weapon": "⚔️",
-    "Crafting": "⚒️",
-    "Equipment": "🛡️",
-    "Consumable": "🧪",
-    "Misc": "🔑",
-    "Funds": "💰"
-    
-}
 
 BG_FILES = {
     "Weapon": "assets/backgrounds/bg_weapon.png",
@@ -407,6 +398,9 @@ class ItemEntryView(discord.ui.View):
             
             self.race_select = RaceSelect(self)
             self.add_item(self.race_select)
+
+        self.race_select = SizeSelect(self)
+        self.add_item(self.size_select)
      
         self.details_button = discord.ui.Button(label="Manual Entry", style=discord.ButtonStyle.secondary)
         self.details_button.callback = self.open_item_details
