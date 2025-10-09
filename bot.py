@@ -422,10 +422,10 @@ class ItemEntryView(discord.ui.View):
             self.stats_data = {"STR": 0, "STA": 0, "AGI": 0, "DEX": 0, "WIS": 0, "INT": 0, "CHA": 0}
             stat_names = list(self.stats_data.keys())
             for i, stat_name in enumerate(stat_names):
-                row = (i // 2) + 1  # start rows from 1 instead of 0 to avoid collisions
                 select = StatsSelect(self, stat_name)
-                select.row = row  # explicitly assign row (discord.py ignores constructor args)
+                select.row = 0 if i < 5 else 1
                 self.add_item(select)
+
             
             self.slot_select = SlotSelect(self)
             self.add_item(self.slot_select)
