@@ -469,7 +469,7 @@ class ItemEntryView(discord.ui.View):
 
                 if self.item_type == "Equipment":
                     # Slot
-                    slot=" ".join(sorted(self.slot))
+                    slot=" ".join(sorted(self.slot)).upper()
                     draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                     y += 25
                     
