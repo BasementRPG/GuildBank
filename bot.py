@@ -426,7 +426,7 @@ class ItemEntryView(discord.ui.View):
             self.stats_data = {"STR": 0, "STA": 0, "AGI": 0, "DEX": 0, "WIS": 0, "INT": 0, "CHA": 0}
             stat_names = list(self.stats_data.keys())
             for i, stat_name in enumerate(stat_names):
-                row = i // 3  # 3 per row
+                row =  0 if i < 5 else 1
                 select = StatsSelect(self, stat_name, row=row)
                 self.add_item(select)
             
