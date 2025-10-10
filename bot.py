@@ -7,6 +7,7 @@ from discord.ui import Modal, TextInput
 import datetime
 import asyncpg 
 from PIL import Image, ImageDraw, ImageFont
+import aiohttp
 import io
 
 active_views = {}
