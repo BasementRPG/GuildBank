@@ -1155,15 +1155,16 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
         return
 
     # 3️⃣ Created/generated item — reopen full ItemEntryView flow
-	await interaction.response.defer(ephemeral=True)
-    view = ItemEntryView(
-        db_pool=db_pool,
-        author=interaction.user,
-        type=type,
-        item_id=item["id"],
-        existing_data=item,
-        is_edit=True
-    )
+	if item.get("created_images"):
+		await interaction.response.defer(ephemeral=True)
+	   	view = ItemEntryView(
+	        db_pool=db_pool,
+	        author=interaction.user,
+	        type=type,
+	        item_id=item["id"],
+	        existing_data=item,
+	        is_edit=True
+	    )
 
     # Let the user know this is edit mode
     await interaction.followup.send(
