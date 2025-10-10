@@ -455,11 +455,8 @@ class ItemEntryView(discord.ui.View):
         modal1 = ItemDetailsModal2(parent_view=self)
         await interaction.response.send_modal(modal1)
 
-    async def reset_entry(self, interaction: discord.Interaction):
-        """Cancel the item entry and close the view."""
-        await interaction.response.send_message("❌ Item entry canceled.", ephemeral=True)
-        self.stop()    
- 
+
+
 
     async def submit_item(self, interaction: discord.Interaction):
 	    # Convert lists to space-separated strings
