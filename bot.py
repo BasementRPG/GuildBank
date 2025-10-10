@@ -1151,8 +1151,8 @@ async def view_itemhistory(interaction: discord.Interaction):
     # Prepare response
     response = (
         f"📜 **Guild Bank Summary for {interaction.guild.name}**\n\n"
-        f"🏰 **Total Items Donated:** {total_donated}\n"
-        f"💰 **Currently in Bank:** {total_in_bank}"
+        f" **Total Items Donated:** {total_donated}\n"
+        f" **Currently in Bank:** {total_in_bank}"
     )
 
     await interaction.response.send_message(response, ephemeral=True)
