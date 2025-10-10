@@ -443,9 +443,6 @@ class ItemEntryView(discord.ui.View):
         self.submit_button.callback = self.submit_item
         self.add_item(self.submit_button)
 
-        self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
-        self.reset_button.callback = self.reset_entry
-        self.add_item(self.reset_button)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
