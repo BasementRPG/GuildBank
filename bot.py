@@ -454,7 +454,7 @@ class ItemEntryView(discord.ui.View):
         self.stop()    
  
 
-	async def submit_item(self, interaction: discord.Interaction):
+    async def submit_item(self, interaction: discord.Interaction):
 	    # Convert lists to space-separated strings
 	    classes_str = " ".join(self.usable_classes)
 	    race_str = " ".join(self.usable_race)
