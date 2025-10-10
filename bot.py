@@ -365,7 +365,7 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author, item_type=None, item_id=None, existing_data=None):
+    def __init__(self, author, item_type=None, item_id=None, existing_data=None, is_edit=False):
         super().__init__(timeout=None)
         self.author = author
         self.item_type = item_type
@@ -383,6 +383,7 @@ class ItemEntryView(discord.ui.View):
         self.delay = ""
         self.effects = ""
         self.ac = ""
+        self.is_edit=is_edit
 
         # preload existing if editing
         if existing_data:
@@ -1128,18 +1129,47 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
-    # Fetch the item from the database
+    await interaction.response.defer(ephemeral=True)
+
+    # Fetch item from DB
     item = await get_item_by_name(interaction.guild.id, item_name)
     if not item:
-        await interaction.response.send_message("Item not found.", ephemeral=True)
+        await interaction.followup.send("❌ Item not found.", ephemeral=True)
         return
 
-    # Open the appropriate modal based on whether the item has an image
-    if item.get('image'):
-        await interaction.response.send_modal(ImageDetailsModal(interaction, item_row=item))
+    # Path 1: Uploaded Image Item
+    if item.get("type") == "Image" and item.get("subtype") == "Image":
+        await interaction.followup.send_modal(ImageDetailsModal(interaction, item_row=item))
+        return
+
+    # Path 2: Created (Generated) Item — restart at dropdowns with prefilled data
     else:
-        view = ItemEntryView(interaction.user, item_type=item['type'], item_id=item['id'], existing_data=item)
-        await interaction.response.send_modal(ItemDetailsModal(view))
+        view = ItemEntryView(
+            author=interaction.user,
+            item_type=item["type"],
+            item_id=item["id"],
+            existing_data=item,
+            is_edit=True
+        )
+
+        # Pre-fill the dropdown selections from existing item data
+        view.type_dropdown.default = item["type"]
+        if hasattr(view, "subtype_dropdown") and item.get("subtype"):
+            view.subtype_dropdown.default = item["subtype"]
+
+        # You can pre-select or disable some UI elements based on how your view logic works.
+        # Example: if you have slot/size dropdowns:
+        if hasattr(view, "slot_dropdown") and item.get("slot"):
+            view.slot_dropdown.default = item["slot"]
+        if hasattr(view, "size_dropdown") and item.get("size"):
+            view.size_dropdown.default = item["size"]
+
+        await interaction.followup.send(
+            "🛠 Editing existing created item — start by reviewing or adjusting your selections below:",
+            view=view,
+            ephemeral=True
+        )
+
 
 
 
