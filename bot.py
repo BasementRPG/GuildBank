@@ -979,7 +979,7 @@ class ItemHistoryModal(discord.ui.Modal):
         for i in items:
             donor = i['donated_by'] or "Anonymous"
             name = i['name']
-            date = i['created_at'].strftime("%m-%d-%y") if i['created_at'] else "Unknown"
+            date = i['created_at1'].strftime("%m-%d-%y") if i['created_at1'] else "Unknown"
             history_text += f"{donor} | {name} | {date}\n"
 
         # Truncate if too long
@@ -1018,7 +1018,7 @@ class ItemHistoryButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         async with self.db_pool.acquire() as conn:
             items = await conn.fetch(
-                "SELECT name, donated_by, created_at FROM inventory WHERE guild_id=$1 ORDER BY created_at DESC",
+                "SELECT name, donated_by, created_at1 FROM inventory WHERE guild_id=$1 ORDER BY created_at1 DESC",
                 interaction.guild.id
             )
 
