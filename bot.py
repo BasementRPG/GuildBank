@@ -729,14 +729,14 @@ class ItemEntryView(discord.ui.View):
 #-----IMAGE UPLOAD ----
 
 class ImageDetailsModal(discord.ui.Modal):
-    def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
+    def __init__(self, interaction: discord.Interaction, view=None, item_row=None, is_edit: bool = False):
         """
         Unified modal for adding or editing an image item.
         """
         super().__init__(title="Image Item Details")
         self.interaction = interaction
         self.view = view
-        self.is_edit = item_row is not None
+        self.is_edit = is_edit is not None
 
         if self.is_edit:
             self.item_id = item_row['id']
