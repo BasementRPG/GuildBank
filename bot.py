@@ -89,36 +89,7 @@ async def get_item_by_name(guild_id, name):
 
 
 
-async def update_item_db(guild_id, item_id, **fields):
-    """
-    Update an item in the database.
-    Only updates the fields provided.
-    Automatically updates updated_at.
-    """
-    if not fields:
-        return  # nothing to update
 
-    set_clauses = []
-    values = []
-    i = 1
-    for key, value in fields.items():
-        set_clauses.append(f"{key}=${i}")
-        values.append(value)
-        i += 1
-
-    # Add updated_at
-    set_clauses.append(f"created_at1=NOW()")
-
-    values.append(guild_id)
-    values.append(item_id)
-
-    sql = f"""
-        UPDATE inventory
-        SET {', '.join(set_clauses)}
-        WHERE guild_id=${i} AND id=${i+1}
-    """
-    async with db_pool.acquire() as conn:
-        await conn.execute(sql, *values)
 
 
 
