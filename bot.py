@@ -726,11 +726,9 @@ class ItemEntryView(discord.ui.View):
 	    self.stop()
 
 
-
-
 #-----IMAGE UPLOAD ----
 class ImageDetailsModal(discord.ui.Modal):
-	def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
+    def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
         """
         Unified modal for adding or editing an image item.
         """
@@ -758,7 +756,7 @@ class ImageDetailsModal(discord.ui.Modal):
         self.donated_by = discord.ui.TextInput(label="Donated By", placeholder="Example: Thieron or Raid", default=default_donor, required=False)
         self.add_item(self.donated_by)
 
-	async def on_submit(self, modal_interaction: discord.Interaction):
+    async def on_submit(self, modal_interaction: discord.Interaction):
         item_name = self.item_name.value
         donated_by = self.donated_by.value
         added_by = str(modal_interaction.user)
@@ -799,7 +797,6 @@ class ImageDetailsModal(discord.ui.Modal):
             )
             image_url = message.attachments[0].url
 
-
         if not image_url:
             await modal_interaction.response.send_message(
                 "❌ No image provided. Please attach or send an image.", ephemeral=True
@@ -837,7 +834,12 @@ class ImageDetailsModal(discord.ui.Modal):
             )
             await modal_interaction.response.send_message(
                 f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
-            )
+            )--
+
+
+
+
+
 
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
