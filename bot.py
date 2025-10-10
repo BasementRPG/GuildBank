@@ -1197,8 +1197,8 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
         return
 
     # 3️⃣ Created/generated item — reopen full ItemEntryView flow
-    view = ItemEntryView
-        db_pool=db_pool
+    view = ItemEntryView(
+        db_pool=db_pool,
         author=interaction.user,
         item_type=item["type"],
         item_id=item["id"],
