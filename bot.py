@@ -1151,7 +1151,7 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
     # 2️⃣ Uploaded image item — open simple modal
     if item.get("image") and not item.get("created_images"):
         modal = ImageDetailsModal(interaction, item_row=item, is_edit=True)
-        await interaction.followup.send_modal(modal)
+        await interaction.response.send_modal(modal)
         return
 
     # 3️⃣ Created/generated item — reopen full ItemEntryView flow
