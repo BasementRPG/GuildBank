@@ -757,7 +757,7 @@ class ImageDetailsModal(discord.ui.Modal):
             )
             await modal_interaction.response.send_message(f"✅ Updated **{item_name}**.", ephemeral=True)
         else:
-            if not self.view or not getattr(self.view, "image", None):
+            if not self.view or not getattr(self.view, "upload_image", None):
                 await modal_interaction.response.send_message(
                     "❌ No image provided. Send an attachment or a link in chat.", ephemeral=True
                 )
