@@ -715,7 +715,7 @@ class ItemEntryView(discord.ui.View):
                 await add_item_db(
                     guild_id=interaction.guild.id,
                     name=self.item_name,
-                    type_=self.type,
+                    type=self.type,
                     size=self.size,
                     subtype=self.subtype,
                     slot=" ".join(self.slot),
@@ -1324,14 +1324,14 @@ def copper_to_currency(total_copper):
 
 
 # ----------------- DB Helpers -----------------
-async def add_funds_db(guild_id, type_, total_copper, donated_by=None, donated_at=None):
+async def add_funds_db(guild_id, type, total_copper, donated_by=None, donated_at=None):
     """Insert a donation or spend entry."""
     donated_at = donated_at or date.today.datetime()  # Use today if not provided
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO funds (guild_id, type, total_copper, donated_by, donated_at)
             VALUES ($1, $2, $3, $4, $5)
-        ''',guild_id, type_, total_copper, donated_by, donated_at)
+        ''',guild_id, type, total_copper, donated_by, donated_at)
 
 async def get_fund_totals(guild_id):
     """Get total donated and spent copper."""
@@ -1385,7 +1385,7 @@ class AddFundsModal(Modal):
 
         await add_funds_db(
             guild_id=interaction.guild.id,
-            type_='donation',
+            type='donation',
             total_copper=total,
             donated_by=self.donated_by.value.strip() or None,
             donated_at=datetime.date.today()
@@ -1420,7 +1420,7 @@ class SpendFundsModal(Modal):
 
         await add_funds_db(
             guild_id=interaction.guild.id,
-            type_='spend',
+            type='spend',
             total_copper=total,
             donated_by=self.note.value.strip() or None,
             donated_at=datetime.date.today()
