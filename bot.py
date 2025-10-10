@@ -107,7 +107,7 @@ async def update_item_db(guild_id, item_id, **fields):
         i += 1
 
     # Add updated_at
-    set_clauses.append(f"updated_at=NOW()")
+    set_clauses.append(f"created_at1=NOW()")
 
     values.append(guild_id)
     values.append(item_id)
