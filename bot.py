@@ -367,23 +367,23 @@ class SizeSelect(discord.ui.Select):
 class ItemEntryView(discord.ui.View):
     def __init__(self, author, db_pool, item_type=None, item_id=None, existing_data=None, is_edit=False):
         super().__init__(timeout=None)
-        self.db_pool = db_pool,      
-        self.author = author,
-        self.item_type = item_type,
-        self.subtype = None,
-        self.slot = [],
-        self.size="",
-        self.usable_classes = [],
-        self.usable_race = [],
-        self.item_name = "",
-        self.stats = "",
-        self.weight = "",
-        self.item_id = item_id,
+        self.db_pool = db_pool     
+        self.author = author
+        self.item_type = item_type
+        self.subtype = None
+        self.slot = []
+        self.size=""
+        self.usable_classes = []
+        self.usable_race = []
+        self.item_name = ""
+        self.stats = ""
+        self.weight = ""
+        self.item_id = item_id
         self.donated_by = ""
-        self.attack = "",
-        self.delay = "",
-        self.effects = "",
-        self.ac = "",
+        self.attack = ""
+        self.delay = ""
+        self.effects = ""
+        self.ac = ""
         self.is_edit=is_edit
 
         # preload existing if editing
@@ -1197,7 +1197,8 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
         return
 
     # 3️⃣ Created/generated item — reopen full ItemEntryView flow
-    view = ItemEntryView(
+    view = ItemEntryView
+        db_pool=db_pool
         author=interaction.user,
         item_type=item["type"],
         item_id=item["id"],
