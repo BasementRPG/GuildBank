@@ -485,9 +485,9 @@ class ItemEntryView(discord.ui.View):
         elif self.type == "Consumable":
             fields_to_update.update({"effects": self.effects})
     
-        
+            async with self.db_pool.acquire() as conn:
             if self.item_id:  # Editing existing item
-                async with self.db_pool.acquire() as conn:
+               
                 # Fetch old item to check for image
                 old_item = await conn.fetchrow(
                     "SELECT id, created_images, upload_message_id FROM inventory WHERE id=$1", 
@@ -1143,7 +1143,7 @@ async def view_bank(interaction: discord.Interaction):
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
 async def add_item(interaction: discord.Interaction, type: str, image: discord.Attachment = None):
-    view = ItemEntryView(interaction.user, type=type)
+    view = ItemEntryView(interaction.user, type=type, db_pool=db_pool)
     active_views[interaction.user.id] = view  # Track this view
 
     # If an image was uploaded, attach it to the view
