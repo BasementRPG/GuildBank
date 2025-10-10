@@ -497,7 +497,7 @@ class ItemEntryView(discord.ui.View):
                 # Delete previous image from upload channel if created
                 if old_item and old_item['upload_message_id']:
                     try:
-                        upload_channel = await self.bot.fetch_channel(UPLOAD_CHANNEL_ID)
+                        upload_channel = await ensure_upload_channel(interaction.guild)
                     
                         old_msg = await upload_channel.fetch_message(old_item['upload_message_id'])
                         await old_msg.delete()
