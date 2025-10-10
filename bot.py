@@ -487,7 +487,7 @@ class ItemEntryView(discord.ui.View):
             # 1️⃣ Delete previous image if it exists
             async with self.bot.db_pool.acquire() as conn:
                 old_item = await conn.fetchrow(
-                    "SELECT created_images, upload_message_id FROM inventory WHERE id=$1", self.item_id
+                    "SELECT created_images, upload_message_id FROM inventory WHERE id=$1", self.item_type
                 )
                 if old_item and old_item["upload_message_id"]:
                     try:
