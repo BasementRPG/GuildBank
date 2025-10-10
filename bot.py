@@ -477,18 +477,18 @@ class ItemEntryView(discord.ui.View):
             "added_by": added_by
         }
 
-				def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
-					draw = ImageDraw.Draw(background)
+		def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
+			draw = ImageDraw.Draw(background)
                 
-          # Load a fontWry
-          # Example fonts
-          font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
-          font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
-          font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
-          font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
-          font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
-          font_weight = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for weight
-          font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
+			# Load a fontWry
+			# Example fonts
+			font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
+        	font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
+        	font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
+        	font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
+        	font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
+        	font_weight = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for weight
+        	font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
 	        font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
 	        font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for attack by
 	        font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for class by
