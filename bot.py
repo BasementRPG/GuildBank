@@ -534,22 +534,22 @@ class ItemEntryView(discord.ui.View):
                     
           if self.type in ("Equipment", "Weapon"): 
       
-          if self.stats != "":
-            stats_text = stats
-            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-            # Measure how tall the rendered text block actually is
-            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-            text_height = bbox[3] - bbox[1]
-            y += text_height + 15  # Add a little padding
+            if self.stats != "":
+                stats_text = stats
+                draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                # Measure how tall the rendered text block actually is
+                bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                text_height = bbox[3] - bbox[1]
+                y += text_height + 15  # Add a little padding
           
-          if self.effects != "":
-            # Effects
-            effects_text = effects
-            draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-            # Measure how tall the rendered text block actually is
-            bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-            text_height = bbox[3] - bbox[1]
-            y += text_height + 15  # Add a little padding
+            if self.effects != "":
+                # Effects
+                effects_text = effects
+                draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+                # Measure how tall the rendered text block actually is
+                bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+                text_height = bbox[3] - bbox[1]
+                y += text_height + 15  # Add a little padding
       
           if self.type in ("Consumable"): 
       
