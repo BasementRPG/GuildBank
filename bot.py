@@ -698,7 +698,7 @@ class ItemEntryView(discord.ui.View):
                 attack=self.attack,
                 delay=self.delay,
                 effects=self.effects,
-                ac=self.ac
+                ac=self.ac,
                 upload_message_id=message.id
                 
             )
@@ -820,7 +820,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 image=image_url,
                 donated_by=donated_by,
                 qty=1,
-                added_by=added_by
+                added_by=added_by,
                 upload_message_id=message.id
             )
             await modal_interaction.response.send_message(
