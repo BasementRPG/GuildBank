@@ -268,6 +268,10 @@ class ClassesSelect(discord.ui.Select):
         # Always show all options
         options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=c) for c in CLASS_OPTIONS]
     
+        for opt in options:
+            if self.parent_view.usable_classes and opt.label in self.parent_view.usable_classes:
+                opt.default = True
+        
         super().__init__(
              placeholder="Select usable classes (multi)",
              options=options,
@@ -275,9 +279,7 @@ class ClassesSelect(discord.ui.Select):
              max_values=len(options)
         )
     
-        # Preselect current classes
-        if self.parent_view.usable_classes:
-            self.default = True
+
     
     async def callback(self, interaction: discord.Interaction):
         # If All is selected, ignore other selections
@@ -299,7 +301,11 @@ class RaceSelect(discord.ui.Select):
     
         # Always show all options
         options = [discord.SelectOption(label="All")] + [discord.SelectOption(label=r) for r in RACE_OPTIONS]
-    
+
+        for opt in options:
+            if self.parent_view.usable_race and opt.label in self.parent_view.usable_race:
+                opt.default = True
+		
         super().__init__(
             placeholder="Select usable race (multi)",
             options=options,
@@ -307,9 +313,7 @@ class RaceSelect(discord.ui.Select):
             max_values=len(options)
         )
     
-        # Preselect current race
-        if self.parent_view.usable_race:
-            self.default = True
+
     
     async def callback(self, interaction: discord.Interaction):
         # If All is selected, ignore other selections
