@@ -1226,9 +1226,9 @@ async def view_itemhistory(interaction: discord.Interaction):
             guild_id
         )
 
-    # Prepare response
+  
 
-     embed = discord.Embed(
+        embed = discord.Embed(
             title="📜 Item Donation Records",
             description=f" **Total Items Donated:** {total_donated}\n **Currently in Bank:** {total_in_bank}",
             color=discord.Color.green()
