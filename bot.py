@@ -750,22 +750,40 @@ class ImageDetailsModal(discord.ui.Modal):
 
         upload_channel = await ensure_upload_channel(modal_interaction.guild)
           
+        # Handle the image
         image_url = None
-        
         if self.view and getattr(self.view, "image", None):
-            # If image was provided as file bytes (like from your earlier logic)
-            file = discord.File(io.BytesIO(self.view.image), filename=f"{item_name}.png")
-            message = await upload_channel.send(file=file, content=f"Uploaded by {added_by}")
-            image_url = message.attachments[0].url
-
+            # If image is bytes, upload directly
+            if isinstance(self.view.image, (bytes, bytearray)):
+                file = discord.File(io.BytesIO(self.view.image), filename=f"{item_name}.png")
+                message = await upload_channel.send(file=file, content=f"Uploaded by {added_by}")
+                image_url = message.attachments[0].url
+        
+            # If image is already a URL (string)
+            elif isinstance(self.view.image, str):
+                # Download and re-upload so it’s permanent in your upload-log
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(self.view.image) as resp:
+                        if resp.status == 200:
+                            data = await resp.read()
+                            file = discord.File(io.BytesIO(data), filename=f"{item_name}.png")
+                            message = await upload_channel.send(file=file, content=f"Uploaded by {added_by}")
+                            image_url = message.attachments[0].url
+                        else:
+                            await modal_interaction.response.send_message(
+                                f"❌ Failed to download image from provided URL.", ephemeral=True
+                            )
+                            return
+        
         elif modal_interaction.message and modal_interaction.message.attachments:
-            # If the user uploaded an image attachment in the original message
+            # If user uploaded a Discord attachment directly
             attachment = modal_interaction.message.attachments[0]
             message = await upload_channel.send(
                 content=f"Uploaded by {added_by}",
                 file=await attachment.to_file()
             )
             image_url = message.attachments[0].url
+
 
         if not image_url:
             await modal_interaction.response.send_message(
