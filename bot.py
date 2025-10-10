@@ -496,43 +496,60 @@ class ItemEntryView(discord.ui.View):
     
                 # Delete previous image from upload channel if created
                 if old_item and old_item['upload_message_id']:
-                    upload_channel = await ensure_upload_channel(interaction.guild)
                     try:
+                        upload_channel = await self.bot.fetch_channel(UPLOAD_CHANNEL_ID)
+                    
                         old_msg = await upload_channel.fetch_message(old_item['upload_message_id'])
                         await old_msg.delete()
                     except discord.NotFound:
                         pass  # Message already deleted
+                        
+                # Select background
+                bg_path = BG_FILES.get(self.type, BG_FILES["Misc"])
+                background = Image.open(bg_path).convert("RGBA")
+            
+                background = draw_item_text(
+                    background,
+                    self.item_name,
+                    self.type,
+                    self.subtype,
+                    self.size,
+                    self.slot,
+                    self.stats,
+                    self.weight,
+                    self.effects,
+                    self.donated_by
+                )
+                created_images = io.BytesIO()
+                background.save(created_images, format="PNG")
+                created_images.seek(0)
     
-                # If this is a created item, regenerate the image
-                if self.type in ["Weapon", "Equipment", "Consumable", "Crafting", "Misc"]:
-                    bg_path = BG_FILES.get(self.type, BG_FILES["Misc"])
-                    background = Image.open(bg_path).convert("RGBA")
+                upload_channel = await ensure_upload_channel(interaction.guild)
+                file = discord.File(created_images, filename=f"{self.item_name}.png")
+                message = await upload_channel.send(file=file, content=f"Created by {added_by}")
+                cdn_url = message.attachments[0].url
     
-                    # Draw the item text as before
-                    def draw_item_text(background):
-                        draw = ImageDraw.Draw(background)
-                        # ... use your previous draw_item_text logic here ...
-                        return background
+                # Update the database
+                fields_to_update["created_images"] = cdn_url
+                fields_to_update["upload_message_id"] = message.id
+                fields_to_update["created_at1"] = datetime.utcnow()
     
-                    background = draw_item_text(background)
-                    created_images = io.BytesIO()
-                    background.save(created_images, format="PNG")
-                    created_images.seek(0)
+                await update_item_db(
+                    guild_id=interaction.guild.id,
+                    item_id=self.item_id,
+                    **fields_to_update
+                )
     
-                    upload_channel = await ensure_upload_channel(interaction.guild)
-                    file = discord.File(created_images, filename=f"{self.item_name}.png")
-                    message = await upload_channel.send(file=file, content=f"Created by {added_by}")
-                    cdn_url = message.attachments[0].url
-                    fields_to_update['created_images'] = cdn_url
-                    fields_to_update['upload_message_id'] = message.id
+                embed = discord.Embed(title=f"{self.item_name}", color=discord.Color.blue())
+                embed.set_image(url=cdn_url)
     
-                # Record the edit timestamp
-                fields_to_update['created_at1'] = datetime.datetime.utcnow()
+                await interaction.response.send_message(
+                    content=f"✅ Updated **{self.item_name}**.",
+                    embed=embed,
+                    ephemeral=True
+                )
     
-                # Update DB
-                await update_item_db(guild_id=interaction.guild.id, item_id=self.item_id, **fields_to_update)
-                await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
-    
+       
             else:        
                 
                 # Select background
@@ -699,7 +716,7 @@ class ItemEntryView(discord.ui.View):
                     self.stats,
                     self.weight,
                     self.effects,
-                    self.donated_by or "Anonymous"
+                    self.donated_by
                 )
             
                 created_images = io.BytesIO()
