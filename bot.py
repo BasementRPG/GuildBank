@@ -1450,7 +1450,7 @@ async def view_funds(interaction: discord.Interaction):
 
 
 
-@bot.tree.command(name="view_donations", description="View all donations in the guild bank.")
+@bot.tree.command(name="view_fundshistory", description="View all donations in the guild bank.")
 async def view_donations(interaction: discord.Interaction):
     guild_id = interaction.guild.id
 
