@@ -224,8 +224,6 @@ class SlotSelect(discord.ui.Select):
         if not self.parent_view.type:
             print("ERROR: type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
-        elif self.parent_view.type == "Weapon":
-            options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
         elif self.parent_view.type in ["Equipment", "Armor"]:
             options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
         else:
@@ -415,8 +413,6 @@ class ItemEntryView(discord.ui.View):
         
         if self.type in ["Weapon", "Equipment"]:
 
-            self.subtype_select = SubtypeSelect(self)
-            self.add_item(self.subtype_select)
 			
             self.slot_select = SlotSelect(self)
             self.add_item(self.slot_select)
@@ -444,6 +440,11 @@ class ItemEntryView(discord.ui.View):
         self.add_item(self.submit_button)
 
 
+	    self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
+        self.reset_button.callback = self.reset_entry
+        self.add_item(self.reset_button)
+        
+    
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
     
@@ -454,6 +455,11 @@ class ItemEntryView(discord.ui.View):
     async def open_item_details1(self, interaction: discord.Interaction):
         modal1 = ItemDetailsModal2(parent_view=self)
         await interaction.response.send_modal(modal1)
+        
+    async def reset_entry(self, interaction: discord.Interaction):
+        """Cancel the item entry and close the view."""
+        await interaction.response.send_message("❌ Item entry canceled.", ephemeral=True)
+        self.stop()    
 
 
 
