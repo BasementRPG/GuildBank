@@ -529,7 +529,7 @@ class ItemEntryView(discord.ui.View):
                     fields_to_update['upload_message_id'] = message.id
     
                 # Record the edit timestamp
-                fields_to_update['created_at1'] = datetime.utcnow()
+                fields_to_update['created_at1'] = datetime.datetime.utcnow()
     
                 # Update DB
                 await update_item_db(guild_id=interaction.guild.id, item_id=self.item_id, **fields_to_update)
