@@ -362,7 +362,7 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author, db_pool, type=None, item_id=None, existing_data=None, is_edit=False):
+    def __init__(self, author, db_pool=None, type=None, item_id=None, existing_data=None, is_edit=False):
         super().__init__(timeout=None)
         self.db_pool = db_pool     
         self.author = author
