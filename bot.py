@@ -365,8 +365,9 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author, item_type=None, item_id=None, existing_data=None, is_edit=False):
+    def __init__(self, author, db_pool, item_type=None, item_id=None, existing_data=None, is_edit=False):
         super().__init__(timeout=None)
+        self.db_pool       
         self.author = author
         self.item_type = item_type
         self.subtype = None
@@ -485,7 +486,7 @@ class ItemEntryView(discord.ui.View):
         }
         if self.item_id:  # Editing existing item
             # 1️⃣ Delete previous image if it exists
-            async with self.bot.db_pool.acquire() as conn:
+            async with self.db_pool.acquire() as conn:
                 old_item = await conn.fetchrow(
                     "SELECT created_images, upload_message_id FROM inventory WHERE id=$1", self.item_type
                 )
