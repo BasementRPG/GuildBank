@@ -30,7 +30,7 @@ BG_FILES = {
 
 
 
-ITEM_TYPES = ["Equipment", "Crafting", "Consumable", "Equipment", "Misc", "Weapon"]
+TYPE = ["Equipment", "Crafting", "Consumable", "Equipment", "Misc", "Weapon"]
 WEAPON_TYPES = ["Axe", "Battle Axe", "Bow", "Dagger", "Great Scythe", "Great Sword", "Long Sword", "Mace", "Maul", "Scimitar", "Scythe", "Short Sword", "Spear", "Trident", "Warhammer" ]
 ARMORTYPES_SUBTYPES = ["Chain", "Cloth", "Leather", "Plate", "Shield"]
 CONSUMABLE_SUBTYPES = ["Drink", "Food", "Other", "Potion", "Scroll"]
@@ -69,12 +69,12 @@ async def ensure_upload_channel(guild: discord.Guild):
 
 
 
-async def add_item_db(guild_id, upload_message_id, name, type_, subtype=None, size=None, slot=None, stats=None, weight=None,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, delay=None,effects=None, ac=None, created_images=None):
+async def add_item_db(guild_id, upload_message_id, name, type, subtype=None, size=None, slot=None, stats=None, weight=None,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, delay=None,effects=None, ac=None, created_images=None):
     async with db_pool.acquire() as conn:
         await conn.execute('''
             INSERT INTO inventory (guild_id, upload_message_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-        ''', guild_id, upload_message_id, name, type_, size, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
+        ''', guild_id, upload_message_id, name, type, size, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
 
 
 async def get_all_items(guild_id):
@@ -132,7 +132,7 @@ async def delete_item_db(guild_id, item_id):
 
 
 
-async def generate_item_image(item_name, item_type, subtype, slot, stats, effects, donated_by):
+async def generate_item_image(item_name, type, subtype, slot, stats, effects, donated_by):
     # Create a base image
     width, height = 512, 256
     background_color = (30, 30, 30)  # dark gray
@@ -152,7 +152,7 @@ async def generate_item_image(item_name, item_type, subtype, slot, stats, effect
     line_spacing = 28
     for line in [
         f"Name: {item_name}",
-        f"Type: {item_type} | Subtype: {subtype}",
+        f"Type: {type} | Subtype: {subtype}",
         f"Stats: {stats}",
         f"Effects: {effects}",
         f"Donated by: {donated_by}"
@@ -174,15 +174,15 @@ class SubtypeSelect(discord.ui.Select):
         self.parent_view = parent_view
         
         # Add debugging
-        print(f"DEBUG: SubtypeSelect init - item_type: {self.parent_view.item_type}")
+        print(f"DEBUG: SubtypeSelect init - type: {self.parent_view.type}")
         
         # Add safety check
-        if not self.parent_view.item_type:
-            print("ERROR: item_type is None!")
+        if not self.parent_view.type:
+            print("ERROR: type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
-        elif self.parent_view.item_type == "Crafting":
+        elif self.parent_view.type == "Crafting":
             options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
-        elif self.parent_view.item_type == "Consumable":
+        elif self.parent_view.type == "Consumable":
             options = [discord.SelectOption(label=s, value=s) for s in CONSUMABLE_SUBTYPES]
         else:
             options = [discord.SelectOption(label=s, value=s) for s in MISC_SUBTYPES]
@@ -215,14 +215,14 @@ class SlotSelect(discord.ui.Select):
     def __init__(self, parent_view):
         self.parent_view = parent_view
         
-        print(f"DEBUG: SlotSelect init - item_type: {self.parent_view.item_type}")
+        print(f"DEBUG: SlotSelect init - type: {self.parent_view.type}")
         
-        if not self.parent_view.item_type:
-            print("ERROR: item_type is None!")
+        if not self.parent_view.type:
+            print("ERROR: type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
-        elif self.parent_view.item_type == "Weapon":
+        elif self.parent_view.type == "Weapon":
             options = [discord.SelectOption(label=s, value=s) for s in WEAPON_SUBTYPES]
-        elif self.parent_view.item_type in ["Equipment", "Armor"]:
+        elif self.parent_view.type in ["Equipment", "Armor"]:
             options = [discord.SelectOption(label=s, value=s) for s in EQUIPMENT_SUBTYPES]
         else:
             options = [discord.SelectOption(label="N/A", value="N/A")]
@@ -362,11 +362,11 @@ class SizeSelect(discord.ui.Select):
                 pass
                 
 class ItemEntryView(discord.ui.View):
-    def __init__(self, author, db_pool, item_type=None, item_id=None, existing_data=None, is_edit=False):
+    def __init__(self, author, db_pool, type=None, item_id=None, existing_data=None, is_edit=False):
         super().__init__(timeout=None)
         self.db_pool = db_pool     
         self.author = author
-        self.item_type = item_type
+        self.type = type
         self.subtype = None
         self.slot = []
         self.size=""
@@ -386,7 +386,7 @@ class ItemEntryView(discord.ui.View):
         # preload existing if editing
         if existing_data:
             self.item_name = existing_data['name']
-            self.item_type = existing_data['type']
+            self.type = existing_data['type']
             self.subtype = existing_data['subtype']
             self.size = existing_data['size']
             self.slot = existing_data['slot'].split(" ") if existing_data['slot'] else []
@@ -400,12 +400,12 @@ class ItemEntryView(discord.ui.View):
             self.usable_classes = existing_data['classes'].split(" ") if existing_data['classes'] else []
             self.usable_race = existing_data['race'].split(" ") if existing_data['race'] else []
 
-        if self.item_type in ["Crafting","Consumable","Misc"]:
+        if self.type in ["Crafting","Consumable","Misc"]:
             self.subtype_select = SubtypeSelect(self)
             self.add_item(self.subtype_select)
 
         
-        if self.item_type in ["Weapon", "Equipment"]:
+        if self.type in ["Weapon", "Equipment"]:
             
 
             self.slot_select = SlotSelect(self)
@@ -424,7 +424,7 @@ class ItemEntryView(discord.ui.View):
         self.details_button.callback = self.open_item_details
         self.add_item(self.details_button)
         
-        if self.item_type in ["Weapon", "Equipment"]:
+        if self.type in ["Weapon", "Equipment"]:
             self.details_button1 = discord.ui.Button(label="Stat Details", style=discord.ButtonStyle.secondary)
             self.details_button1.callback = self.open_item_details1
             self.add_item(self.details_button1)
@@ -465,7 +465,7 @@ class ItemEntryView(discord.ui.View):
         # Base fields to update/add
         fields_to_update = {
             "name": self.item_name,
-            "type": self.item_type,
+            "type": self.type,
             "subtype": self.subtype,
             "slot": slot_str,
             "size": self.size,
@@ -478,11 +478,11 @@ class ItemEntryView(discord.ui.View):
         }
     
         # Only include relevant fields per item type
-        if self.item_type == "Weapon":
+        if self.type == "Weapon":
             fields_to_update.update({"attack": self.attack, "delay": self.delay, "effects": self.effects})
-        elif self.item_type == "Equipment":
+        elif self.type == "Equipment":
             fields_to_update.update({"ac": self.ac, "effects": self.effects})
-        elif self.item_type == "Consumable":
+        elif self.type == "Consumable":
             fields_to_update.update({"effects": self.effects})
     
         async with self.db_pool.acquire() as conn:
@@ -503,8 +503,8 @@ class ItemEntryView(discord.ui.View):
                         pass  # Message already deleted
     
                 # If this is a created item, regenerate the image
-                if self.item_type in ["Weapon", "Equipment", "Consumable", "Crafting", "Misc"]:
-                    bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+                if self.type in ["Weapon", "Equipment", "Consumable", "Crafting", "Misc"]:
+                    bg_path = BG_FILES.get(self.type, BG_FILES["Misc"])
                     background = Image.open(bg_path).convert("RGBA")
     
                     # Draw the item text as before
@@ -535,11 +535,11 @@ class ItemEntryView(discord.ui.View):
             else:        
                 
                 # Select background
-                bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+                bg_path = BG_FILES.get(self.type, BG_FILES["Misc"])
                 background = Image.open(bg_path).convert("RGBA")
                 
             
-                def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, weight, effects, donated_by):
+                def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
                     draw = ImageDraw.Draw(background)
                 
                     # Load a fontWry
@@ -567,7 +567,7 @@ class ItemEntryView(discord.ui.View):
                     y += 50  # spacing after title
                     x = 110
                     
-                    if self.item_type in ("Equipment"):
+                    if self.type in ("Equipment"):
                     
                         # Slot
                         slot=" ".join(sorted(self.slot))
@@ -580,7 +580,7 @@ class ItemEntryView(discord.ui.View):
                             draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
                             y += 25
                         
-                    if self.item_type in ("Weapon"):
+                    if self.type in ("Weapon"):
                     
                         # Slot
                         slot=" ".join(sorted(self.slot)).upper()
@@ -595,7 +595,7 @@ class ItemEntryView(discord.ui.View):
                             y += 25
     
                     
-                    if self.item_type in ("Equipment", "Weapon"): 
+                    if self.type in ("Equipment", "Weapon"): 
     
                         if self.stats != "":
                             stats_text = stats
@@ -614,7 +614,7 @@ class ItemEntryView(discord.ui.View):
                             text_height = bbox[3] - bbox[1]
                             y += text_height + 15  # Add a little padding
     
-                    if self.item_type in ("Consumable"): 
+                    if self.type in ("Consumable"): 
     
                         if self.stats != "":
                             stats_text = stats
@@ -639,7 +639,7 @@ class ItemEntryView(discord.ui.View):
                                 y += text_height + 15  # Add a little padding
                                 
                  
-                    if self.item_type in ("Crafting", "Misc"):
+                    if self.type in ("Crafting", "Misc"):
                        
                         if self.effects != "":
                             effects_text = effects
@@ -661,7 +661,7 @@ class ItemEntryView(discord.ui.View):
                         draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
                         y += 25
     
-                    if self.item_type in ("Crafting", "Misc"):                
+                    if self.type in ("Crafting", "Misc"):                
                         if self.stats != "":
                             stats_text = stats
                             draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
@@ -671,7 +671,7 @@ class ItemEntryView(discord.ui.View):
                             y += text_height + 15  # Add a little padding
     
                     
-                    if self.item_type in ("Equipment", "Weapon"):    
+                    if self.type in ("Equipment", "Weapon"):    
                       
                         if self.usable_classes:
                             # Classes
@@ -691,7 +691,7 @@ class ItemEntryView(discord.ui.View):
                 background = draw_item_text(
                     background,
                     self.item_name,
-                    self.item_type,
+                    self.type,
                     self.subtype,
                     self.size,
                     self.slot,
@@ -714,7 +714,7 @@ class ItemEntryView(discord.ui.View):
                 await add_item_db(
                     guild_id=interaction.guild.id,
                     name=self.item_name,
-                    type_=self.item_type,
+                    type_=self.type,
                     size=self.size,
                     subtype=self.subtype,
                     slot=" ".join(self.slot),
@@ -863,7 +863,7 @@ class ImageDetailsModal(discord.ui.Modal):
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
     def __init__(self, parent_view):
-        super().__init__(title=f"{parent_view.item_type} Details")
+        super().__init__(title=f"{parent_view.type} Details")
         
         self.parent_view = parent_view
         
@@ -873,7 +873,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.add_item(self.item_name)
         
         # Weapon ATTACK/DELAY
-        if parent_view.item_type == "Weapon":
+        if parent_view.type == "Weapon":
 
             self.attack = discord.ui.TextInput(
                 label="Damage", default=parent_view.attack or "", required=False
@@ -886,7 +886,7 @@ class ItemDetailsModal(discord.ui.Modal):
 
 
         # Equipment AC
-        if parent_view.item_type == "Equipment":
+        if parent_view.type == "Equipment":
 
             self.ac = discord.ui.TextInput(
                 label="Armor Class", default=parent_view.ac or "", required=True
@@ -894,7 +894,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.ac)
 
          
-        if parent_view.item_type == "Consumable":
+        if parent_view.type == "Consumable":
          # STATS
             self.stats = discord.ui.TextInput(
                 label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
@@ -909,7 +909,7 @@ class ItemDetailsModal(discord.ui.Modal):
             self.add_item(self.stats)
             self.add_item(self.effects)
 
-        if self.parent_view.item_type in ("Crafting","Misc"):
+        if self.parent_view.type in ("Crafting","Misc"):
         # STATS
             self.stats = discord.ui.TextInput(
                 label="Info", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
@@ -944,13 +944,13 @@ class ItemDetailsModal(discord.ui.Modal):
         self.parent_view.weight = self.weight.value
         self.parent_view.donated_by = self.donated_by.value or "Anonymous"
 
-        if self.parent_view.item_type == "Weapon":
+        if self.parent_view.type == "Weapon":
             self.parent_view.attack = self.attack.value
             self.parent_view.delay = self.delay.value
-        if self.parent_view.item_type == "Equipment":
+        if self.parent_view.type == "Equipment":
             self.parent_view.ac = self.ac.value
         
-        if self.parent_view.item_type in ("Crafting", "Consumable","Misc"):
+        if self.parent_view.type in ("Crafting", "Consumable","Misc"):
       
             self.parent_view.stats = self.stats.value
             self.parent_view.effects = self.effects.value
@@ -963,12 +963,12 @@ class ItemDetailsModal(discord.ui.Modal):
             
 class ItemDetailsModal2(discord.ui.Modal):
     def __init__(self, parent_view):
-        super().__init__(title=f"{parent_view.item_type} Details")
+        super().__init__(title=f"{parent_view.type} Details")
         
         self.parent_view = parent_view
 
          #  STATS
-        if parent_view.item_type == "Weapon" or "Equipment" or "Consumable":
+        if parent_view.type == "Weapon" or "Equipment" or "Consumable":
 
             self.stats = discord.ui.TextInput(
                 label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
@@ -988,7 +988,7 @@ class ItemDetailsModal2(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         # Save values back to the view   
-        if self.parent_view.item_type == "Weapon" or "Equipment" or"Consumable":
+        if self.parent_view.type == "Weapon" or "Equipment" or"Consumable":
             self.parent_view.stats = self.stats.value
             self.parent_view.effects = self.effects.value
 
@@ -1095,14 +1095,14 @@ async def view_bank(interaction: discord.Interaction):
         return f"```{text}```" if text else "```None```"
 
     async def build_embed_with_file(row):
-        item_type = (row.get('type') or "Misc").lower()
+        type = (row.get('type') or "Misc").lower()
         name = row.get('name')
 
         donated_by = row.get('donated_by') or "Anonymous"
 
 
         embed = discord.Embed(
-            color=TYPE_COLORS.get(item_type, discord.Color.blurple())
+            color=TYPE_COLORS.get(type, discord.Color.blurple())
         )
         embed.set_footer(text=f"Donated by: {donated_by} | {name}")
                             
@@ -1133,16 +1133,16 @@ async def view_bank(interaction: discord.Interaction):
 # ---------- /add_item Command ----------
 
 @bot.tree.command(name="add_item", description="Add a new item to the guild bank.")
-@app_commands.describe(item_type="Type of the item", image="Optional image upload")
-@app_commands.choices(item_type=[
+@app_commands.describe(type="Type of the item", image="Optional image upload")
+@app_commands.choices(type=[
     app_commands.Choice(name="Equipment", value="Equipment"),
     app_commands.Choice(name="Crafting", value="Crafting"),
     app_commands.Choice(name="Consumable", value="Consumable"),
     app_commands.Choice(name="Misc", value="Misc"),
     app_commands.Choice(name="Weapon", value="Weapon")
 ])
-async def add_item(interaction: discord.Interaction, item_type: str, image: discord.Attachment = None):
-    view = ItemEntryView(interaction.user, item_type=item_type)
+async def add_item(interaction: discord.Interaction, type: str, image: discord.Attachment = None):
+    view = ItemEntryView(interaction.user, type=type)
     active_views[interaction.user.id] = view  # Track this view
 
     # If an image was uploaded, attach it to the view
@@ -1153,7 +1153,7 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
         await interaction.response.send_modal(ImageDetailsModal(interaction, view=view))
     else:
         # Just show the view with dropdowns for subtype/classes
-        await interaction.response.send_message(f"Adding a new {item_type}:", view=view, ephemeral=True)
+        await interaction.response.send_message(f"Adding a new {type}:", view=view, ephemeral=True)
 
 
 
@@ -1179,7 +1179,7 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
     view = ItemEntryView(
         db_pool=db_pool,
         author=interaction.user,
-        item_type=item["type"],
+        type=type,
         item_id=item["id"],
         existing_data=item,
         is_edit=True
