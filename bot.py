@@ -736,7 +736,7 @@ class ImageDetailsModal(discord.ui.Modal):
         self.interaction = interaction
         self.view = view
         self.is_edit = item_row is not None
-		self.item_row = item_row
+				self.item_row = item_row
 
         if self.is_edit:
             self.item_id = item_row['id']
