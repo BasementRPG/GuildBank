@@ -809,7 +809,7 @@ class ImageDetailsModal(discord.ui.Modal):
             await add_item_db(
                 guild_id=self.guild_id,
                 name=item_name,
-                type_="Image",
+                type="Image",
                 subtype="Image",
                 size="",
                 slot="",
