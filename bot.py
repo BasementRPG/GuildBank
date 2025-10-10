@@ -1,4 +1,3 @@
-
 import os
 import discord
 from discord import app_commands
@@ -736,7 +735,7 @@ class ImageDetailsModal(discord.ui.Modal):
         super().__init__(title="Image Item Details")
         self.interaction = interaction
         self.view = view
-        self.is_edit = is_edit is not None
+        self.is_edit = item_row is not None
 
         if self.is_edit:
             self.item_id = item_row['id']
