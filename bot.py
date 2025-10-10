@@ -839,7 +839,6 @@ class ImageDetailsModal(discord.ui.Modal):
                 f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
             )
 
-
 # ------ITEM DETAILS ----
 class ItemDetailsModal(discord.ui.Modal):
     def __init__(self, parent_view):
