@@ -19,12 +19,12 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 BG_FILES = {
-    "Weapon": "assets/backgrounds/bg_weapon.png",
-    "Equipment": "assets/backgrounds/bg_weapon.png",
-    "Consumable": "assets/backgrounds/bg_weapon.png",
-    "Crafting": "assets/backgrounds/bg_weapon.png",
-    "Misc": "assets/backgrounds/bg_weapon.png",
-    "Jewlery": "assests/backgrounds/bg_weapon.png"
+    "Weapon": "assets/backgrounds/bgweapon.png",
+    "Equipment": "assets/backgrounds/bgarmor.png",
+    "Consumable": "assets/backgrounds/bgconsumable.png",
+    "Crafting": "assets/backgrounds/bgcrafting.png",
+    "Misc": "assets/backgrounds/bgmisc.png",
+    
 }
 
 
