@@ -1131,6 +1131,31 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
         f"🗑️ Removed **{item_name}** from the Guild Bank.", ephemeral=True
     )
 
+@bot.tree.command(name="view_itemhistory", description="View guild item donation stats.")
+async def view_itemhistory(interaction: discord.Interaction):
+    guild_id = interaction.guild.id
+
+    async with db_pool.acquire() as conn:
+        # Count all donated items (all rows ever added for this guild)
+        total_donated = await conn.fetchval(
+            "SELECT COUNT(*) FROM inventory WHERE guild_id = $1;",
+            guild_id
+        )
+
+        # Count currently active items (qty = 1)
+        total_in_bank = await conn.fetchval(
+            "SELECT COUNT(*) FROM inventory WHERE guild_id = $1 AND qty = 1;",
+            guild_id
+        )
+
+    # Prepare response
+    response = (
+        f"📜 **Guild Bank Summary for {interaction.guild.name}**\n\n"
+        f"🏰 **Total Items Donated:** {total_donated}\n"
+        f"💰 **Currently in Bank:** {total_in_bank}"
+    )
+
+    await interaction.response.send_message(response, ephemeral=True)
 
 
 
