@@ -485,7 +485,7 @@ class ItemEntryView(discord.ui.View):
         elif self.type == "Consumable":
             fields_to_update.update({"effects": self.effects})
     
-            async with self.db_pool.acquire() as conn:
+        async with self.db_pool.acquire() as conn:
             if self.item_id:  # Editing existing item
                
                 # Fetch old item to check for image
