@@ -727,6 +727,7 @@ class ItemEntryView(discord.ui.View):
 
 
 #-----IMAGE UPLOAD ----
+
 class ImageDetailsModal(discord.ui.Modal):
     def __init__(self, interaction: discord.Interaction, view=None, item_row=None):
         """
@@ -834,10 +835,7 @@ class ImageDetailsModal(discord.ui.Modal):
             )
             await modal_interaction.response.send_message(
                 f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
-            )--
-
-
-
+            )
 
 
 
