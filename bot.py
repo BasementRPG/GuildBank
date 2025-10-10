@@ -396,10 +396,10 @@ class ItemEntryView(discord.ui.View):
             self.delay = existing_data['delay']
             self.effects = existing_data['effects']
             self.donated_by = existing_data['donated_by']
-            self.usable_classes = existing_data['classes'].split(" ") if existing_data['classes'] else []
+            self.usable_classes = existing_data['usable_classes'].split(" ") if existing_data['usable_classes'] else []
             self.usable_race = existing_data['race'].split(" ") if existing_data['race'] else []
-            self.classes = existing_data['classes'].split(" ") if existing_data['classes'] else []
-            self.race = existing_data['race'].split(" ") if existing_data['race'] else []
+            self.classes = existing_data['usable_classes'].split(" ") if existing_data['usable_classes'] else []
+            self.race = existing_data['usable_race'].split(" ") if existing_data['usable_race'] else []
 
         if self.type in ["Crafting","Consumable","Misc"]:
             self.subtype_select = SubtypeSelect(self)
