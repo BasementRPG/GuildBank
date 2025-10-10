@@ -850,7 +850,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
-                label="Item Name", placeholder="", placeholder="Example: Flowing Black Silk Sash", default=parent_view.item_name, required=True
+                label="Item Name", placeholder="Example: Flowing Black Silk Sash", default=parent_view.item_name, required=True
         )
         self.add_item(self.item_name)
         
