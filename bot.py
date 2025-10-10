@@ -48,6 +48,9 @@ CLASS_OPTIONS = ["ARC", "BRD", "BST", "CLR", "DRU", "ELE", "ENC", "FTR", "INQ", 
 
 
 intents = discord.Intents.default()
+intents.message_content = True
+intents.guilds = True
+intents.messages = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 db_pool: asyncpg.Pool = None
 
