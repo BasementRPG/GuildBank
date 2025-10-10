@@ -182,6 +182,8 @@ class SubtypeSelect(discord.ui.Select):
         if not self.parent_view.type:
             print("ERROR: type is None!")
             options = [discord.SelectOption(label="Error", value="error")]
+		elif self.parent_view.type == "Weapons":
+            options = [discord.SelectOption(label=s, value=s) for s in WEAPON_TYPES]
         elif self.parent_view.type == "Crafting":
             options = [discord.SelectOption(label=s, value=s) for s in CRAFTING_SUBTYPES]
         elif self.parent_view.type == "Consumable":
@@ -412,8 +414,10 @@ class ItemEntryView(discord.ui.View):
 
         
         if self.type in ["Weapon", "Equipment"]:
-            
 
+            self.subtype_select = SubtypeSelect(self)
+            self.add_item(self.subtype_select)
+			
             self.slot_select = SlotSelect(self)
             self.add_item(self.slot_select)
             
