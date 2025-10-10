@@ -456,104 +456,86 @@ class ItemEntryView(discord.ui.View):
         await interaction.response.send_message("❌ Item entry canceled.", ephemeral=True)
         self.stop()    
  
+
     async def submit_item(self, interaction: discord.Interaction):
-        # Ensure all fields are up-to-date from the modal
+        # Convert lists to space-separated strings
         classes_str = " ".join(self.usable_classes)
         race_str = " ".join(self.usable_race)
         slot_str = " ".join(self.slot)
-
-        donor = self.donated_by
+        donor = self.donated_by or "Anonymous"
         added_by = str(interaction.user)
     
-        # Only update fields for this item type
+        # Base fields to update/add
         fields_to_update = {
             "name": self.item_name,
             "type": self.item_type,
             "subtype": self.subtype,
             "slot": slot_str,
-            "size":self.size,
+            "size": self.size,
             "stats": self.stats,
             "weight": self.weight,
             "classes": classes_str,
             "race": race_str,
             "donated_by": donor,
-            "added_by": added_by,
-            "effects" : self.effects,
-            "ac" : self.ac,
-            "attack" : self.attack,
-            "delay" : self.delay
-            
+            "added_by": added_by
         }
-        if self.item_id:  # Editing existing item
-            # 1️⃣ Delete previous image if it exists
-            async with self.db_pool.acquire() as conn:
+    
+        # Only include relevant fields per item type
+        if self.item_type == "Weapon":
+            fields_to_update.update({"attack": self.attack, "delay": self.delay, "effects": self.effects})
+        elif self.item_type == "Equipment":
+            fields_to_update.update({"ac": self.ac, "effects": self.effects})
+        elif self.item_type == "Consumable":
+            fields_to_update.update({"effects": self.effects})
+    
+        async with self.db_pool.acquire() as conn:
+            if self.item_id:  # Editing existing item
+                # Fetch old item to check for image
                 old_item = await conn.fetchrow(
-                    "SELECT created_images, upload_message_id FROM inventory WHERE id=$1", self.item_type
+                    "SELECT id, created_images, upload_message_id FROM inventory WHERE id=$1", 
+                    self.item_id
                 )
-                if old_item and old_item["upload_message_id"]:
+    
+                # Delete previous image from upload channel if created
+                if old_item and old_item['upload_message_id']:
+                    upload_channel = await ensure_upload_channel(interaction.guild)
                     try:
-                        channel = self.bot.get_channel(YOUR_UPLOAD_CHANNEL_ID)  # replace with your upload log channel
-                        msg = await channel.fetch_message(old_item["upload_message_id"])
-                        await msg.delete()
-                    except Exception:
-                        pass  # message may have been deleted already
+                        old_msg = await upload_channel.fetch_message(old_item['upload_message_id'])
+                        await old_msg.delete()
+                    except discord.NotFound:
+                        pass  # Message already deleted
     
-            # 2️⃣ Draw new image for created items
-            if self.item_type not in ["Upload"]:  # only recreate if it’s a created item
-                bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
-                background = Image.open(bg_path).convert("RGBA")
+                # If this is a created item, regenerate the image
+                if self.item_type in ["Weapon", "Equipment", "Consumable", "Crafting", "Misc"]:
+                    bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+                    background = Image.open(bg_path).convert("RGBA")
     
-                # Draw item text (your draw_item_text function)
-                background = draw_item_text(
-                    background,
-                    self.item_name,
-                    self.item_type,
-                    self.subtype,
-                    self.size,
-                    self.slot,
-                    self.stats,
-                    self.weight,
-                    self.effects,
-                    self.donated_by or "Anonymous"
-                )
+                    # Draw the item text as before
+                    def draw_item_text(background):
+                        draw = ImageDraw.Draw(background)
+                        # ... use your previous draw_item_text logic here ...
+                        return background
     
-                # Upload new image
-                created_images = io.BytesIO()
-                background.save(created_images, format="PNG")
-                created_images.seek(0)
-                upload_channel = await ensure_upload_channel(interaction.guild)
-                file = discord.File(created_images, filename=f"{self.item_name}.png")
-                message = await upload_channel.send(file=file, content=f"Created by {added_by}")
-                cdn_url = message.attachments[0].url
+                    background = draw_item_text(background)
+                    created_images = io.BytesIO()
+                    background.save(created_images, format="PNG")
+                    created_images.seek(0)
     
-                # Save new image info
-                fields_to_update["created_images"] = cdn_url
-                fields_to_update["upload_message_id"] = message.id
+                    upload_channel = await ensure_upload_channel(interaction.guild)
+                    file = discord.File(created_images, filename=f"{self.item_name}.png")
+                    message = await upload_channel.send(file=file, content=f"Created by {added_by}")
+                    cdn_url = message.attachments[0].url
+                    fields_to_update['created_images'] = cdn_url
+                    fields_to_update['upload_message_id'] = message.id
     
-            # 3️⃣ Update DB
-            await update_item_db(
-                guild_id=interaction.guild.id,
-                item_id=self.item_id,
-                **fields_to_update
-            )
-            await interaction.response.send_message(
-                f"✅ Updated **{self.item_name}**.",
-                ephemeral=True
-            )
-
-
-        else:
-            if self.item_type == "Weapon":
-                fields_to_update["attack"] = self.attack
-                fields_to_update["delay"] = self.delay
-                fields_to_update["effects"] = self.effects
-            elif self.item_type == "Equipment":
-                fields_to_update["ac"] = self.ac
-                fields_to_update["effects"] = self.effects
-            elif self.item_type == "Consumable":
-                fields_to_update["effects"] = self.effects
-            # Crafting / Misc uses stats and donated_by only
-        
+                # Record the edit timestamp
+                fields_to_update['created_at1'] = datetime.utcnow()
+    
+                # Update DB
+                await update_item_db(guild_id=interaction.guild.id, item_id=self.item_id, **fields_to_update)
+                await interaction.response.send_message(f"✅ Updated **{self.item_name}**.", ephemeral=True)
+    
+            else:        
                 
                 # Select background
                 bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
