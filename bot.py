@@ -476,7 +476,6 @@ class ItemEntryView(discord.ui.View):
             "donated_by": donor,
             "added_by": added_by
         }
-
 		def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
 			draw = ImageDraw.Draw(background)
                 
@@ -618,7 +617,7 @@ class ItemEntryView(discord.ui.View):
 	          race=" ".join(sorted(self.usable_race))
 	          draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
 	          y += 25
-				return background
+		return background
 
 
 
