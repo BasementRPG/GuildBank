@@ -461,7 +461,7 @@ class ItemEntryView(discord.ui.View):
         race_str = " ".join(self.usable_race)
         slot_str = " ".join(self.slot)
 
-        donor = self.donated_by or "Anonymous"
+        donor = self.donated_by
         added_by = str(interaction.user)
     
         # Only update fields for this item type
@@ -476,21 +476,60 @@ class ItemEntryView(discord.ui.View):
             "classes": classes_str,
             "race": race_str,
             "donated_by": donor,
-            "added_by": added_by
+            "added_by": added_by,
+            "effects" : self.effects,
+            "ac" : self.ac,
+            "attack" : self.attack,
+            "delay" : self.delay
+            
         }
+        if self.item_id:  # Editing existing item
+            # 1️⃣ Delete previous image if it exists
+            async with self.bot.db_pool.acquire() as conn:
+                old_item = await conn.fetchrow(
+                    "SELECT created_images, upload_message_id FROM inventory WHERE id=$1", self.item_id
+                )
+                if old_item and old_item["upload_message_id"]:
+                    try:
+                        channel = self.bot.get_channel(YOUR_UPLOAD_CHANNEL_ID)  # replace with your upload log channel
+                        msg = await channel.fetch_message(old_item["upload_message_id"])
+                        await msg.delete()
+                    except Exception:
+                        pass  # message may have been deleted already
     
-        if self.item_type == "Weapon":
-            fields_to_update["attack"] = self.attack
-            fields_to_update["delay"] = self.delay
-            fields_to_update["effects"] = self.effects
-        elif self.item_type == "Equipment":
-            fields_to_update["ac"] = self.ac
-            fields_to_update["effects"] = self.effects
-        elif self.item_type == "Consumable":
-            fields_to_update["effects"] = self.effects
-        # Crafting / Misc uses stats and donated_by only
+            # 2️⃣ Draw new image for created items
+            if self.item_type not in ["Upload"]:  # only recreate if it’s a created item
+                bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+                background = Image.open(bg_path).convert("RGBA")
     
-        if self.item_id:  # editing existing item
+                # Draw item text (your draw_item_text function)
+                background = draw_item_text(
+                    background,
+                    self.item_name,
+                    self.item_type,
+                    self.subtype,
+                    self.size,
+                    self.slot,
+                    self.stats,
+                    self.weight,
+                    self.effects,
+                    self.donated_by or "Anonymous"
+                )
+    
+                # Upload new image
+                created_images = io.BytesIO()
+                background.save(created_images, format="PNG")
+                created_images.seek(0)
+                upload_channel = await ensure_upload_channel(interaction.guild)
+                file = discord.File(created_images, filename=f"{self.item_name}.png")
+                message = await upload_channel.send(file=file, content=f"Created by {added_by}")
+                cdn_url = message.attachments[0].url
+    
+                # Save new image info
+                fields_to_update["created_images"] = cdn_url
+                fields_to_update["upload_message_id"] = message.id
+    
+            # 3️⃣ Update DB
             await update_item_db(
                 guild_id=interaction.guild.id,
                 item_id=self.item_id,
@@ -500,219 +539,231 @@ class ItemEntryView(discord.ui.View):
                 f"✅ Updated **{self.item_name}**.",
                 ephemeral=True
             )
-        else:  # adding new item manually
 
-            
-            # Select background
-            bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
-            background = Image.open(bg_path).convert("RGBA")
-            
+
+        else:
+            if self.item_type == "Weapon":
+                fields_to_update["attack"] = self.attack
+                fields_to_update["delay"] = self.delay
+                fields_to_update["effects"] = self.effects
+            elif self.item_type == "Equipment":
+                fields_to_update["ac"] = self.ac
+                fields_to_update["effects"] = self.effects
+            elif self.item_type == "Consumable":
+                fields_to_update["effects"] = self.effects
+            # Crafting / Misc uses stats and donated_by only
         
-            def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, weight, effects, donated_by):
-                draw = ImageDraw.Draw(background)
+                
+                # Select background
+                bg_path = BG_FILES.get(self.item_type, BG_FILES["Misc"])
+                background = Image.open(bg_path).convert("RGBA")
+                
             
-                # Load a fontWry
-                # Example fonts
-                font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
-                font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
-                font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
-                font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
-                font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
-                font_weight = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for weight
-                font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
-                font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
-                font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for attack by
-                font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for class by
-                font_race = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for race by
+                def draw_item_text(background, item_name, item_type, subtype, size, slot, stats, weight, effects, donated_by):
+                    draw = ImageDraw.Draw(background)
                 
-                width, height = background.size
-            
-                # Example positions:
-                x_margin = 40
-                y = 3  # start y
-            
-                # Name at top
-                draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
-                y += 50  # spacing after title
-                x = 110
+                    # Load a fontWry
+                    # Example fonts
+                    font_title = ImageFont.truetype("assets/WinthorpeScB.ttf", 28)   # for the item name
+                    font_type = ImageFont.truetype("assets/Winthorpe.ttf", 20)      # for type/subtype
+                    font_slot = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for slot
+                    font_size = ImageFont.truetype("assets/Winthorpe.ttf", 16)      # for size
+                    font_stats = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for stats
+                    font_weight = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for weight
+                    font_effects = ImageFont.truetype("assets/Winthorpe.ttf", 16)   # for effects
+                    font_ac = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for ac by
+                    font_attack = ImageFont.truetype("assets/Winthorpe.ttf", 16)     # for attack by
+                    font_class = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for class by
+                    font_race = ImageFont.truetype("assets/WinthorpeB.ttf", 16)     # for race by
+                    
+                    width, height = background.size
                 
-                if self.item_type in ("Equipment"):
+                    # Example positions:
+                    x_margin = 40
+                    y = 3  # start y
                 
-                    # Slot
-                    slot=" ".join(sorted(self.slot))
-                    draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
-                    y += 25
-                
-                    if self.ac !="":    
-                        # AC
-                        ac = self.ac
-                        draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
+                    # Name at top
+                    draw.text((x_margin, y), f"{item_name}", fill=(255, 255, 255), font=font_title)
+                    y += 50  # spacing after title
+                    x = 110
+                    
+                    if self.item_type in ("Equipment"):
+                    
+                        # Slot
+                        slot=" ".join(sorted(self.slot))
+                        draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                         y += 25
                     
-                if self.item_type in ("Weapon"):
-                
-                    # Slot
-                    slot=" ".join(sorted(self.slot)).upper()
-                    draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
-                    y += 25
-                   
-                    if self.attack !="":
-                        #Attack/Delay
-                        attack = self.attack
-                        delay = self.delay
-                        draw.text((x, y), f"Weapon DMG: {attack} ATK Delay: {delay}", fill=(255, 255, 255), font=font_attack)
+                        if self.ac !="":    
+                            # AC
+                            ac = self.ac
+                            draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
+                            y += 25
+                        
+                    if self.item_type in ("Weapon"):
+                    
+                        # Slot
+                        slot=" ".join(sorted(self.slot)).upper()
+                        draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
                         y += 25
-
-                
-                if self.item_type in ("Equipment", "Weapon"): 
-
-                    if self.stats != "":
-                        stats_text = stats
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
+                       
+                        if self.attack !="":
+                            #Attack/Delay
+                            attack = self.attack
+                            delay = self.delay
+                            draw.text((x, y), f"Weapon DMG: {attack} ATK Delay: {delay}", fill=(255, 255, 255), font=font_attack)
+                            y += 25
     
-                    if self.effects != "":
-                        # Effects
-                        effects_text = effects
-                        draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
-
-                if self.item_type in ("Consumable"): 
-
-                    if self.stats != "":
-                        stats_text = stats
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
-
-                    if self.subtype in ("Potion", "Scroll"):
+                    
+                    if self.item_type in ("Equipment", "Weapon"): 
+    
+                        if self.stats != "":
+                            stats_text = stats
+                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                            # Measure how tall the rendered text block actually is
+                            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                            text_height = bbox[3] - bbox[1]
+                            y += text_height + 15  # Add a little padding
+        
                         if self.effects != "":
                             # Effects
-                            draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
-                            y += 25
-                    if self.subtype in ("Drink","Food", "Other"): 
-                        if self.effects != "":
                             effects_text = effects
                             draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
                             # Measure how tall the rendered text block actually is
                             bbox = draw.textbbox((x, y), effects_text, font=font_effects)
                             text_height = bbox[3] - bbox[1]
                             y += text_height + 15  # Add a little padding
+    
+                    if self.item_type in ("Consumable"): 
+    
+                        if self.stats != "":
+                            stats_text = stats
+                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                            # Measure how tall the rendered text block actually is
+                            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                            text_height = bbox[3] - bbox[1]
+                            y += text_height + 15  # Add a little padding
+    
+                        if self.subtype in ("Potion", "Scroll"):
+                            if self.effects != "":
+                                # Effects
+                                draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
+                                y += 25
+                        if self.subtype in ("Drink","Food", "Other"): 
+                            if self.effects != "":
+                                effects_text = effects
+                                draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+                                # Measure how tall the rendered text block actually is
+                                bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+                                text_height = bbox[3] - bbox[1]
+                                y += text_height + 15  # Add a little padding
+                                
+                 
+                    if self.item_type in ("Crafting", "Misc"):
+                       
+                        if self.effects != "":
+                            effects_text = effects
+                            draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+                            # Measure how tall the rendered text block actually is
+                            bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+                            text_height = bbox[3] - bbox[1]
+                            y += text_height + 15  # Add a little paddingg
                             
-             
-                if self.item_type in ("Crafting", "Misc"):
-                   
-                    if self.effects != "":
-                        effects_text = effects
-                        draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little paddingg
                         
-                    
-                if self.size !="" and self.weight!="":
-                    draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-                    y += 25                      
-                    
-                if self.size !="" and self.weight=="":
-                    draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-                    y += 25                       
-                if self. size =="" and self.weight !="":
-                    draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
-                    y += 25
-
-                if self.item_type in ("Crafting", "Misc"):                
-                    if self.stats != "":
-                        stats_text = stats
-                        draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-                        # Measure how tall the rendered text block actually is
-                        bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-                        text_height = bbox[3] - bbox[1]
-                        y += text_height + 15  # Add a little padding
-
-                
-                if self.item_type in ("Equipment", "Weapon"):    
-                  
-                    if self.usable_classes:
-                        # Classes
-                        classes=" ".join(sorted(self.usable_classes))
-                        draw.text((x, y), f"Class: {classes.upper()}", fill=(255, 255, 255), font=font_effects)
-                        y += 25
+                    if self.size !="" and self.weight!="":
+                        draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25                      
                         
-                    if self.usable_race:
-                        # Race
-                        race=" ".join(sorted(self.usable_race))
-                        draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
+                    if self.size !="" and self.weight=="":
+                        draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+                        y += 25                       
+                    if self. size =="" and self.weight !="":
+                        draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
                         y += 25
-
+    
+                    if self.item_type in ("Crafting", "Misc"):                
+                        if self.stats != "":
+                            stats_text = stats
+                            draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+                            # Measure how tall the rendered text block actually is
+                            bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+                            text_height = bbox[3] - bbox[1]
+                            y += text_height + 15  # Add a little padding
+    
                     
-                return background
-                
-            background = draw_item_text(
-                background,
-                self.item_name,
-                self.item_type,
-                self.subtype,
-                self.size,
-                self.slot,
-                self.stats,
-                self.weight,
-                self.effects,
-                self.donated_by or "Anonymous"
-            )
-        
-            created_images = io.BytesIO()
-            background.save(created_images, format="PNG")
-            created_images.seek(0)
-            upload_channel = await ensure_upload_channel(interaction.guild)
-            file = discord.File(created_images, filename=f"{self.item_name}.png")
-            message = await upload_channel.send(file=file, content=f"Created by {added_by}")
-            cdn_url = message.attachments[0].url
-
+                    if self.item_type in ("Equipment", "Weapon"):    
+                      
+                        if self.usable_classes:
+                            # Classes
+                            classes=" ".join(sorted(self.usable_classes))
+                            draw.text((x, y), f"Class: {classes.upper()}", fill=(255, 255, 255), font=font_effects)
+                            y += 25
+                            
+                        if self.usable_race:
+                            # Race
+                            race=" ".join(sorted(self.usable_race))
+                            draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
+                            y += 25
+    
+                        
+                    return background
+                    
+                background = draw_item_text(
+                    background,
+                    self.item_name,
+                    self.item_type,
+                    self.subtype,
+                    self.size,
+                    self.slot,
+                    self.stats,
+                    self.weight,
+                    self.effects,
+                    self.donated_by or "Anonymous"
+                )
             
-            # 6. Save item to DB including full-size image
-            await add_item_db(
-                guild_id=interaction.guild.id,
-                name=self.item_name,
-                type_=self.item_type,
-                size=self.size,
-                subtype=self.subtype,
-                slot=" ".join(self.slot),
-                stats=self.stats,
-                weight=self.weight,
-                classes=" ".join(self.usable_classes),
-                race=" ".join(self.usable_race),
-                image=None,
-                created_images=cdn_url,  # original image field empty
-                donated_by=self.donated_by,
-                qty=1,
-                added_by=str(interaction.user),
-                attack=self.attack,
-                delay=self.delay,
-                effects=self.effects,
-                ac=self.ac,
-                upload_message_id=message.id
+                created_images = io.BytesIO()
+                background.save(created_images, format="PNG")
+                created_images.seek(0)
+                upload_channel = await ensure_upload_channel(interaction.guild)
+                file = discord.File(created_images, filename=f"{self.item_name}.png")
+                message = await upload_channel.send(file=file, content=f"Created by {added_by}")
+                cdn_url = message.attachments[0].url
+    
                 
-            )
-            embed = discord.Embed(
-                title=f"{self.item_name}", color=discord.Color.blue()
-            )
-            embed.set_image(url=cdn_url)
-            
-            await interaction.response.send_message(
-                content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
-                embed=embed,
-                ephemeral=True
-            )
+                # 6. Save item to DB including full-size image
+                await add_item_db(
+                    guild_id=interaction.guild.id,
+                    name=self.item_name,
+                    type_=self.item_type,
+                    size=self.size,
+                    subtype=self.subtype,
+                    slot=" ".join(self.slot),
+                    stats=self.stats,
+                    weight=self.weight,
+                    classes=" ".join(self.usable_classes),
+                    race=" ".join(self.usable_race),
+                    image=None,
+                    created_images=cdn_url,  # original image field empty
+                    donated_by=self.donated_by,
+                    qty=1,
+                    added_by=str(interaction.user),
+                    attack=self.attack,
+                    delay=self.delay,
+                    effects=self.effects,
+                    ac=self.ac,
+                    upload_message_id=message.id
+                    
+                )
+                embed = discord.Embed(
+                    title=f"{self.item_name}", color=discord.Color.blue()
+                )
+                embed.set_image(url=cdn_url)
+                
+                await interaction.response.send_message(
+                    content=f"✅ Added **{self.item_name}** to the Guild Bank (manual image created).",
+                    embed=embed,
+                    ephemeral=True
+                )
         self.stop()
 
 
@@ -1130,45 +1181,35 @@ async def add_item(interaction: discord.Interaction, item_type: str, image: disc
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
     await interaction.response.defer(ephemeral=True)
+    guild_id = interaction.guild.id
 
-    # Fetch item from DB
-    item = await get_item_by_name(interaction.guild.id, item_name)
+    # 1️⃣ Fetch the item record
+    item = await get_item_by_name(guild_id, item_name)
     if not item:
         await interaction.followup.send("❌ Item not found.", ephemeral=True)
         return
 
-    # Path 1: Uploaded Image Item
-    if item.get("type") == "Image" and item.get("subtype") == "Image":
-        await interaction.followup.send_modal(ImageDetailsModal(interaction, item_row=item))
+    # 2️⃣ Uploaded image item — open simple modal
+    if item.get("image") and not item.get("created_images"):
+        modal = ImageDetailsModal(interaction, item_row=item, is_edit=True)
+        await interaction.followup.send_modal(modal)
         return
 
-    # Path 2: Created (Generated) Item — restart at dropdowns with prefilled data
-    else:
-        view = ItemEntryView(
-            author=interaction.user,
-            item_type=item["type"],
-            item_id=item["id"],
-            existing_data=item,
-            is_edit=True
-        )
+    # 3️⃣ Created/generated item — reopen full ItemEntryView flow
+    view = ItemEntryView(
+        author=interaction.user,
+        item_type=item["type"],
+        item_id=item["id"],
+        existing_data=item,
+        is_edit=True
+    )
 
-        # Pre-fill the dropdown selections from existing item data
-        view.type_dropdown.default = item["type"]
-        if hasattr(view, "subtype_dropdown") and item.get("subtype"):
-            view.subtype_dropdown.default = item["subtype"]
-
-        # You can pre-select or disable some UI elements based on how your view logic works.
-        # Example: if you have slot/size dropdowns:
-        if hasattr(view, "slot_dropdown") and item.get("slot"):
-            view.slot_dropdown.default = item["slot"]
-        if hasattr(view, "size_dropdown") and item.get("size"):
-            view.size_dropdown.default = item["size"]
-
-        await interaction.followup.send(
-            "🛠 Editing existing created item — start by reviewing or adjusting your selections below:",
-            view=view,
-            ephemeral=True
-        )
+    # Let the user know this is edit mode
+    await interaction.followup.send(
+        content=f"🛠 Editing **{item['name']}**. You can adjust fields and re-submit to update the item.",
+        view=view,
+        ephemeral=True
+    )
 
 
 
