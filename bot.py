@@ -982,7 +982,7 @@ class ItemHistoryModal(discord.ui.Modal):
             date = i['created_at'].strftime("%m-%d-%y") if i['created_at'] else "Unknown"
             history_text += f"{donor} | {name} | {date}\n"
 
-        # Truncate if too long for modal limits
+        # Truncate if too long
         if len(history_text) > 4000:
             history_text = history_text[:3990] + "\n…"
 
@@ -1029,17 +1029,6 @@ class ItemHistoryButton(discord.ui.Button):
         modal = ItemHistoryModal(interaction.guild.id, items)
         await interaction.response.send_modal(modal)
 
-
-class ItemHistoryView(discord.ui.View):
-    def __init__(self, db_pool):
-        super().__init__(timeout=None)
-        self.add_item(ItemHistoryButton(db_pool))
-
-
-class Bank(commands.Cog):
-    def __init__(self, bot, db_pool):
-        self.bot = bot
-        self.db_pool = db_pool
 
 
 
@@ -1214,31 +1203,34 @@ async def view_itemhistory(interaction: discord.Interaction):
     guild_id = interaction.guild.id
 
     async with db_pool.acquire() as conn:
-        # Count all donated items (all rows ever added for this guild)
+        # Total donated (all items ever)
         total_donated = await conn.fetchval(
             "SELECT COUNT(*) FROM inventory WHERE guild_id = $1;",
             guild_id
         )
 
-        # Count currently active items (qty = 1)
+        # Total currently in bank
         total_in_bank = await conn.fetchval(
             "SELECT COUNT(*) FROM inventory WHERE guild_id = $1 AND qty = 1;",
             guild_id
         )
 
-  
+    # Embed summary
+    embed = discord.Embed(
+        title="📜 Item Donation Records",
+        description=(
+            f"**Total Items Donated:** {total_donated}\n"
+            f"**Currently in Bank:** {total_in_bank}"
+        ),
+        color=discord.Color.green()
+    )
 
-        embed = discord.Embed(
-            title="📜 Item Donation Records",
-            description=f" **Total Items Donated:** {total_donated}\n **Currently in Bank:** {total_in_bank}",
-            color=discord.Color.green()
-        )
-    
-        view = discord.ui.View()
-        view.add_item(ItemHistoryButton(self.db_pool))
+    # Add the Item History button
+    view = discord.ui.View()
+    view.add_item(ItemHistoryButton(db_pool))
 
-    
-    await interaction.response.send_message(response, ephemeral=True)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 
 
 
