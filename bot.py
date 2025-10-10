@@ -476,8 +476,16 @@ class ItemEntryView(discord.ui.View):
             "donated_by": donor,
             "added_by": added_by
         }
-	def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
-			draw = ImageDraw.Draw(background)
+        # Only include relevant fields per item type
+        if self.type == "Weapon":
+            fields_to_update.update({"attack": self.attack, "delay": self.delay, "effects": self.effects})
+        elif self.type == "Equipment":
+            fields_to_update.update({"ac": self.ac, "effects": self.effects})
+        elif self.type == "Consumable":
+            fields_to_update.update({"effects": self.effects})
+        
+        def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
+		    draw = ImageDraw.Draw(background)
                 
 			# Load a fontWry
 			# Example fonts
@@ -617,23 +625,9 @@ class ItemEntryView(discord.ui.View):
 	          race=" ".join(sorted(self.usable_race))
 	          draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
 	          y += 25
-		return background
-
-
-
-
-
-
+        return background
 
         
-        # Only include relevant fields per item type
-        if self.type == "Weapon":
-            fields_to_update.update({"attack": self.attack, "delay": self.delay, "effects": self.effects})
-        elif self.type == "Equipment":
-            fields_to_update.update({"ac": self.ac, "effects": self.effects})
-        elif self.type == "Consumable":
-            fields_to_update.update({"effects": self.effects})
-    
         async with self.db_pool.acquire() as conn:
             if self.item_id:  # Editing existing item
                
