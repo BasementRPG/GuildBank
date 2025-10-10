@@ -692,13 +692,15 @@ class ItemEntryView(discord.ui.View):
                 race=" ".join(self.usable_race),
                 image=None,
                 created_images=cdn_url,  # original image field empty
-                donated_by=self.donated_by or "Anonymous",
+                donated_by=self.donated_by,
                 qty=1,
                 added_by=str(interaction.user),
                 attack=self.attack,
                 delay=self.delay,
                 effects=self.effects,
                 ac=self.ac
+                upload_message_id=message.id
+                
             )
             embed = discord.Embed(
                 title=f"{self.item_name}", color=discord.Color.blue()
@@ -819,6 +821,7 @@ class ImageDetailsModal(discord.ui.Modal):
                 donated_by=donated_by,
                 qty=1,
                 added_by=added_by
+                upload_message_id=message.id
             )
             await modal_interaction.response.send_message(
                 f"✅ Image item **{item_name}** added to the guild bank!", ephemeral=True
@@ -1090,6 +1093,33 @@ async def remove_item(interaction: discord.Interaction, item_name: str):
                 "Item not found or already removed.", ephemeral=True
             )
             return
+            
+        # Delete the uploaded image message if exists
+        if item.get("upload_message_id"):
+            upload_channel = discord.utils.get(interaction.guild.text_channels, name="guild-bank-upload-log")
+            if upload_channel:
+                try:
+                    msg = await upload_channel.fetch_message(item["upload_message_id"])
+                    await msg.delete()
+                except discord.NotFound:
+                    pass  # message already deleted
+                except Exception as e:
+                    print(f"Failed to delete uploaded image: {e}")
+
+        # Remove image URLs and mark item as removed
+        await conn.execute(
+            """
+            UPDATE inventory
+            SET image=NULL, created_images=NULL, upload_message_id=NULL, qty=0, removed_by=$2, removed_at=NOW()
+            WHERE id=$1
+            """,
+            item["id"], str(interaction.user)
+        )
+
+    await interaction.response.send_message(
+        f"🗑️ Fully removed **{item_name}** and deleted its uploaded image.", ephemeral=True
+    )
+        
 
         # Set qty to 0 instead of deleting
         await conn.execute(
