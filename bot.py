@@ -476,7 +476,7 @@ class ItemEntryView(discord.ui.View):
             "donated_by": donor,
             "added_by": added_by
         }
-		def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
+	def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
 			draw = ImageDraw.Draw(background)
                 
 			# Load a fontWry
