@@ -482,10 +482,10 @@ class ItemEntryView(discord.ui.View):
         elif self.type == "Equipment":
             fields_to_update.update({"ac": self.ac, "effects": self.effects})
         elif self.type == "Consumable":
-            fields_to_update.update({"effects": self.effects})
+        	fields_to_update.update({"effects": self.effects})
         
-        def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
-		    draw = ImageDraw.Draw(background)
+		def draw_item_text(background, item_name, type, subtype, size, slot, stats, weight, effects, donated_by):
+			draw = ImageDraw.Draw(background)
                 
 			# Load a fontWry
 			# Example fonts
@@ -514,118 +514,117 @@ class ItemEntryView(discord.ui.View):
                     
 	        if self.type in ("Equipment"):
 	        	# Slot
-	          slot=" ".join(sorted(self.slot))
-	          draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
-	          y += 25
+	        	slot=" ".join(sorted(self.slot))
+	        	draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
+	        	y += 25
 	                    
-	          if self.ac !="":    
-	          	# AC
-	            ac = self.ac
-	            draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
-	            y += 25
-	                        
-					if self.type in ("Weapon"):
+		        if self.ac !="":    
+		        	# AC
+		            ac = self.ac
+		            draw.text((x, y), f"AC: {ac}", fill=(255, 255, 255), font=font_ac)
+		            y += 25
+		                        
+			if self.type in ("Weapon"):
 	                    
-	        # Slot
-	        slot=" ".join(sorted(self.slot)).upper()
-	        draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
-	        y += 25
+		        # Slot
+		        slot=" ".join(sorted(self.slot)).upper()
+		        draw.text((x, y), f"Slot: {slot}", fill=(255, 255, 255), font=font_ac)
+		        y += 25
 	                       
-	        if self.attack !="":
-	        	#Attack/Delay
-	          attack = self.attack
-	          delay = self.delay
-	          draw.text((x, y), f"Weapon DMG: {attack} ATK Delay: {delay}", fill=(255, 255, 255), font=font_attack)
-	          y += 25
+	        	if self.attack !="":
+		        	#Attack/Delay
+		         	attack = self.attack
+		       		delay = self.delay
+		        	draw.text((x, y), f"Weapon DMG: {attack} ATK Delay: {delay}", fill=(255, 255, 255), font=font_attack)
+		          	y += 25
 	    
 	                    
-	      if self.type in ("Equipment", "Weapon"): 
+			if self.type in ("Equipment", "Weapon"): 
 	      
-	      	if self.stats != "":
-	        	stats_text = stats
-	          draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little padding
+	      		if self.stats != "":
+		    		stats_text = stats
+		        	draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+		          	# Measure how tall the rendered text block actually is
+		          	bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+		          	text_height = bbox[3] - bbox[1]
+		          	y += text_height + 15  # Add a little padding
 	          
-	        if self.effects != "":
-	        	# Effects
-	          effects_text = effects
-	          draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little padding
+	        	if self.effects != "":
+		        	# Effects
+		         	effects_text = effects
+		          	draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+		          	# Measure how tall the rendered text block actually is
+		          	bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+		         	text_height = bbox[3] - bbox[1]
+		          	y += text_height + 15  # Add a little padding
 	      
-	      if self.type in ("Consumable"): 
+			if self.type in ("Consumable"): 
 	      
-	      	if self.stats != "":
-	        	stats_text = stats
-	          draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little padding
+	     	 	if self.stats != "":
+	       			stats_text = stats
+	          		draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+	        		# Measure how tall the rendered text block actually is
+	          		bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+	         	 	text_height = bbox[3] - bbox[1]
+	          		y += text_height + 15  # Add a little padding
 	      
-	      if self.subtype in ("Potion", "Scroll"):
-	      	if self.effects != "":
-	        	# Effects
-	          draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
-	          y += 25
+			if self.subtype in ("Potion", "Scroll"):
+	      		if self.effects != "":
+	        		# Effects
+	          		draw.text((x, y), f"Effects: {effects}", fill=(255, 255, 255), font=font_effects)
+	          		y += 25
 	              
-	      if self.subtype in ("Drink","Food", "Other"): 
-	      	if self.effects != "":
-	        	effects_text = effects
-	          draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little padding
-	                                  
+			if self.subtype in ("Drink","Food", "Other"): 
+	      		if self.effects != "":
+		        	effects_text = effects
+		        	draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+		        	# Measure how tall the rendered text block actually is
+		        	bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+		        	text_height = bbox[3] - bbox[1]
+		        	y += text_height + 15  # Add a little padding
+		                                  
 	                   
-	      if self.type in ("Crafting", "Misc"):
-	      	if self.effects != "":
-	        	effects_text = effects
-	          draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), effects_text, font=font_effects)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little paddingg
-	        if self.size !="" and self.weight!="":
-	        	draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-	          y += 25                      
+			if self.type in ("Crafting", "Misc"):
+	      		if self.effects != "":
+		        	effects_text = effects
+		         	draw.text((x, y), effects_text, fill=(255, 255, 255), font=font_effects)
+		        	# Measure how tall the rendered text block actually is
+		        	bbox = draw.textbbox((x, y), effects_text, font=font_effects)
+		        	text_height = bbox[3] - bbox[1]
+		        	y += text_height + 15  # Add a little paddingg
+	        	if self.size !="" and self.weight!="":
+		        	draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+		        	y += 25                      
 	                          
-	        if self.size !="" and self.weight=="":
-	        	draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
-	          y += 25                       
-	        if self. size =="" and self.weight !="":
-	        	draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
-	          y += 25
+	        	if self.size !="" and self.weight=="":
+		        	draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+		         	y += 25                       
+	        	if self. size =="" and self.weight !="":
+		        	draw.text((x, y), f"Weight:{weight}", fill=(255, 255, 255), font=font_size)
+			        y += 25
 	      
-	      if self.type in ("Crafting", "Misc"):                
-	      	if self.stats != "":
-	        	stats_text = stats
-	          draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
-	          # Measure how tall the rendered text block actually is
-	          bbox = draw.textbbox((x, y), stats_text, font=font_stats)
-	          text_height = bbox[3] - bbox[1]
-	          y += text_height + 15  # Add a little padding
+			if self.type in ("Crafting", "Misc"):                
+	      		if self.stats != "":
+		        	stats_text = stats
+		       	  	draw.text((x, y), stats_text, fill=(255, 255, 255), font=font_stats)
+		          	# Measure how tall the rendered text block actually is
+		          	bbox = draw.textbbox((x, y), stats_text, font=font_stats)
+		          	text_height = bbox[3] - bbox[1]
+		          	y += text_height + 15  # Add a little padding
 	      
-	                      
-	      if self.type in ("Equipment", "Weapon"):    
-	      	if self.usable_classes:
-	        	# Classes
-	          classes=" ".join(sorted(self.usable_classes))
-	          draw.text((x, y), f"Class: {classes.upper()}", fill=(255, 255, 255), font=font_effects)
-	          y += 25
+			if self.type in ("Equipment", "Weapon"):    
+	      		if self.usable_classes:
+		        	# Classes
+		         	classes=" ".join(sorted(self.usable_classes))
+		        	draw.text((x, y), f"Class: {classes.upper()}", fill=(255, 255, 255), font=font_effects)
+		        	y += 25
 	                                
-	        if self.usable_race:
-	        	# Race
-	          race=" ".join(sorted(self.usable_race))
-	          draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
-	          y += 25
-        return background
+	        	if self.usable_race:
+		        	# Race
+		        	race=" ".join(sorted(self.usable_race))
+		        	draw.text((x, y), f"Race: {race.upper()}", fill=(255, 255, 255), font=font_effects)
+		        	y += 25
+		return background
 
         
         async with self.db_pool.acquire() as conn:
