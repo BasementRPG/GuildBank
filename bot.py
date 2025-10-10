@@ -759,7 +759,7 @@ class ImageDetailsModal(discord.ui.Modal):
 
     async def on_submit(self, modal_interaction: discord.Interaction):
         item_name = self.item_name.value
-        donated_by = self.donated_by.value
+        donated_by = self.donated_by.value or "Anonymous"
         added_by = str(modal_interaction.user)
 
         upload_channel = await ensure_upload_channel(modal_interaction.guild)
@@ -912,7 +912,7 @@ class ItemDetailsModal(discord.ui.Modal):
                     label="Weight", default=parent_view.weight, placeholder="Example: 1.0", required=False
         )
         self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=parent_view.donated_by or "Anonymous", placeholder="Example:Thieron or Raid", required=False
+                label="Donated By", default=parent_view.donated_by, placeholder="Example:Thieron or Raid", required=False
         )
 
        
@@ -953,13 +953,13 @@ class ItemDetailsModal2(discord.ui.Modal):
         if parent_view.type == "Weapon" or "Equipment" or "Consumable":
 
             self.stats = discord.ui.TextInput(
-                label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+                label="Stats", default=parent_view.stats, placeholder="Example: STR:+3 WIS:+4 INT:-1", required=False, style=discord.TextStyle.paragraph
             )
     
         #  EFFECTS
 
             self.effects = discord.ui.TextInput(
-                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
+                label="Effects", default=parent_view.effects, placeholder="Example: Lesser Spellshield, ", required=False, style=discord.TextStyle.paragraph
             )
 
             
