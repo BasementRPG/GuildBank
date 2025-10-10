@@ -964,6 +964,84 @@ class ItemDetailsModal2(discord.ui.Modal):
             "✅ Details saved. Click Submit when ready, or Add Required Details.", ephemeral=True
         )
 
+class ItemHistoryModal(discord.ui.Modal):
+    def __init__(self, guild_id, items):
+        super().__init__(title="📜 Item Donation History")
+        self.guild_id = guild_id
+        self.items = items
+
+        # Calculate total items donated
+        total_donated = len(items)
+        total_text = str(total_donated)
+
+        # Build history string
+        history_text = ""
+        for i in items:
+            donor = i['donated_by'] or "Anonymous"
+            name = i['name']
+            date = i['created_at'].strftime("%m-%d-%y") if i['created_at'] else "Unknown"
+            history_text += f"{donor} | {name} | {date}\n"
+
+        # Truncate if too long for modal limits
+        if len(history_text) > 4000:
+            history_text = history_text[:3990] + "\n…"
+
+        # Total Items Donated field
+        self.total_input = discord.ui.TextInput(
+            label="📦 Total Items Donated",
+            style=discord.TextStyle.short,
+            default=total_text,
+            required=False
+        )
+        self.total_input.disabled = True
+        self.add_item(self.total_input)
+
+        # Donation History field
+        self.history_input = discord.ui.TextInput(
+            label="🧾 Items Donated History (Recent)",
+            style=discord.TextStyle.paragraph,
+            default=history_text or "No items donated yet.",
+            required=False
+        )
+        self.history_input.disabled = True
+        self.add_item(self.history_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
+
+class ItemHistoryButton(discord.ui.Button):
+    def __init__(self, db_pool):
+        super().__init__(label="Item History", style=discord.ButtonStyle.secondary)
+        self.db_pool = db_pool
+
+    async def callback(self, interaction: discord.Interaction):
+        async with self.db_pool.acquire() as conn:
+            items = await conn.fetch(
+                "SELECT name, donated_by, created_at FROM inventory WHERE guild_id=$1 ORDER BY created_at DESC",
+                interaction.guild.id
+            )
+
+        if not items:
+            await interaction.response.send_message("No items found for this guild.", ephemeral=True)
+            return
+
+        modal = ItemHistoryModal(interaction.guild.id, items)
+        await interaction.response.send_modal(modal)
+
+
+class ItemHistoryView(discord.ui.View):
+    def __init__(self, db_pool):
+        super().__init__(timeout=None)
+        self.add_item(ItemHistoryButton(db_pool))
+
+
+class Bank(commands.Cog):
+    def __init__(self, bot, db_pool):
+        self.bot = bot
+        self.db_pool = db_pool
+
+
 
 
 
@@ -1149,12 +1227,17 @@ async def view_itemhistory(interaction: discord.Interaction):
         )
 
     # Prepare response
-    response = (
-        f"📜 **Guild Bank Summary for {interaction.guild.name}**\n\n"
-        f" **Total Items Donated:** {total_donated}\n"
-        f" **Currently in Bank:** {total_in_bank}"
-    )
 
+     embed = discord.Embed(
+            title="📜 Item Donation Records",
+            description=f" **Total Items Donated:** {total_donated}\n **Currently in Bank:** {total_in_bank}",
+            color=discord.Color.green()
+        )
+    
+        view = discord.ui.View()
+        view.add_item(ItemHistoryButton(self.db_pool))
+
+    
     await interaction.response.send_message(response, ephemeral=True)
 
 
