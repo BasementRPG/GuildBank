@@ -1139,7 +1139,7 @@ async def add_item(interaction: discord.Interaction, type: str, image: discord.A
 @bot.tree.command(name="edit_item", description="Edit an existing item in the guild bank.")
 @app_commands.describe(item_name="Name of the item to edit")
 async def edit_item(interaction: discord.Interaction, item_name: str):
-    
+    await interaction.response.defer(ephemeral=True)
     guild_id = interaction.guild.id
 
     # 1️⃣ Fetch the item record
