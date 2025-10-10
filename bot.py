@@ -797,7 +797,10 @@ class ImageDetailsModal(discord.ui.Modal):
             )
             image_url = message.attachments[0].url
 
-        if not self.is_edit and not image_url:
+        if self.is_edit and not image_url:
+            image_url = self.item_row["image"] 
+			
+		if not self.is_edit and not image_url:
             await modal_interaction.response.send_message(
                 "❌ No image provided. Please attach or send an image.", ephemeral=True
             )
