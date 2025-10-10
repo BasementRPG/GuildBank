@@ -850,7 +850,7 @@ class ItemDetailsModal(discord.ui.Modal):
         self.parent_view = parent_view
         
         self.item_name = discord.ui.TextInput(
-                label="Item Name", placeholder="", default=parent_view.item_name, required=True
+                label="Item Name", placeholder="", placeholder="Example: Flowing Black Silk Sash", default=parent_view.item_name, required=True
         )
         self.add_item(self.item_name)
         
@@ -858,10 +858,10 @@ class ItemDetailsModal(discord.ui.Modal):
         if parent_view.type == "Weapon":
 
             self.attack = discord.ui.TextInput(
-                label="Damage", default=parent_view.attack or "", required=False
+                label="Damage", placeholder="Example: 7", default=parent_view.attack, required=False
             )
             self.delay = discord.ui.TextInput(
-                label="Delay", default=parent_view.delay or "", required=False
+                label="Delay", placeholder="Example: 28", default=parent_view.delay, required=False
             )
             self.add_item(self.attack)
             self.add_item(self.delay)
@@ -871,7 +871,7 @@ class ItemDetailsModal(discord.ui.Modal):
         if parent_view.type == "Equipment":
 
             self.ac = discord.ui.TextInput(
-                label="Armor Class", default=parent_view.ac or "", required=True
+                label="Armor Class", placeholder="Example: 15", default=parent_view.ac, required=True
             )
             self.add_item(self.ac)
 
@@ -879,13 +879,13 @@ class ItemDetailsModal(discord.ui.Modal):
         if parent_view.type == "Consumable":
          # STATS
             self.stats = discord.ui.TextInput(
-                label="Stats", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+                label="Stats", default=parent_view.stats, placeholder="Example: STR:+1 STA:+3 CHA:-1", required=False, style=discord.TextStyle.paragraph
             )
     
         #  EFFECTS
 
             self.effects = discord.ui.TextInput(
-                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
+                label="Effects", default=parent_view.effects, placeholder="Minor Serum of Dexerity: increases dex by 5 for 1 hour", required=False, style=discord.TextStyle.paragraph
             )  
 
             self.add_item(self.stats)
@@ -894,13 +894,13 @@ class ItemDetailsModal(discord.ui.Modal):
         if self.parent_view.type in ("Crafting","Misc"):
         # STATS
             self.stats = discord.ui.TextInput(
-                label="Info", default=parent_view.stats or "", required=False, style=discord.TextStyle.paragraph
+                label="Info", default=parent_view.stats, placeholder="Basic information about the item", required=False, style=discord.TextStyle.paragraph
             )
     
         #  EFFECTS
 
             self.effects = discord.ui.TextInput(
-                label="Effects", default=parent_view.effects or "", required=False, style=discord.TextStyle.paragraph
+                label="Effects", default=parent_view.effects, placeholder="Basic information if the item has an effect", required=False, style=discord.TextStyle.paragraph
             )
                         
             self.add_item(self.stats)
@@ -909,10 +909,10 @@ class ItemDetailsModal(discord.ui.Modal):
         
 
         self.weight = discord.ui.TextInput(
-                    label="Weight", default=parent_view.weight or "", required=False
+                    label="Weight", default=parent_view.weight, placeholder="Example: 1.0", required=False
         )
         self.donated_by = discord.ui.TextInput(
-                label="Donated By", default=parent_view.donated_by or "Anonymous", required=False
+                label="Donated By", default=parent_view.donated_by or "Anonymous", placeholder="Example:Thieron or Raid", required=False
         )
 
        
