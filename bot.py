@@ -674,7 +674,7 @@ class ItemEntryView(discord.ui.View):
             created_images.seek(0)
             upload_channel = await ensure_upload_channel(interaction.guild)
             file = discord.File(created_images, filename=f"{self.item_name}.png")
-            message = await upload_channel.send(file=file)
+            message = await upload_channel.send(file=file, content=f"Created by {added_by}")
             cdn_url = message.attachments[0].url
 
             
