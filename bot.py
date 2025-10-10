@@ -440,7 +440,7 @@ class ItemEntryView(discord.ui.View):
         self.add_item(self.submit_button)
 
 
-	    self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
+        self.reset_button = discord.ui.Button(label="Reset", style=discord.ButtonStyle.danger)
         self.reset_button.callback = self.reset_entry
         self.add_item(self.reset_button)
         
