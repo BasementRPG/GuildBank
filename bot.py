@@ -1115,7 +1115,7 @@ class RemovalHistoryButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         async with self.db_pool.acquire() as conn:
             items = await conn.fetch(
-                "SELECT name, removed_by, removed_at, removed_reason, FROM inventory WHERE guild_id=$1 ORDER BY removed_at DESC",
+                "SELECT name, removed_by, removed_at, removed_reason FROM inventory WHERE guild_id=$1 ORDER BY removed_at DESC",
                 interaction.guild.id
             )
 
