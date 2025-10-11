@@ -1055,6 +1055,62 @@ class ItemHistoryButton(discord.ui.Button):
         await interaction.response.send_modal(modal)
 
 
+@bot.tree.command(name="remove_item", description="Remove an item from the guild bank.")
+@app_commands.describe(item_name="Name of the item to remove")
+async def remove_item(interaction: discord.Interaction, item_name: str):
+    async with db_pool.acquire() as conn:
+        # Fetch the item with qty = 1 (active) to remove
+        item = await conn.fetchrow(
+            "SELECT * FROM inventory WHERE guild_id=$1 AND name=$2 AND qty=1",
+            interaction.guild.id,
+            item_name
+        )
+
+        if not item:
+            await interaction.response.send_message(
+                "Item not found or already removed.", ephemeral=True
+            )
+            return
+            
+        # Delete the uploaded image message if exists
+        if item.get("upload_message_id"):
+            upload_channel = discord.utils.get(interaction.guild.text_channels, name="guild-bank-upload-log")
+            if upload_channel:
+                try:
+                    msg = await upload_channel.fetch_message(item["upload_message_id"])
+                    await msg.delete()
+                except discord.NotFound:
+                    pass  # message already deleted
+                except Exception as e:
+                    print(f"Failed to delete uploaded image: {e}")
+
+        # Remove image URLs and mark item as removed
+        await conn.execute(
+            """
+            UPDATE inventory
+            SET image=NULL, created_images=NULL, upload_message_id=NULL, qty=0, removed_by=$2, removed_at=NOW()
+            WHERE id=$1
+            """,
+            item["id"], str(interaction.user)
+        )
+
+    await interaction.response.send_message(
+        f"🗑️ Fully removed **{item_name}** and deleted its uploaded image.", ephemeral=True
+    )
+        
+
+        # Set qty to 0 instead of deleting
+    await conn.execute(
+        "UPDATE inventory SET qty=0 WHERE id=$1",
+        item['id']
+        )
+
+    await interaction.response.send_message(
+        f"🗑️ Removed **{item_name}** from the Guild Bank.", ephemeral=True
+    )
+
+
+
 
 
 
@@ -1195,55 +1251,24 @@ async def edit_item(interaction: discord.Interaction, item_name: str):
 @app_commands.describe(item_name="Name of the item to remove")
 async def remove_item(interaction: discord.Interaction, item_name: str):
     async with db_pool.acquire() as conn:
-        # Fetch the item with qty = 1 (active) to remove
         item = await conn.fetchrow(
             "SELECT * FROM inventory WHERE guild_id=$1 AND name=$2 AND qty=1",
             interaction.guild.id,
             item_name
         )
 
-        if not item:
-            await interaction.response.send_message(
-                "Item not found or already removed.", ephemeral=True
-            )
-            return
-            
-        # Delete the uploaded image message if exists
-        if item.get("upload_message_id"):
-            upload_channel = discord.utils.get(interaction.guild.text_channels, name="guild-bank-upload-log")
-            if upload_channel:
-                try:
-                    msg = await upload_channel.fetch_message(item["upload_message_id"])
-                    await msg.delete()
-                except discord.NotFound:
-                    pass  # message already deleted
-                except Exception as e:
-                    print(f"Failed to delete uploaded image: {e}")
-
-        # Remove image URLs and mark item as removed
-        await conn.execute(
-            """
-            UPDATE inventory
-            SET image=NULL, created_images=NULL, upload_message_id=NULL, qty=0, removed_by=$2, removed_at=NOW()
-            WHERE id=$1
-            """,
-            item["id"], str(interaction.user)
+    if not item:
+        await interaction.response.send_message(
+            "❌ Item not found or already removed.", ephemeral=True
         )
+        return
 
-    await interaction.response.send_message(
-        f"🗑️ Fully removed **{item_name}** and deleted its uploaded image.", ephemeral=True
-    )
-        
+    # 🧾 Open modal to capture removal reason
+    modal = RemoveItemModal(item=item, db_pool=db_pool)
+    await interaction.response.send_modal(modal)
 
-        # Set qty to 0 instead of deleting
-    await conn.execute(
-        "UPDATE inventory SET qty=0 WHERE id=$1",
-        item['id']
-        )
 
-    await interaction.response.send_message(
-        f"🗑️ Removed **{item_name}** from the Guild Bank.", ephemeral=True
-    )
+
 
 @bot.tree.command(name="view_itemhistory", description="View guild item donation stats.")
 async def view_itemhistory(interaction: discord.Interaction):
