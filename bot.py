@@ -1037,7 +1037,7 @@ class ItemHistoryModal(discord.ui.Modal):
 
 class ItemHistoryButton(discord.ui.Button):
     def __init__(self, db_pool):
-        super().__init__(label="Item History", style=discord.ButtonStyle.secondary)
+        super().__init__(label="Donation History", style=discord.ButtonStyle.secondary)
         self.db_pool = db_pool
 
     async def callback(self, interaction: discord.Interaction):
@@ -1053,6 +1053,80 @@ class ItemHistoryButton(discord.ui.Button):
 
         modal = ItemHistoryModal(interaction.guild.id, items)
         await interaction.response.send_modal(modal)
+
+
+class RemovalHistoryModal(discord.ui.Modal):
+    def __init__(self, guild_id, items, removed_by, removed_at, removed_reason):
+        super().__init__(title="📜 Item Removal History")
+        self.guild_id = guild_id
+        self.items = items
+		self.removed_by = removed_by
+		self.removed_at = removed_at
+		self.removed_reason = removed_reason
+
+        # Calculate total items removed
+        total_removed = len(removed_by)
+        total_text = str(total_removed)
+
+        # Build history string
+        history_text = ""
+        for i in items:
+            name = i['name']
+            removed_by = i['removed_by']
+            removed_reason = i['removed_reason']
+            date = i['removed_at'].strftime("%m-%d-%y") if i['removed_at'] else "Unknown"
+            history_text += f"{name} | {removed_by} | {date}\n {removed_reason} \n"
+
+        # Truncate if too long
+        if len(history_text) > 4000:
+            history_text = history_text[:3990] + "\n…"
+
+        # Total Items Removed field
+        self.total_input = discord.ui.TextInput(
+            label="📦 Total Removed Donated",
+            style=discord.TextStyle.short,
+            default=total_text,
+            required=False
+        )
+        self.total_input.disabled = True
+        self.add_item(self.total_input)
+
+        # Removal History field
+        self.history_input = discord.ui.TextInput(
+            label="🧾 Items Removed History (Recent)",
+            style=discord.TextStyle.paragraph,
+            default=history_text or "No items removed yet.",
+            required=False
+        )
+        self.history_input.disabled = True
+        self.add_item(self.history_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("✅ Closed.", ephemeral=True)
+
+
+
+
+class RemovalHistoryButton(discord.ui.Button):
+    def __init__(self, db_pool):
+        super().__init__(label="Removal History", style=discord.ButtonStyle.secondary)
+        self.db_pool = db_pool
+
+    async def callback(self, interaction: discord.Interaction):
+        async with self.db_pool.acquire() as conn:
+            items = await conn.fetch(
+                "SELECT name, removed_by, removed_at, removed_reason, FROM inventory WHERE guild_id=$1 ORDER BY removed_at DESC",
+                interaction.guild.id
+            )
+
+        if not items:
+            await interaction.response.send_message("No items found for this guild.", ephemeral=True)
+            return
+
+        modal = RemovalHistoryModal(interaction.guild.id, items)
+        await interaction.response.send_modal(modal)
+
+
 
 
 class RemoveItemModal(discord.ui.Modal, title="Remove Item"):
@@ -1307,6 +1381,8 @@ async def view_itemhistory(interaction: discord.Interaction):
     # Add the Item History button
     view = discord.ui.View()
     view.add_item(ItemHistoryButton(db_pool))
+
+    view.add_item(RemovalHistoryButton(db_pool))
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
