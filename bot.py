@@ -1056,13 +1056,11 @@ class ItemHistoryButton(discord.ui.Button):
 
 
 class RemovalHistoryModal(discord.ui.Modal):
-    def __init__(self, guild_id, items, removed_by, removed_at, removed_reason):
+    def __init__(self, guild_id, items):
         super().__init__(title="📜 Item Removal History")
         self.guild_id = guild_id
         self.items = items
-        self.removed_by = removed_by
-        self.removed_at = removed_at
-        self.removed_reason = removed_reason
+
 
         # Calculate total items removed
         total_removed = len(removed_by)
