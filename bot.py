@@ -1063,7 +1063,7 @@ class RemovalHistoryModal(discord.ui.Modal):
 
 
         # Calculate total items removed
-        total_removed = len(removed_by)
+        total_removed = len(items)
         total_text = str(total_removed)
 
         # Build history string
