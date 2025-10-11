@@ -1060,9 +1060,9 @@ class RemovalHistoryModal(discord.ui.Modal):
         super().__init__(title="📜 Item Removal History")
         self.guild_id = guild_id
         self.items = items
-		self.removed_by = removed_by
-		self.removed_at = removed_at
-		self.removed_reason = removed_reason
+        self.removed_by = removed_by
+        self.removed_at = removed_at
+        self.removed_reason = removed_reason
 
         # Calculate total items removed
         total_removed = len(removed_by)
