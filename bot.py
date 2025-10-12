@@ -3,7 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import Modal, TextInput
-import datetime
+from datetime import datetime
 import asyncpg 
 from PIL import Image, ImageDraw, ImageFont
 import aiohttp
@@ -72,11 +72,12 @@ async def ensure_upload_channel(guild: discord.Guild):
 
 
 async def add_item_db(guild_id, upload_message_id, name, type, subtype=None, size=None, slot=None, stats=None, weight=None,classes=None, race=None, image=None, donated_by=None, qty=None, added_by=None, attack=None, delay=None,effects=None, ac=None, created_images=None):
+    created_at1 = datetime.utcnow()
     async with db_pool.acquire() as conn:
         await conn.execute('''
-            INSERT INTO inventory (guild_id, upload_message_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-        ''', guild_id, upload_message_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images)
+            INSERT INTO inventory (guild_id, upload_message_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images, created_at1)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        ''', guild_id, upload_message_id, name, size, type, subtype, slot, stats, weight, classes, race, image, donated_by, qty, added_by, attack, delay, effects, ac, created_images, created_at1)
 
 
 async def get_all_items(guild_id):
@@ -658,7 +659,7 @@ class ItemEntryView(discord.ui.View):
 	
 	            fields_to_update["created_images"] = cdn_url
 	            fields_to_update["upload_message_id"] = message.id
-	            fields_to_update["created_at1"] = datetime.datetime.utcnow()
+	            fields_to_update["created_at1"] = datetime.utcnow()
 	
 	            await update_item_db(
 	                guild_id=interaction.guild.id,
