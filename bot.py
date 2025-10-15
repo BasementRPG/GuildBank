@@ -555,6 +555,18 @@ class ItemEntryView(discord.ui.View):
 	                bbox = draw.textbbox((x, y), effects_text, font=font_effects)
 	                text_height = bbox[3] - bbox[1]
 	                y += text_height + 15
+
+			if self.size != "" and self.weight != "":
+	                draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+	                y += 25
+	
+	            if self.size != "" and self.weight == "":
+	                draw.text((x, y), f"Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+	                y += 25
+	
+	            if self.size == "" and self.weight != "":
+	                draw.text((x, y), f"Weight: {weight}", fill=(255, 255, 255), font=font_size)
+	                y += 25
 	
 	        if self.type in ("Consumable"):
 	            if self.stats != "":
@@ -586,7 +598,7 @@ class ItemEntryView(discord.ui.View):
 	                y += text_height + 15
 	
 	            if self.size != "" and self.weight != "":
-	                draw.text((x, y), f"Weight:Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
+	                draw.text((x, y), f"Weight:{weight} Size: {size.upper()}", fill=(255, 255, 255), font=font_size)
 	                y += 25
 	
 	            if self.size != "" and self.weight == "":
