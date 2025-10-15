@@ -1138,7 +1138,7 @@ class RemovalHistoryButton(discord.ui.Button):
 
 class RemoveItemModal(discord.ui.Modal):
     def __init__(self, item, db_pool):
-        super().__init__()
+        super().__init__(title="Remove Item")
         self.item = item
         self.db_pool = db_pool
 
