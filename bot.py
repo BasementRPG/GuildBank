@@ -1223,7 +1223,7 @@ async def remove_itemdb(interaction: discord.Interaction, item_name: str):
 
 class PaginatedResultsView(discord.ui.View):
     def __init__(self, items: list[dict], per_page: int = 5, author_id: int | None = None):
-        super().__init__(timeout=180)
+        super().__init__(timeout=None)
         self.items = items
         self.per_page = per_page
         self.current_page = 0
@@ -1419,7 +1419,7 @@ class PaginatedResultsView(discord.ui.View):
 # ---------- FILTER VIEW ----------
 class DatabaseView(View):
     def __init__(self, db_pool, guild_id):
-        super().__init__(timeout=120)
+        super().__init__(timeout=None)
         self.db_pool = db_pool
         self.guild_id = guild_id
 
