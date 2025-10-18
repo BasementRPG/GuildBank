@@ -1071,10 +1071,11 @@ class ItemDatabaseModal(discord.ui.Modal):
                 self.npc_msg_id,
             )
     
-        await interaction.followup.send(
-            f"✅ `{self.item_name.value}` added or updated successfully.",
-            ephemeral=True
-        )
+       if not interaction.response.is_done():
+            await interaction.response.send_message(..., ephemeral=True)
+        else:
+            await interaction.followup.send(..., ephemeral=True)
+
 
 
 
