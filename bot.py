@@ -955,9 +955,6 @@ async def view_donations(interaction: discord.Interaction):
 
 
 
-
-
-# --------------- Modal ----------------
 class ItemDatabaseModal(discord.ui.Modal):
     def __init__(self, item_image_url, npc_image_url, item_slot, db_pool, guild_id, item_msg_id=None, npc_msg_id=None):
         super().__init__(title="Add Item Database Entry")
@@ -1003,30 +1000,84 @@ class ItemDatabaseModal(discord.ui.Modal):
             
 
     async def on_submit(self, interaction: discord.Interaction):
-        added_by = str(interaction.user)
+        guild_id = interaction.guild.id
+        added_by = interaction.user.name
+    
         async with self.db_pool.acquire() as conn:
+            # Check if item already exists
+            existing = await conn.fetchrow(
+                """
+                SELECT * FROM item_database
+                WHERE guild_id=$1 AND LOWER(item_name)=LOWER($2) AND LOWER(npc_name)=LOWER($3)
+                """,
+                guild_id,
+                self.item_name.value.strip(),
+                self.npc_name.value.strip()
+            )
+    
+            # ⚠️ If it exists, ask user before overwriting
+            if existing:
+                view = ConfirmUpdateView()
+                await interaction.response.send_message(
+                    f"⚠️ `{self.item_name.value}` for `{self.npc_name.value}` already exists.\n"
+                    "Do you want to update this entry?",
+                    view=view,
+                    ephemeral=True
+                )
+                await view.wait()
+    
+                if view.value is None or not view.value:
+                    return  # user canceled
+    
+            # ✅ Insert or update (UPSERT)
             await conn.execute(
                 """
-                INSERT INTO item_database (guild_id, item_name, zone_name, zone_area, npc_name, item_slot, item_image, npc_image, added_by, image_message_id, npc_message_id, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+                INSERT INTO item_database (
+                    guild_id,
+                    item_name,
+                    zone_name,
+                    zone_area,
+                    npc_name,
+                    item_slot,
+                    item_image,
+                    npc_image,
+                    added_by,
+                    item_msg_id,
+                    npc_msg_id
+                )
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                ON CONFLICT (guild_id, item_name, npc_name)
+                DO UPDATE SET
+                    zone_name   = EXCLUDED.zone_name,
+                    zone_area   = EXCLUDED.zone_area,
+                    item_slot   = EXCLUDED.item_slot,
+                    item_image  = EXCLUDED.item_image,
+                    npc_image   = EXCLUDED.npc_image,
+                    added_by    = EXCLUDED.added_by,
+                    item_msg_id = EXCLUDED.item_msg_id,
+                    npc_msg_id  = EXCLUDED.npc_msg_id,
+                    updated_at  = NOW();
                 """,
                 self.guild_id,
-                self.item_name.value,
-                self.zone_name.value,
-                self.zone_area.value,
-                self.npc_name.value,
-                self.item_slot_field.value.lower(),
-                self.item_image_url,
-                self.npc_image_url,
+                self.item_name.value.strip(),
+                self.zone_name.value.strip() if self.zone_name.value else None,
+                self.zone_area.value.strip() if self.zone_area.value else None,
+                self.npc_name.value.strip(),
+                self.item_slot_field.value.lower().strip() if self.item_slot_field.value else None,
+                self.item_image_url.strip() if self.item_image_url else None,
+                self.npc_image_url.strip() if self.npc_image_url else None,
                 added_by,
                 self.item_msg_id,
-                self.npc_msg_id
-                
-                
+                self.npc_msg_id,
             )
-        await interaction.response.send_message(
-            f"✅ Item **{self.item_name.value}** added to the database!", ephemeral=True
+    
+        await interaction.followup.send(
+            f"✅ `{self.item_name.value}` added or updated successfully.",
+            ephemeral=True
         )
+
+
+
 
 # --------------- Slash Command ----------------
 @bot.tree.command(name="add_item_db", description="Add a new item to the database")
@@ -1099,11 +1150,6 @@ async def add_item_db(interaction: discord.Interaction, item_image: discord.Atta
 
 
 
-
-
-
-
-
 class EditDatabaseModal(discord.ui.Modal):
     def __init__(self, item_row, db_pool):
         super().__init__(title=f"Edit {item_row['item_name']}")
@@ -1167,7 +1213,7 @@ class ConfirmRemoveItemView(View):
             async with self.db_pool.acquire() as conn:
                 # Fetch message IDs to delete the images
                 row = await conn.fetchrow("""
-                    SELECT image_message_id, npc_message_id 
+                    SELECT item_msg_id, npc_msg_id 
                     FROM item_database 
                     WHERE item_name=$1 AND guild_id=$2
                 """, self.item_name, interaction.guild_id)
@@ -1182,7 +1228,7 @@ class ConfirmRemoveItemView(View):
                 # Delete the uploaded messages
                 upload_channel = discord.utils.get(interaction.guild.text_channels, name="item-database-upload-log")
                 if upload_channel:
-                    for msg_id in [row["image_message_id"], row["npc_message_id"]]:
+                    for msg_id in [row["item_msg_id"], row["npc_msg_id"]]:
                         if msg_id:
                             try:
                                 msg = await upload_channel.fetch_message(msg_id)
@@ -1501,7 +1547,6 @@ class DatabaseView(View):
                 discord.SelectOption(label="Slot", value="item_slot"),
                 discord.SelectOption(label="NPC Name", value="npc_name"),
                 discord.SelectOption(label="Zone Name", value="zone_name"),
-                discord.SelectOption(label="Item Name", value="item_name"),
                 discord.SelectOption(label="All", value="all")
             ]
         )
@@ -1665,7 +1710,6 @@ async def show_results(interaction, items, db_pool=None, guild_id=None):
             await interaction.followup.send(content=None, embeds=embeds, view=view)
 
 
-
             
 
 @bot.tree.command(name="view_item_db", description="View the guild's item database with filters.")
@@ -1688,6 +1732,86 @@ async def view_item_db(interaction: discord.Interaction):
 
 
 
+from discord import app_commands, Attachment
+
+@bot.tree.command(name="edit_item_image", description="Upload a new item or NPC image for an existing database entry.")
+@app_commands.describe(
+    item_name="The exact item name to update",
+    npc_name="The NPC associated with this item",
+    new_item_image="Upload new image for the item (optional)",
+    new_npc_image="Upload new image for the NPC (optional)",
+)
+async def edit_item_image(
+    interaction: discord.Interaction,
+    item_name: str,
+    npc_name: str,
+    new_item_image: Attachment = None,
+    new_npc_image: Attachment = None,
+):
+    guild_id = interaction.guild.id
+
+    # --- Validate ---
+    if not new_item_image and not new_npc_image:
+        await interaction.response.send_message(
+            "⚠️ You must upload at least one new image.", ephemeral=True
+        )
+        return
+
+    async with db_pool.acquire() as conn:
+        # --- Check if item exists ---
+        existing = await conn.fetchrow(
+            """
+            SELECT item_image, npc_image FROM item_database
+             WHERE guild_id = $1 AND LOWER(item_name) = LOWER($2) AND LOWER(npc_name) = LOWER($3)
+            """,
+            guild_id, item_name, npc_name
+        )
+
+        if not existing:
+            await interaction.response.send_message(
+                f"❌ No record found for `{item_name}` (NPC: `{npc_name}`).",
+                ephemeral=True
+            )
+            return
+
+        # --- Get uploaded image URLs ---
+        new_item_image_url = new_item_image.url if new_item_image else None
+        new_npc_image_url = new_npc_image.url if new_npc_image else None
+
+        # --- Update the database ---
+        await conn.execute(
+            """
+            UPDATE item_database
+               SET item_image = COALESCE($1, item_image),
+                   npc_image  = COALESCE($2, npc_image),
+                   updated_at = NOW()
+             WHERE guild_id = $3
+               AND LOWER(item_name) = LOWER($4)
+               AND LOWER(npc_name) = LOWER($5)
+            """,
+            new_item_image_url,
+            new_npc_image_url,
+            guild_id,
+            item_name,
+            npc_name
+        )
+
+    # --- Build confirmation embed ---
+    embed = discord.Embed(
+        title=f"✅ Updated Images for {item_name}",
+        description=f"NPC: **{npc_name}**",
+        color=discord.Color.green()
+    )
+
+    if new_item_image_url:
+        embed.add_field(name="🖼️ New Item Image", value="Updated successfully", inline=False)
+        embed.set_image(url=new_item_image_url)
+    if new_npc_image_url:
+        embed.add_field(name="👤 New NPC Image", value="Updated successfully", inline=False)
+        if not new_item_image_url:
+            embed.set_image(url=new_npc_image_url)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 
