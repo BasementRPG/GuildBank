@@ -1077,6 +1077,22 @@ class ItemDatabaseModal(discord.ui.Modal):
             await interaction.followup.send(..., ephemeral=True)
 
 
+class ConfirmUpdateView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30)
+        self.value = None  # store True/False
+
+    @discord.ui.button(label="✅ Yes, Update", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = True
+        self.stop()
+        await interaction.response.send_message("🔄 Updating existing entry...", ephemeral=True)
+
+    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = False
+        self.stop()
+        await interaction.response.send_message("❌ Update canceled.", ephemeral=True)
 
 
 
