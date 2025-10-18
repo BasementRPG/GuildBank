@@ -1072,9 +1072,9 @@ class ItemDatabaseModal(discord.ui.Modal):
             )
     
         if not interaction.response.is_done():
-            await interaction.response.send_message(..., ephemeral=True)
+            await interaction.response.send_message("✅ Item added successfully!", ephemeral=True)
         else:
-            await interaction.followup.send(..., ephemeral=True)
+            await interaction.followup.send("✅ Item added successfully!", ephemeral=True)
 
 
 class ConfirmUpdateView(discord.ui.View):
