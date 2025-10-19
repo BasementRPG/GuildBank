@@ -970,7 +970,7 @@ class ItemDatabaseModal(discord.ui.Modal, title="Add Item to Database"):
         # Fields
         self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Flowing Black Silk Sash")
         self.zone_field = discord.ui.TextInput(
-            label="Zone Name - Zone Area",
+            label="Zone Name - Zone Area or Camp",
             placeholder="Eamples: Shaded Dunes - Ashira Camp",
         )
         self.npc_name = discord.ui.TextInput(label="NPC Name", placeholder="Example: Fippy Darkpaw")
@@ -1209,7 +1209,7 @@ class EditDatabaseModal(discord.ui.Modal):
             max_length=45
         )
         self.zone_field = discord.ui.TextInput(
-            label="Zone Name - Area",
+            label="Zone Name - Zone Area or Camp",
             default=f"{item_row['zone_name']} - {item_row['zone_area'] or ''}"
         )
         self.npc_name = discord.ui.TextInput(
