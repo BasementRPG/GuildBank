@@ -955,150 +955,175 @@ async def view_donations(interaction: discord.Interaction):
 
 
 
-class ItemDatabaseModal(discord.ui.Modal):
-    def __init__(self, item_image_url, npc_image_url, item_slot, db_pool, guild_id, item_msg_id=None, npc_msg_id=None):
-        super().__init__(title="Add Item Database Entry")
-        self.item_image_url = item_image_url
-        self.npc_image_url = npc_image_url
-        self.item_slot = item_slot
+
+class ItemDatabaseModal(discord.ui.Modal, title="Add Item to Database"):
+    def __init__(self, db_pool, guild_id, added_by, item_image_url=None, npc_image_url=None, item_slot=None, item_msg_id=None, npc_msg_id=None):
+        super().__init__(timeout=None)
         self.db_pool = db_pool
         self.guild_id = guild_id
+        self.added_by = added_by
+        self.item_image_url = item_image_url
+        self.npc_image_url = npc_image_url
         self.item_msg_id = item_msg_id
         self.npc_msg_id = npc_msg_id
 
-        self.item_name = discord.ui.TextInput(
-            label="Item Name",
-            placeholder="Example: Flowing Black Silk Sash",
-            required=True
+        # Fields
+        self.item_name = discord.ui.TextInput(label="Item Name", placeholder="Example: Flowing Black Silk Sash")
+        self.zone_field = discord.ui.TextInput(
+            label="Zone Name - Zone Area",
+            placeholder="Eamples: Shaded Dunes - Ashira Camp",
         )
-        self.add_item(self.item_name)
+        self.npc_name = discord.ui.TextInput(label="NPC Name", placeholder="Example: Fippy Darkpaw")
 
-        self.zone_name = discord.ui.TextInput(
-            label="Zone Name",
-            placeholder="Example: Shadowfang Keep",
-            required=True
-        )
-        self.add_item(self.zone_name)
-
-        self.zone_area = discord.ui.TextInput(
-            label="Zone Area",
-            placeholder="Example: Goblin Camp",
+        self.npc_level = discord.ui.TextInput(
+            label="NPC Level",
+            placeholder="Example: 15 (Numbers Only)",
             required=False
         )
-        self.add_item(self.zone_area)
-
-        self.npc_name = discord.ui.TextInput(
-            label="NPC Name",
-            placeholder="Example: Silvermoon Sentinel",
-            required=True
-        )
-        self.add_item(self.npc_name)
         
-        self.item_slot_field = discord.ui.TextInput(label="Item Slot", default=self.item_slot, required=True)
-        self.add_item(self.item_slot_field)
+        self.item_slot_field = discord.ui.TextInput(label="Item Slot (Add another slot spaced with a , )", default=item_slot or "")
 
-            
+
+        self.add_item(self.item_name)
+        self.add_item(self.zone_field)
+        self.add_item(self.npc_name)
+        self.add_item(self.npc_level)
+        self.add_item(self.item_slot_field)
+        
+
 
     async def on_submit(self, interaction: discord.Interaction):
-        guild_id = interaction.guild.id
-        added_by = interaction.user.name
+         # 🧹 Clean and title-case all text inputs
+        item_name = self.item_name.value.strip().title()
+        raw_zone_value = self.zone_field.value.strip()
+        npc_name = self.npc_name.value.strip().title()
+        item_slot = self.item_slot_field.value.strip().title()
     
-        async with self.db_pool.acquire() as conn:
-            # Check if item already exists
-            existing = await conn.fetchrow(
-                """
-                SELECT * FROM item_database
-                WHERE guild_id=$1 AND LOWER(item_name)=LOWER($2) AND LOWER(npc_name)=LOWER($3)
-                """,
-                guild_id,
-                self.item_name.value.strip(),
-                self.npc_name.value.strip()
-            )
+        # 🗺️ Split "Zone - Area"
+        if "-" in raw_zone_value:
+            zone_name, zone_area = map(str.strip, raw_zone_value.split("-", 1))
+            zone_name = zone_name.title()
+            zone_area = zone_area.title()
+        else:
+            zone_name = raw_zone_value.title()
+            zone_area = None
     
-            # ⚠️ If it exists, ask user before overwriting
-            if existing:
-                view = ConfirmUpdateView()
-                await interaction.response.send_message(
-                    f"⚠️ `{self.item_name.value}` for `{self.npc_name.value}` already exists.\n"
-                    "Do you want to update this entry?",
-                    view=view,
-                    ephemeral=True
-                )
-                await view.wait()
+        # Parse NPC level
+        npc_level_value = None
+        if self.npc_level.value.strip():
+            try:
+                npc_level_value = int(self.npc_level.value.strip())
+            except ValueError:
+                await interaction.response.send_message("⚠️ NPC Level must be a number.", ephemeral=True)
+                return
     
-                if view.value is None or not view.value:
-                    return  # user canceled
-    
-            # ✅ Insert or update (UPSERT)
-            await conn.execute(
-                """
-                INSERT INTO item_database (
-                    guild_id,
-                    item_name,
-                    zone_name,
-                    zone_area,
-                    npc_name,
-                    item_slot,
-                    item_image,
-                    npc_image,
-                    added_by,
-                    item_msg_id,
-                    npc_msg_id
-                )
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                ON CONFLICT (guild_id, item_name, npc_name)
-                DO UPDATE SET
-                    zone_name   = EXCLUDED.zone_name,
-                    zone_area   = EXCLUDED.zone_area,
-                    item_slot   = EXCLUDED.item_slot,
-                    item_image  = EXCLUDED.item_image,
-                    npc_image   = EXCLUDED.npc_image,
-                    added_by    = EXCLUDED.added_by,
-                    item_msg_id = EXCLUDED.item_msg_id,
-                    npc_msg_id  = EXCLUDED.npc_msg_id,
-                    updated_at  = NOW();
+        # Insert into DB
+        try:
+            async with self.db_pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO item_database (
+                        guild_id, item_name, zone_name, zone_area,
+                        npc_name, item_slot, npc_level,
+                        item_image, npc_image, item_msg_id, npc_msg_id, added_by, created_at
+                    )
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
                 """,
                 self.guild_id,
-                self.item_name.value.strip(),
-                self.zone_name.value.strip() if self.zone_name.value else None,
-                self.zone_area.value.strip() if self.zone_area.value else None,
-                self.npc_name.value.strip(),
-                self.item_slot_field.value.lower().strip() if self.item_slot_field.value else None,
-                self.item_image_url.strip() if self.item_image_url else None,
-                self.npc_image_url.strip() if self.npc_image_url else None,
-                added_by,
+                item_name,
+                zone_name,
+                zone_area,
+                npc_name,
+                item_slot,
+                npc_level_value,
+                self.item_image_url,
+                self.npc_image_url,
                 self.item_msg_id,
-                self.npc_msg_id,
+                self.npc_msg_id,                  
+                self.added_by)
+    
+            # Confirmation
+            await interaction.response.send_message(
+                f"✅ `{item_name}` added successfully!",
+                ephemeral=True
             )
     
-        if not interaction.response.is_done():
-            await interaction.response.send_message("✅ Item added successfully!", ephemeral=True)
-        else:
-            await interaction.followup.send("✅ Item added successfully!", ephemeral=True)
+        except asyncpg.UniqueViolationError:
+            # ⚠️ Already exists — ask if they want to update
+            class ConfirmUpdateView(discord.ui.View):
+                def __init__(self, db_pool, guild_id, item_name, npc_name, zone_name, zone_area,
+                             item_slot, npc_level_value, item_image_url, npc_image_url, item_msg_id, npc_msg_id, added_by):
+                    super().__init__(timeout=30)
+                    self.db_pool = db_pool
+                    self.guild_id = guild_id
+                    self.item_name = item_name
+                    self.npc_name = npc_name
+                    self.zone_name = zone_name
+                    self.zone_area = zone_area
+                    self.item_slot = item_slot
+                    self.npc_level_value = npc_level_value
+                    self.item_image_url = item_image_url
+                    self.npc_image_url = npc_image_url
+                    self.item_msg_id = item_msg_id
+                    self.npc_msg_id = npc_msg_id
+                    self.added_by = added_by
+    
+                @discord.ui.button(label="✅ Update Existing", style=discord.ButtonStyle.green)
+                async def confirm(self, interaction2: discord.Interaction, button: discord.ui.Button):
+                    async with self.db_pool.acquire() as conn:
+                        await conn.execute("""
+                            UPDATE item_database
+                            SET zone_name=$3, zone_area=$4, item_slot=$5,
+                                npc_level=$6, item_image=$7, npc_image=$8, item_msg_id=$9, npc_msg_id=$10,
+                                added_by=$11, updated_at=NOW()
+                            WHERE guild_id=$1 AND item_name=$2 AND npc_name=$12
+                        """,
+                        self.guild_id,
+                        self.item_name,
+                        self.zone_name,
+                        self.zone_area,
+                        self.item_slot,
+                        self.npc_level_value,
+                        self.item_image_url,
+                        self.npc_image_url,
+                        self.item_msg_id,
+                        self.npc_msg_id,
+                        self.added_by,
+                        self.npc_name)
+                    await interaction2.response.edit_message(content=f"✅ `{self.item_name}` updated successfully!", view=None)
+    
+                @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red)
+                async def cancel(self, interaction2: discord.Interaction, button: discord.ui.Button):
+                    await interaction2.response.edit_message(content="❌ Update cancelled.", view=None)
+    
+            view = ConfirmUpdateView(
+                db_pool=self.db_pool,
+                guild_id=self.guild_id,
+                item_name=self.item_name.value.strip(),
+                npc_name=self.npc_name.value.strip(),
+                zone_name=zone_name,
+                zone_area=zone_area,
+                item_slot=self.item_slot_field.value.lower(),
+                npc_level_value=npc_level_value,
+                item_image_url=self.item_image_url,
+                npc_image_url=self.npc_image_url,
+                item_msg_id=self.item_msg_id,
+                npc_msg_id=self.npc_msg_id,
+                added_by=self.added_by
+            )
+    
+            await interaction.response.send_message(
+                f"⚠️ `{self.item_name.value}` from `{self.npc_name.value}` already exists.\nWould you like to update it?",
+                view=view,
+                ephemeral=True
+            )
 
+        return
 
-class ConfirmUpdateView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=30)
-        self.value = None  # store True/False
+        
 
-    @discord.ui.button(label="✅ Yes, Update", style=discord.ButtonStyle.success)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.value = True
-        self.stop()
-        await interaction.response.send_message("🔄 Updating existing entry...", ephemeral=True)
+# ---------------- Slash Command ----------------
 
-    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.value = False
-        self.stop()
-        await interaction.response.send_message("❌ Update canceled.", ephemeral=True)
-
-
-
-
-# --------------- Slash Command ----------------
-@bot.tree.command(name="add_item_db", description="Add a new item to the database")
+@bot.tree.command(name="add_item_db", description="Add a new item to the database.")
 @app_commands.describe(
     item_image="Upload an image of the item",
     npc_image="Upload an image of the NPC that drops the item",
@@ -1122,21 +1147,17 @@ class ConfirmUpdateView(discord.ui.View):
     app_commands.Choice(name="Shoulders", value="Shoulders"),
     app_commands.Choice(name="Waist", value="Waist"),
     app_commands.Choice(name="Wrist", value="Wrist"),
-    
 ])
-
-
 async def add_item_db(interaction: discord.Interaction, item_image: discord.Attachment, npc_image: discord.Attachment, item_slot: str):
     """Uploads images and opens modal for item info entry."""
-    # ✅ Require both images
     if not item_image or not npc_image:
         await interaction.response.send_message("❌ Both item and NPC images are required.", ephemeral=True)
         return
 
+    added_by = str(interaction.user)
     guild = interaction.guild
     upload_channel = await ensure_upload_channel1(guild)
 
-    # ✅ Upload both images to hidden log
     try:
         item_msg = await upload_channel.send(
             file=await item_image.to_file(),
@@ -1146,24 +1167,27 @@ async def add_item_db(interaction: discord.Interaction, item_image: discord.Atta
             file=await npc_image.to_file(),
             content=f"👹 Uploaded NPC image by {interaction.user.mention}"
         )
-       
+
     except discord.Forbidden:
-        await interaction.response.send_message("❌ I don't have permission to upload files in this server.", ephemeral=True)
+        await interaction.response.send_message("❌ I don't have permission to upload files here.", ephemeral=True)
         return
     except Exception as e:
         await interaction.response.send_message(f"❌ Upload failed: {e}", ephemeral=True)
         return
 
-    # ✅ Open the modal for extra info entry
-    await interaction.response.send_modal(ItemDatabaseModal(
-        guild_id=guild.id,
-        item_image_url=item_msg.attachments[0].url,
-        npc_image_url=npc_msg.attachments[0].url,
-        item_slot=item_slot.lower(),
-        db_pool=db_pool,
-        item_msg_id = item_msg.id,
-        npc_msg_id = npc_msg.id
-    ))
+    # Open modal
+    await interaction.response.send_modal(
+        ItemDatabaseModal(
+            db_pool=db_pool,
+            guild_id=guild.id,
+            added_by=added_by,
+            item_image_url=item_msg.attachments[0].url,
+            npc_image_url=npc_msg.attachments[0].url,
+            item_slot=item_slot,
+            item_msg_id=item_msg.id,
+            npc_msg_id=npc_msg.id 
+        )
+    )
 
 
 
@@ -1174,40 +1198,106 @@ class EditDatabaseModal(discord.ui.Modal):
         self.item_row = item_row
         self.db_pool = db_pool
 
-        self.item_name = discord.ui.TextInput(label="Item Name", default=item_row['item_name'])
+        self.item_name = discord.ui.TextInput(
+            label="Item Name",
+            default=item_row['item_name'],
+            max_length=45
+        )
+        self.zone_field = discord.ui.TextInput(
+            label="Zone Name - Area",
+            default=f"{item_row['zone_name']} - {item_row['zone_area'] or ''}"
+        )
+        self.npc_name = discord.ui.TextInput(
+            label="NPC Name",
+            default=item_row['npc_name'],
+            max_length=45
+        )
+        self.npc_level = discord.ui.TextInput(
+            label="NPC Level",
+            default=str(item_row['npc_level'] or ""),
+            required=False
+        )
+        self.item_slot = discord.ui.TextInput(
+            label="Item Slot",
+            default=item_row['item_slot']
+        )
+
         self.add_item(self.item_name)
-
-        self.zone_name = discord.ui.TextInput(label="Zone Name", default=item_row['zone_name'])
-        self.add_item(self.zone_name)
-
-        self.zone_area = discord.ui.TextInput(label="Zone Area", default=item_row['zone_area'])
-        self.add_item(self.zone_area)
-
-        self.npc_name = discord.ui.TextInput(label="NPC Name", default=item_row['npc_name'])
+        self.add_item(self.zone_field)
         self.add_item(self.npc_name)
-
-        self.item_slot = discord.ui.TextInput(label="Item Slot", default=item_row['item_slot'])
+        self.add_item(self.npc_level)
         self.add_item(self.item_slot)
 
     async def on_submit(self, interaction: discord.Interaction):
+       
+        # 🧹 Normalize values
+        item_name = self.item_name.value.strip().title()
+        npc_name = self.npc_name.value.strip().title()
+        item_slot = self.item_slot.value.strip().title()
+
+        # Split "Zone - Area"
+        raw_zone_value = self.zone_field.value.strip()
+        if "-" in raw_zone_value:
+            zone_name, zone_area = map(str.strip, raw_zone_value.split("-", 1))
+            zone_name = zone_name.title()
+            zone_area = zone_area.title()
+        else:
+            zone_name = raw_zone_value.title()
+            zone_area = None
+
+        # Validate NPC level
+        npc_level_value = None
+        if self.npc_level.value.strip():
+            try:
+                npc_level_value = int(self.npc_level.value.strip())
+            except ValueError:
+                await interaction.response.send_message("⚠️ NPC Level must be a number.", ephemeral=True)
+                return
+
+        # Check for duplicates BEFORE updating
         async with self.db_pool.acquire() as conn:
+            duplicate = await conn.fetchrow("""
+                SELECT id FROM item_database
+                WHERE guild_id=$1 AND item_name=$2 AND npc_name=$3 AND id != $4
+            """, interaction.guild.id, self.item_name.value.strip(), self.npc_name.value.strip(), self.item_row['id'])
+
+            if duplicate:
+                await interaction.response.send_message(
+                    f"⚠️ `{self.item_name.value}` from `{self.npc_name.value}` already exists in the database.\n"
+                    f"You cannot rename this entry to a duplicate.",
+                    ephemeral=True
+                )
+                return
+
+            # Proceed with update if no duplicates
             await conn.execute("""
                 UPDATE item_database
-                SET item_name=$1, zone_name=$2, zone_area=$3, npc_name=$4, item_slot=$5, updated_at=NOW()
-                WHERE id=$6 AND guild_id=$7
-            """, self.item_name.value, self.zone_name.value, self.zone_area.value, self.npc_name.value, self.item_slot.value.lower(),
-                 self.item_row['id'], interaction.guild.id)
+                SET item_name=$1, zone_name=$2, zone_area=$3,
+                    npc_name=$4, npc_level=$5, item_slot=$6,
+                    updated_at=NOW()
+                WHERE id=$7 AND guild_id=$8
+            """,
+            item_name,
+            zone_name,
+            zone_area,
+            npc_name,
+            npc_level_value,
+            item_slot,
+            self.item_row['id'],
+            interaction.guild.id)
 
-        await interaction.response.send_message(f"✅ Updated **{self.item_name.value}**!", ephemeral=True)
+        await interaction.response.send_message(f"✅ Updated **{item_name}** successfully!", ephemeral=True)
+
 
 
 @bot.tree.command(name="edit_item_db", description="Edit an existing item in the database by name.")
 @app_commands.describe(item_name="The name of the item to edit.")
-async def edit_database_item(interaction: discord.Interaction, item_name: str):
+@app_commands.describe(npc_name="The name of the NPC to edit.")
+async def edit_database_item(interaction: discord.Interaction, item_name: str, npc_name: str):
     async with db_pool.acquire() as conn:
         item_row = await conn.fetchrow(
-            "SELECT * FROM item_database WHERE guild_id=$1 AND item_name ILIKE $2",
-            interaction.guild.id, item_name
+            "SELECT * FROM item_database WHERE guild_id=$1 AND item_name=$2 AND npc_name=$3",
+            interaction.guild.id, item_name, npc_name
         )
 
     if not item_row:
@@ -1220,9 +1310,10 @@ async def edit_database_item(interaction: discord.Interaction, item_name: str):
 
 
 class ConfirmRemoveItemView(View):
-    def __init__(self, item_name, db_pool):
+    def __init__(self, item_name, npc_name, db_pool):
         super().__init__(timeout=60)
         self.item_name = item_name
+        self.npc_name = npc_name
         self.db_pool = db_pool
 
     @discord.ui.button(label="✅ Confirm", style=discord.ButtonStyle.danger)
@@ -1233,18 +1324,18 @@ class ConfirmRemoveItemView(View):
                 row = await conn.fetchrow("""
                     SELECT item_msg_id, npc_msg_id 
                     FROM item_database 
-                    WHERE item_name=$1 AND guild_id=$2
-                """, self.item_name, interaction.guild_id)
+                    WHERE item_name=$1 AND npc_name=$2 AND guild_id=$3
+                """, self.item_name, self.npc_name, interaction.guild_id)
 
                 if not row:
                     await interaction.response.edit_message(
-                        content=f"❌ Item **{self.item_name}** not found in the database.",
+                        content=f"❌ Item **{self.item_name} from {self.npc_name}** not found in the database.",
                         view=None
                     )
                     return
 
                 # Delete the uploaded messages
-                upload_channel = discord.utils.get(interaction.guild.text_channels, name="item-database-upload-log")
+                upload_channel = await ensure_upload_channel1(interaction.guild)
                 if upload_channel:
                     for msg_id in [row["item_msg_id"], row["npc_msg_id"]]:
                         if msg_id:
@@ -1259,8 +1350,8 @@ class ConfirmRemoveItemView(View):
                 # Remove entry from database
                 await conn.execute("""
                     DELETE FROM item_database 
-                    WHERE item_name=$1 AND guild_id=$2
-                """, self.item_name, interaction.guild_id)
+                    WHERE item_name=$1 AND npc_name=$2 AND guild_id=$3
+                """, self.item_name, self.npc_name, interaction.guild_id)
 
             await interaction.response.edit_message(
                 content=f"🗑️ **{self.item_name}** was successfully removed from the database.",
@@ -1288,9 +1379,10 @@ class ConfirmRemoveItemView(View):
 
 @bot.tree.command(name="remove_item_db", description="Remove an item from the item database by name.")
 @app_commands.describe(item_name="Name of the item to remove.")
-async def remove_itemdb(interaction: discord.Interaction, item_name: str):
+@app_commands.describe(npc_name="Name of the NPC to remove.")
+async def remove_itemdb(interaction: discord.Interaction, item_name: str, npc_name: str, ):
     # Ask for confirmation first
-    view = ConfirmRemoveItemView(item_name=item_name, db_pool=db_pool)
+    view = ConfirmRemoveItemView(item_name=item_name, npc_name=npc_name, db_pool=db_pool)
     await interaction.response.send_message(
         f"⚠️ Are you sure you want to remove **{item_name}** from the item database?",
         view=view,
@@ -1299,111 +1391,9 @@ async def remove_itemdb(interaction: discord.Interaction, item_name: str):
 
 
 
-class PaginatedResultsView(discord.ui.View):
-    def __init__(self, items: list[dict], per_page: int = 5, author_id: int | None = None):
-        super().__init__(timeout=None)
-        self.items = items
-        self.per_page = per_page
-        self.current_page = 0
-        self.max_page = max(0, math.ceil(len(items) / per_page) - 1)
-        self.author_id = author_id  # optional: restrict button use to the command author
-
-        self.previous_button = self.PreviousPageButton(self)
-        self.next_button = self.NextPageButton(self)
-        self.back_button = self.BackToFiltersButton(self)
-
-        # Add buttons in order
-        self.add_item(self.previous_button)
-        self.add_item(self.next_button)
-        self.add_item(self.back_button)
-
-        self._last_message = None  # will store the sent message object
-
-        self._update_button_states()
-
-    def _update_button_states(self):
-        self.previous_button.disabled = self.current_page <= 0
-        self.next_button.disabled = self.current_page >= self.max_page
-
-    def get_page_items(self):
-        start = self.current_page * self.per_page
-        end = start + self.per_page
-        return self.items[start:end]
-
-    def build_embeds_for_current_page(self) -> list[discord.Embed]:
-        embeds = []
-        page_items = self.get_page_items()
-        for item in page_items:
-            title = item.get("item_name") or item.get("name") or "Unknown Item"
-            npc_name = item.get("npc_name") or "Unknown NPC"
-            zone_name = item.get("zone_name") or "Unknown Zone"
-            zone_area = item.get("zone_area") or ""
-            raw_slot = item.get("item_slot") or item.get("slot") or ""
-            item_image = item.get("item_image") or item.get("image")
-            npc_image = item.get("npc_image") or None
-
-            embed = discord.Embed(
-                title=title,
-                color=discord.Color.blue()
-            )
-            
-            
-            
-                # Handle multi-slot entries like "chest, legs"
-            slot = "\n".join([s.strip().capitalize() for s in raw_slot.split(",")])
-
-
-            
-            # Primary details in fields
-            embed.add_field(name="NPC", value=npc_name, inline=True)
-            embed.add_field(name="Zone", value=zone_name, inline=True)
-            embed.add_field(name="Slot", value=slot, inline=True)
-
-            # Add the main image (item) and thumbnail (npc)
-            if item_image:
-                embed.set_image(url=item_image)
-            if npc_image:
-                embed.set_thumbnail(url=npc_image)
-
-            embeds.append(embed)
-
-        # Add page footer to each embed so users know where they are
-        for e in embeds:
-            e.set_footer(text=f"Page {self.current_page + 1} of {self.max_page + 1} — Total results: {len(self.items)}")
-
-        return embeds
-
-    async def _edit_message_with_current_page(self, interaction: discord.Interaction):
-        self._update_button_states()
-        embeds = self.build_embeds_for_current_page()
-
-        # If interaction hasn't been responded to yet, use response.edit_message/send_message accordingly
-        try:
-            if not interaction.response.is_done():
-                # If the original interaction hasn't been answered, we edit the original deferred response (unlikely for nav buttons)
-                await interaction.response.edit_message(embeds=embeds, view=self)
-            else:
-                # Most common: nav buttons after initial send -> use followup edit on the original message object
-                if self._last_message:
-                    await self._last_message.edit(embeds=embeds, view=self)
-                else:
-                    # fallback: send a followup and store message
-                    msg = await interaction.followup.send(embeds=embeds, view=self)
-                    self._last_message = msg
-        except Exception:
-            # fallback to editing via response if possible
-            try:
-                await interaction.response.edit_message(embeds=embeds, view=self)
-            except Exception:
-                # give up silently; caller should log if needed
-                pass
-
-    # Button classes
-
-
 
 class PaginatedResultsView(discord.ui.View):
-    def __init__(self, items: list[dict], db_pool, guild_id: int, *, per_page: int = 5, author_id: int | None = None):
+    def __init__(self, items: list[dict], db_pool, guild_id, *, per_page: int = 5, author_id: int | None = None):
         super().__init__(timeout=None)
         self.items = items
         self.db_pool = db_pool
@@ -1414,141 +1404,187 @@ class PaginatedResultsView(discord.ui.View):
         self.author_id = author_id
         self._last_message = None
 
-        # Initialize navigation + item select dropdown
-        self._update_view()
+        # Add navigation + dropdown
+        self._add_nav_buttons()
+        self._add_item_dropdown()
 
-    # -------------------------------
-    # Page helpers
-    # -------------------------------
-    def _page_items(self):
+    # ─────────────────────────────
+    # Core Pagination Logic
+    # ─────────────────────────────
+    def get_page_items(self):
         start = self.current_page * self.per_page
         return self.items[start:start + self.per_page]
 
-    def _update_view(self):
-        """Refresh buttons and dropdown contents."""
+    def _add_nav_buttons(self):
+        """Add navigation and control buttons"""
         self.clear_items()
 
-        # Navigation buttons
-        prev_btn = discord.ui.Button(style=discord.ButtonStyle.secondary, emoji="⬅️")
-        next_btn = discord.ui.Button(style=discord.ButtonStyle.secondary, emoji="➡️")
-        back_btn = discord.ui.Button(style=discord.ButtonStyle.danger, emoji="🔄", label="Back to Filters")
+        # ⬅️ Previous
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.secondary,
+            emoji="⬅️",
+            label="Previous",
+            disabled=self.current_page <= 0,
+            custom_id="prev"
+        ))
 
-        prev_btn.callback = self._prev_page
-        next_btn.callback = self._next_page
-        back_btn.callback = self._back_to_filters
+        # ➡️ Next
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.secondary,
+            emoji="➡️",
+            label="Next",
+            disabled=self.current_page >= self.max_page,
+            custom_id="next"
+        ))
 
-        prev_btn.disabled = self.current_page <= 0
-        next_btn.disabled = self.current_page >= self.max_page
+        # 🔄 Back to Filters
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.danger,
+            emoji="🔄",
+            label="Back to Filters",
+            custom_id="back"
+        ))
 
-        # Add buttons
-        self.add_item(prev_btn)
-        self.add_item(next_btn)
-        self.add_item(back_btn)
+    def _add_item_dropdown(self):
+        """Add dropdown menu for sending individual items"""
+        current_page_items = self.get_page_items()
 
-        # Dropdown menu for items on this page
-        page_items = self._page_items()
         options = [
-            discord.SelectOption(label=(i.get("item_name") or "Unknown Item")[:100], value=str(idx))
-            for idx, i in enumerate(page_items)
+            discord.SelectOption(
+                label=f"{(i.get('item_name') or 'Unknown Item')[:80]}",
+                description=f"{i.get('npc_name') or 'Unknown NPC'} • {i.get('zone_name') or 'Unknown Zone'}",
+                value=str(index)
+            )
+            for index, i in enumerate(current_page_items)
         ]
-        select = discord.ui.Select(
-            placeholder="Select an item to send privately",
+
+        dropdown = discord.ui.Select(
+            placeholder="📜 Send an item privately...",
             options=options,
-            min_values=1,
-            max_values=1,
+            custom_id="send_item_select"
         )
-        select.callback = self._send_item_ephemeral
-        self.add_item(select)
+        self.add_item(dropdown)
 
-    def _build_embeds(self):
-        """Builds embeds for current page."""
+    # ─────────────────────────────
+    # Embed Builder
+    # ─────────────────────────────
+    def _build_embeds_for_current_page(self) -> list[discord.Embed]:
         embeds = []
-        page_items = self._page_items()
-        for i in page_items:
-            title = i.get("item_name") or "Unknown Item"
-            npc_name = i.get("npc_name") or "Unknown NPC"
-            zone_name = i.get("zone_name") or "Unknown Zone"
-            zone_area = i.get("zone_area") or ""
-            raw_slot = i.get("item_slot") or ""
-            item_image = i.get("item_image")
-            npc_image = i.get("npc_image")
+        page_items = self.get_page_items()
 
+        for item in page_items:
+            title = item.get("item_name").title() or "Unknown Item"
+            npc_name = item.get("npc_name").title() or "Unknown NPC"
+            npc_level = item.get("npc_level")
+            zone_name = item.get("zone_name").title() or "Unknown Zone"
+            zone_area = item.get("zone_area") or ""
+            slot = item.get("item_slot") or ""
+            item_image = item.get("item_image")
+            npc_image = item.get("npc_image")
             
-                # Handle multi-slot entries like "chest, legs"
-            slot = "\n".join([s.strip().capitalize() for s in raw_slot.split(",")])
-            
-            embed = discord.Embed(title=title, color=discord.Color.blurple())
-            embed.add_field(name="NPC", value=npc_name, inline=True)
-            embed.add_field(name="Zone", value=f"{zone_name} \n{zone_area}", inline=True)
-            embed.add_field(name="Slot", value=slot, inline=True)
+
+            #  NPC + Level
+            npc_display = f"{npc_name}\n ({npc_level})" if npc_level else f"{npc_name}"
+
+            # Zone + Area
+            zone_display = zone_name if not zone_area else f"{zone_name}\n {zone_area.title()}"
+
+            # Slots stacked vertically
+            slot_display = "\n".join(s.strip().title() for s in slot.split(",")) if "," in slot else slot.title()
+
+            embed = discord.Embed(title=f"{title}", color=discord.Color.blurple())
+            embed.add_field(name="NPC", value=npc_display, inline=True)
+            embed.add_field(name="Zone", value=zone_display, inline=True)
+            embed.add_field(name="Slot", value=slot_display or "Unknown", inline=True)
+
             if item_image:
                 embed.set_image(url=item_image)
             if npc_image:
                 embed.set_thumbnail(url=npc_image)
-            embed.set_footer(text=f"Page {self.current_page + 1} of {self.max_page + 1}")
+
+            embed.set_footer(
+                text=f"Page {self.current_page + 1} of {self.max_page + 1} — Total Entries: {len(self.items)}"
+            )
+
             embeds.append(embed)
+
         return embeds
 
-    # -------------------------------
-    # Button Callbacks
-    # -------------------------------
-    async def _prev_page(self, interaction: discord.Interaction):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self._update_view()
-            await self._render(interaction)
-
-    async def _next_page(self, interaction: discord.Interaction):
-        if self.current_page < self.max_page:
-            self.current_page += 1
-            self._update_view()
-            await self._render(interaction)
-
-    async def _back_to_filters(self, interaction: discord.Interaction):
-       
-        await interaction.response.edit_message(
-            content="Choose a filter type:",
-            embeds=[],
-            view=DatabaseView(self.db_pool, self.guild_id)
-        )
-
-    # -------------------------------
-    # Dropdown callback
-    # -------------------------------
-    async def _send_item_ephemeral(self, interaction: discord.Interaction):
-        """Sends an ephemeral message for the selected item."""
-        try:
-            index = int(interaction.data["values"][0])
-            item = self._page_items()[index]
-        except Exception:
-            await interaction.response.send_message("⚠️ Something went wrong selecting that item.", ephemeral=True)
-            return
-
-        title = item.get("item_name") or "Unknown Item"
-        npc_name = item.get("npc_name") or "Unknown NPC"
-        zone_name = item.get("zone_name") or "Unknown Zone"
-        zone_area = item.get("zone_area") or ""
-        slot = item.get("item_slot") or ""
-        item_image = item.get("item_image")
-        npc_image = item.get("npc_image")
-
-        embed = discord.Embed(title=title, color=discord.Color.green())
-        embed.add_field(name="NPC", value=npc_name, inline=True)
-        embed.add_field(name="Zone", value=f"{zone_name} \n{zone_area}", inline=True)
-        embed.add_field(name="Slot", value=slot, inline=True)
-        if item_image:
-            embed.set_image(url=item_image)
-        if npc_image:
-            embed.set_thumbnail(url=npc_image)
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    # -------------------------------
-    # Rendering
-    # -------------------------------
+    # ─────────────────────────────
+    # Message Rendering
+    # ─────────────────────────────
     async def _render(self, interaction: discord.Interaction):
-        embeds = self._build_embeds()
-        await interaction.response.edit_message(embeds=embeds, view=self)
+        """Refreshes embeds and controls for current page"""
+        embeds = self._build_embeds_for_current_page()
+        self._add_nav_buttons()
+        self._add_item_dropdown()
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(embeds=embeds, view=self)
+            elif self._last_message:
+                await self._last_message.edit(embeds=embeds, view=self)
+            else:
+                msg = await interaction.followup.send(embeds=embeds, view=self, ephemeral=True)
+                self._last_message = msg
+        except Exception as e:
+            print(f"[Paginator Render Error]: {e}")
+
+    # ─────────────────────────────
+    # Interaction Handler
+    # ─────────────────────────────
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Main handler for navigation and dropdown interactions"""
+        if self.author_id and interaction.user.id != self.author_id:
+            await interaction.response.send_message("You can’t control this view.", ephemeral=True)
+            return False
+
+        cid = interaction.data.get("custom_id")
+
+        # Pagination
+        if cid == "prev":
+            if self.current_page > 0:
+                self.current_page -= 1
+                await self._render(interaction)
+            return True
+
+        elif cid == "next":
+            if self.current_page < self.max_page:
+                self.current_page += 1
+                await self._render(interaction)
+            return True
+
+        # Back to Filters
+        elif cid == "back":
+            await interaction.response.edit_message(
+                content="Choose a new filter:",
+                embeds=[],
+                view=DatabaseView(self.db_pool, self.guild_id)
+            )
+            return True
+
+        # Send private item
+        elif cid == "send_item_select":
+            selected_index = int(interaction.data["values"][0])
+            item = self.get_page_items()[selected_index]
+
+            embed = discord.Embed(
+                title=f"💎 {item.get('item_name') or 'Unknown Item'}",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="🧝 NPC", value=item.get("npc_name") or "Unknown NPC", inline=True)
+            embed.add_field(name="🏰 Zone", value=item.get("zone_name") or "Unknown Zone", inline=True)
+            embed.add_field(name="🪓 Slot", value=item.get("item_slot") or "Unknown", inline=True)
+
+            if item.get("item_image"):
+                embed.set_image(url=item["item_image"])
+            if item.get("npc_image"):
+                embed.set_thumbnail(url=item["npc_image"])
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return True
+
+        return False
 
     
 
@@ -1600,7 +1636,7 @@ class DatabaseView(View):
                 per_page=5,
                 author_id=interaction.user.id
             )
-            embeds = view._build_embeds()
+            embeds = view._build_embeds_for_current_page()
             await interaction.response.edit_message(content=None, embeds=embeds, view=view)
 
 
@@ -1830,7 +1866,6 @@ async def edit_item_image(
             embed.set_image(url=new_npc_image_url)
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 
 
