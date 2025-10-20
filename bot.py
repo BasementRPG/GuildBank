@@ -1540,9 +1540,7 @@ class PaginatedResultsView(discord.ui.View):
     # ─────────────────────────────
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Main handler for navigation and dropdown interactions"""
-        if self.author_id and interaction.user.id != self.author_id:
-            await interaction.response.send_message("You can’t control this view.", ephemeral=True)
-            return False
+
 
         cid = interaction.data.get("custom_id")
 
