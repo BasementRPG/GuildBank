@@ -1753,7 +1753,7 @@ async def show_results(interaction, items, db_pool=None, guild_id=None):
         author_id=interaction.user.id
     )
 
-    embeds = view._build_embeds()
+    embeds = view._build_embeds_for_current_pages()
 
     # ✅ Check whether we already responded to this interaction
     if not interaction.response.is_done():
