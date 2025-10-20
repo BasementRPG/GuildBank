@@ -1052,7 +1052,7 @@ class ItemDatabaseModal(discord.ui.Modal, title="Add Item to Database"):
             class ConfirmUpdateView(discord.ui.View):
                 def __init__(self, db_pool, guild_id, item_name, npc_name, zone_name, zone_area,
                              item_slot, npc_level_value, item_image_url, npc_image_url, item_msg_id, npc_msg_id, added_by):
-                    super().__init__(timeout=30)
+                    super().__init__(timeout=None)
                     self.db_pool = db_pool
                     self.guild_id = guild_id
                     self.item_name = item_name
