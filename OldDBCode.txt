@@ -1,0 +1,813 @@
+
+# ---------------- Slash Command ----------------
+
+@bot.tree.command(name="add_item_db", description="Add a new item to the database.")
+@app_commands.describe(
+    item_image="Upload an image of the item",
+    npc_image="Upload an image of the NPC that drops the item",
+    item_slot="Select the item slot"
+)
+@app_commands.choices(item_slot=[
+    app_commands.Choice(name="Ammo", value="Ammo"),
+    app_commands.Choice(name="Back", value="Back"),
+    app_commands.Choice(name="Backpack", value="Backpack"),
+    app_commands.Choice(name="Bag", value="Bag"),
+    app_commands.Choice(name="Belt", value="Belt"),
+    app_commands.Choice(name="Chest", value="Chest"),
+    app_commands.Choice(name="Ear", value="Ear"),
+    app_commands.Choice(name="Face", value="Face"),
+    app_commands.Choice(name="Feet", value="Feet"),
+    app_commands.Choice(name="Finger", value="Finger"),
+    app_commands.Choice(name="Hands", value="Hands"),
+    app_commands.Choice(name="Head", value="Head"),
+    app_commands.Choice(name="Legs", value="Legs"),
+    app_commands.Choice(name="Neck", value="Neck"),
+    app_commands.Choice(name="Primary", value="Primary"),
+    app_commands.Choice(name="Primary 2h", value="Primary 2h"),
+    app_commands.Choice(name="Range", value="Range"),
+    app_commands.Choice(name="Secondary", value="Secondary"),
+    app_commands.Choice(name="Shirt", value="Shirt"),
+    app_commands.Choice(name="Shoulders", value="Shoulders"),
+    app_commands.Choice(name="Waist", value="Waist"),
+    app_commands.Choice(name="Wrist", value="Wrist"),
+])
+async def add_item_db(interaction: discord.Interaction, item_image: discord.Attachment, npc_image: discord.Attachment, item_slot: str):
+    """Uploads images and opens modal for item info entry."""
+    if not item_image or not npc_image:
+        await interaction.response.send_message("❌ Both item and NPC images are required.", ephemeral=True)
+        return
+
+    added_by = str(interaction.user)
+    guild = interaction.guild
+    upload_channel = await ensure_upload_channel1(guild)
+
+    try:
+        item_msg = await upload_channel.send(
+            file=await item_image.to_file(),
+            content=f"📦 Uploaded item image by {interaction.user.mention}"
+        )
+        npc_msg = await upload_channel.send(
+            file=await npc_image.to_file(),
+            content=f"👹 Uploaded NPC image by {interaction.user.mention}"
+        )
+
+    except discord.Forbidden:
+        await interaction.response.send_message("❌ I don't have permission to upload files here.", ephemeral=True)
+        return
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Upload failed: {e}", ephemeral=True)
+        return
+
+    # Open modal
+    await interaction.response.send_modal(
+        ItemDatabaseModal(
+            db_pool=db_pool,
+            guild_id=guild.id,
+            added_by=added_by,
+            item_image_url=item_msg.attachments[0].url,
+            npc_image_url=npc_msg.attachments[0].url,
+            item_slot=item_slot,
+            item_msg_id=item_msg.id,
+            npc_msg_id=npc_msg.id 
+        )
+    )
+
+
+
+
+class EditDatabaseModal(discord.ui.Modal):
+    def __init__(self, item_row, db_pool):
+        super().__init__(title=f"Edit {item_row['item_name']}")
+        self.item_row = item_row
+        self.db_pool = db_pool
+
+        self.item_name = discord.ui.TextInput(
+            label="Item Name",
+            default=item_row['item_name'],
+            max_length=45
+        )
+        self.zone_field = discord.ui.TextInput(
+            label="Zone Name - Zone Area or Camp",
+            default=f"{item_row['zone_name']} - {item_row['zone_area'] or ''}"
+        )
+        self.npc_name = discord.ui.TextInput(
+            label="NPC Name",
+            default=item_row['npc_name'],
+            max_length=45
+        )
+        self.npc_level = discord.ui.TextInput(
+            label="NPC Level",
+            default=str(item_row['npc_level'] or ""),
+            required=False
+        )
+        self.item_slot = discord.ui.TextInput(
+            label="Item Slot",
+            default=item_row['item_slot']
+        )
+
+        self.add_item(self.item_name)
+        self.add_item(self.zone_field)
+        self.add_item(self.npc_name)
+        self.add_item(self.npc_level)
+        self.add_item(self.item_slot)
+
+    async def on_submit(self, interaction: discord.Interaction):
+       
+        # 🧹 Normalize values
+        item_name = self.item_name.value.strip().title()
+        npc_name = self.npc_name.value.strip().title()
+        item_slot = self.item_slot.value.strip().title()
+
+        # Split "Zone - Area"
+        raw_zone_value = self.zone_field.value.strip()
+        if "-" in raw_zone_value:
+            zone_name, zone_area = map(str.strip, raw_zone_value.split("-", 1))
+            zone_name = zone_name.title()
+            zone_area = zone_area.title()
+        else:
+            zone_name = raw_zone_value.title()
+            zone_area = None
+
+        # Validate NPC level
+        npc_level_value = None
+        if self.npc_level.value.strip():
+            try:
+                npc_level_value = int(self.npc_level.value.strip())
+            except ValueError:
+                await interaction.response.send_message("⚠️ NPC Level must be a number.", ephemeral=True)
+                return
+
+        # Check for duplicates BEFORE updating
+        async with self.db_pool.acquire() as conn:
+            duplicate = await conn.fetchrow("""
+                SELECT id FROM item_database
+                WHERE guild_id=$1 AND item_name=$2 AND npc_name=$3 AND id != $4
+            """, interaction.guild.id, self.item_name.value.strip(), self.npc_name.value.strip(), self.item_row['id'])
+
+            if duplicate:
+                await interaction.response.send_message(
+                    f"⚠️ `{self.item_name.value}` from `{self.npc_name.value}` already exists in the database.\n"
+                    f"You cannot rename this entry to a duplicate.",
+                    ephemeral=True
+                )
+                return
+
+            # Proceed with update if no duplicates
+            await conn.execute("""
+                UPDATE item_database
+                SET item_name=$1, zone_name=$2, zone_area=$3,
+                    npc_name=$4, npc_level=$5, item_slot=$6,
+                    updated_at=NOW()
+                WHERE id=$7 AND guild_id=$8
+            """,
+            item_name,
+            zone_name,
+            zone_area,
+            npc_name,
+            npc_level_value,
+            item_slot,
+            self.item_row['id'],
+            interaction.guild.id)
+
+        await interaction.response.send_message(f"✅ Updated **{item_name}** successfully!", ephemeral=True)
+
+
+
+@bot.tree.command(name="edit_item_db", description="Edit an existing item in the database by name.")
+@app_commands.describe(item_name="The name of the item to edit.")
+@app_commands.describe(npc_name="The name of the NPC to edit.")
+async def edit_database_item(interaction: discord.Interaction, item_name: str, npc_name: str):
+    async with db_pool.acquire() as conn:
+        item_row = await conn.fetchrow(
+            "SELECT * FROM item_database WHERE guild_id=$1 AND item_name=$2 AND npc_name=$3",
+            interaction.guild.id, item_name, npc_name
+        )
+
+    if not item_row:
+        await interaction.response.send_message("❌ Item not found.", ephemeral=True)
+        return
+
+    await interaction.response.send_modal(EditDatabaseModal(item_row, db_pool))
+
+
+
+
+class ConfirmRemoveItemView(View):
+    def __init__(self, item_name, npc_name, db_pool):
+        super().__init__(timeout=60)
+        self.item_name = item_name
+        self.npc_name = npc_name
+        self.db_pool = db_pool
+
+    @discord.ui.button(label="✅ Confirm", style=discord.ButtonStyle.danger)
+    async def confirm(self, interaction: discord.Interaction, button: Button):
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Fetch message IDs to delete the images
+                row = await conn.fetchrow("""
+                    SELECT item_msg_id, npc_msg_id 
+                    FROM item_database 
+                    WHERE item_name=$1 AND npc_name=$2 AND guild_id=$3
+                """, self.item_name, self.npc_name, interaction.guild_id)
+
+                if not row:
+                    await interaction.response.edit_message(
+                        content=f"❌ Item **{self.item_name} from {self.npc_name}** not found in the database.",
+                        view=None
+                    )
+                    return
+
+                # Delete the uploaded messages
+                upload_channel = await ensure_upload_channel1(interaction.guild)
+                if upload_channel:
+                    for msg_id in [row["item_msg_id"], row["npc_msg_id"]]:
+                        if msg_id:
+                            try:
+                                msg = await upload_channel.fetch_message(msg_id)
+                                await msg.delete()
+                            except discord.NotFound:
+                                pass
+                            except Exception as e:
+                                print(f"⚠️ Failed to delete message {msg_id}: {e}")
+
+                # Remove entry from database
+                await conn.execute("""
+                    DELETE FROM item_database 
+                    WHERE item_name=$1 AND npc_name=$2 AND guild_id=$3
+                """, self.item_name, self.npc_name, interaction.guild_id)
+
+            await interaction.response.edit_message(
+                content=f"🗑️ **{self.item_name}** was successfully removed from the database.",
+                view=None
+            )
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            await interaction.response.edit_message(
+                content=f"❌ Error while removing **{self.item_name}**: {e}",
+                view=None
+            )
+
+    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.edit_message(
+            content=f"❎ Removal of **{self.item_name}** canceled.",
+            view=None
+        )
+
+
+
+
+
+@bot.tree.command(name="remove_item_db", description="Remove an item from the item database by name.")
+@app_commands.describe(item_name="Name of the item to remove.")
+@app_commands.describe(npc_name="Name of the NPC to remove.")
+async def remove_itemdb(interaction: discord.Interaction, item_name: str, npc_name: str, ):
+    # Ask for confirmation first
+    view = ConfirmRemoveItemView(item_name=item_name, npc_name=npc_name, db_pool=db_pool)
+    await interaction.response.send_message(
+        f"⚠️ Are you sure you want to remove **{item_name}** from the item database?",
+        view=view,
+        ephemeral=True
+    )
+
+
+
+
+class PaginatedResultsView(discord.ui.View):
+    def __init__(self, items: list[dict], db_pool, guild_id, *, per_page: int = 5, author_id: int | None = None):
+        super().__init__(timeout=None)
+        self.items = items
+        self.db_pool = db_pool
+        self.guild_id = guild_id
+        self.per_page = per_page
+        self.current_page = 0
+        self.max_page = max(0, math.ceil(len(items) / per_page) - 1)
+        self.author_id = author_id
+        self._last_message = None
+
+        # Add navigation + dropdown
+        self._add_nav_buttons()
+        self._add_item_dropdown()
+
+    # ─────────────────────────────
+    # Core Pagination Logic
+    # ─────────────────────────────
+    def get_page_items(self):
+        start = self.current_page * self.per_page
+        return self.items[start:start + self.per_page]
+
+    def _add_nav_buttons(self):
+        """Add navigation and control buttons"""
+        self.clear_items()
+
+        # ⬅️ Previous
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.secondary,
+            emoji="⬅️",
+            label="Previous",
+            disabled=self.current_page <= 0,
+            custom_id="prev"
+        ))
+
+        # ➡️ Next
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.secondary,
+            emoji="➡️",
+            label="Next",
+            disabled=self.current_page >= self.max_page,
+            custom_id="next"
+        ))
+
+        # 🔄 Back to Filters
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.danger,
+            emoji="🔄",
+            label="Back to Filters",
+            custom_id="back"
+        ))
+
+    def _add_item_dropdown(self):
+        """Add dropdown menu for sending individual items"""
+        current_page_items = self.get_page_items()
+
+        options = [
+            discord.SelectOption(
+                label=f"{(i.get('item_name') or 'Unknown Item')[:80]}",
+                description=f"{i.get('npc_name') or 'Unknown NPC'} • {i.get('zone_name') or 'Unknown Zone'}",
+                value=str(index)
+            )
+            for index, i in enumerate(current_page_items)
+        ]
+
+        dropdown = discord.ui.Select(
+            placeholder="📜 Send an item privately...",
+            options=options,
+            custom_id="send_item_select"
+        )
+        self.add_item(dropdown)
+
+    # ─────────────────────────────
+    # Embed Builder
+    # ─────────────────────────────
+    def _build_embeds_for_current_page(self) -> list[discord.Embed]:
+        embeds = []
+        page_items = self.get_page_items()
+
+        for item in page_items:
+            title = item.get("item_name").title() or "Unknown Item"
+            npc_name = item.get("npc_name").title() or "Unknown NPC"
+            npc_level = item.get("npc_level")
+            zone_name = item.get("zone_name").title() or "Unknown Zone"
+            zone_area = item.get("zone_area") or ""
+            slot = item.get("item_slot") or ""
+            item_image = item.get("item_image")
+            npc_image = item.get("npc_image")
+            
+
+            #  NPC + Level
+            npc_display = f"{npc_name}\n ({npc_level})" if npc_level else f"{npc_name}"
+
+            # Zone + Area
+            zone_display = zone_name if not zone_area else f"{zone_name}\n {zone_area.title()}"
+
+            # Slots stacked vertically
+            slot_display = "\n".join(s.strip().title() for s in slot.split(",")) if "," in slot else slot.title()
+
+            embed = discord.Embed(title=f"{title}", color=discord.Color.blurple())
+            embed.add_field(name="NPC", value=npc_display, inline=True)
+            embed.add_field(name="Zone", value=zone_display, inline=True)
+            embed.add_field(name="Slot", value=slot_display or "Unknown", inline=True)
+
+            if item_image:
+                embed.set_image(url=item_image)
+            if npc_image:
+                embed.set_thumbnail(url=npc_image)
+
+            embed.set_footer(
+                text=f"Page {self.current_page + 1} of {self.max_page + 1} — Total Entries: {len(self.items)}"
+            )
+
+            embeds.append(embed)
+
+        return embeds
+
+    # ─────────────────────────────
+    # Message Rendering
+    # ─────────────────────────────
+    async def _render(self, interaction: discord.Interaction):
+        """Refreshes embeds and controls for current page"""
+        embeds = self._build_embeds_for_current_page()
+        self._add_nav_buttons()
+        self._add_item_dropdown()
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(embeds=embeds, view=self)
+            elif self._last_message:
+                await self._last_message.edit(embeds=embeds, view=self)
+            else:
+                msg = await interaction.followup.send(embeds=embeds, view=self, ephemeral=True)
+                self._last_message = msg
+        except Exception as e:
+            print(f"[Paginator Render Error]: {e}")
+
+    # ─────────────────────────────
+    # Interaction Handler
+    # ─────────────────────────────
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Main handler for navigation and dropdown interactions"""
+
+
+        cid = interaction.data.get("custom_id")
+
+        # Pagination
+        if cid == "prev":
+            if self.current_page > 0:
+                self.current_page -= 1
+                await self._render(interaction)
+            return True
+
+        elif cid == "next":
+            if self.current_page < self.max_page:
+                self.current_page += 1
+                await self._render(interaction)
+            return True
+
+        # Back to Filters
+        elif cid == "back":
+            await interaction.response.edit_message(
+                content="Choose a new filter:",
+                embeds=[],
+                view=DatabaseView(self.db_pool, self.guild_id)
+            )
+            return True
+
+        # Send private item
+        elif cid == "send_item_select":
+            selected_index = int(interaction.data["values"][0])
+            item = self.get_page_items()[selected_index]
+
+            embed = discord.Embed(
+                title=f"💎 {item.get('item_name') or 'Unknown Item'}",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="🧝 NPC", value=item.get("npc_name") or "Unknown NPC", inline=True)
+            embed.add_field(name="🏰 Zone", value=item.get("zone_name") or "Unknown Zone", inline=True)
+            embed.add_field(name="🪓 Slot", value=item.get("item_slot") or "Unknown", inline=True)
+
+            if item.get("item_image"):
+                embed.set_image(url=item["item_image"])
+            if item.get("npc_image"):
+                embed.set_thumbnail(url=item["npc_image"])
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return True
+
+        return False
+
+    
+
+# ---------- FILTER VIEW ----------
+class DatabaseView(View):
+    def __init__(self, db_pool, guild_id):
+        super().__init__(timeout=None)
+        self.db_pool = db_pool
+        self.guild_id = guild_id
+
+        self.filter_select = Select(
+            placeholder="Choose filter type",
+            options=[
+                discord.SelectOption(label="Slot", value="item_slot"),
+                discord.SelectOption(label="NPC Name", value="npc_name"),
+                discord.SelectOption(label="Zone Name", value="zone_name"),
+                discord.SelectOption(label="All", value="all")
+            ]
+        )
+        self.filter_select.callback = self.filter_select_callback
+        self.add_item(self.filter_select)
+
+
+    async def filter_select_callback(self, interaction: discord.Interaction):
+        filter_type = self.filter_select.values[0].lower()
+
+        # 🧩 Handle "All" directly — no second dropdown
+        if filter_type == "all":
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT * FROM item_database WHERE guild_id=$1 ORDER BY LOWER(item_name)",
+                    self.guild_id,
+                )
+
+            rows = [dict(r) for r in rows]
+            if not rows:
+                await interaction.response.edit_message(content="❌ No results found.", view=None)
+                return
+
+            for r in rows:
+                r["_db_pool"] = self.db_pool
+                r["_guild_id"] = self.guild_id
+
+            
+            view = PaginatedResultsView(
+                rows,
+                self.db_pool,
+                self.guild_id,
+                per_page=5,
+                author_id=interaction.user.id
+            )
+            embeds = view._build_embeds_for_current_page()
+            await interaction.response.edit_message(content=None, embeds=embeds, view=view)
+
+
+            return
+
+        # 🧭 Otherwise, build second dropdown dynamically
+        async with self.db_pool.acquire() as conn:
+            query = f"SELECT DISTINCT {filter_type} FROM item_database WHERE guild_id=$1"
+            rows = await conn.fetch(query, self.guild_id)
+
+        options = []
+        seen_values = set()
+
+        for row in rows:
+            value = (row[filter_type] or "").strip().lower()
+            if not value:
+                continue
+            # Handle multi-slot entries
+            if filter_type == "item_slot" and "," in value:
+                for slot in value.split(","):
+                    slot = slot.strip().lower()
+                    if slot and slot not in seen_values:
+                        seen_values.add(slot)
+                        options.append(discord.SelectOption(label=slot.title(), value=slot))
+            elif value not in seen_values:
+                seen_values.add(value)
+                options.append(discord.SelectOption(label=value.title(), value=value))
+
+        # Add back/previous option
+        options.append(discord.SelectOption(label="⬅️ Previous", value="previous"))
+
+        # 🔄 Replace the current dropdown with the populated one
+        self.clear_items()
+        self.value_select = discord.ui.Select(
+            placeholder=f"Select {filter_type.title()}",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+
+        self.value_select.callback = lambda i: self.value_select_callback(i, filter_type)
+        self.add_item(self.value_select)
+
+        await interaction.response.edit_message(content=f"Select a {filter_type}:", view=self)
+
+
+
+
+    async def value_select_callback(self, interaction, filter_type):
+        chosen_value = interaction.data["values"][0]
+
+        # 🧭 If user selected "Previous"
+        if chosen_value == "previous":
+            await interaction.response.edit_message(
+                content="Choose a filter type:",
+                embeds=[],
+                view=DatabaseView(self.db_pool, self.guild_id)
+            )
+            return
+
+        async with self.db_pool.acquire() as conn:
+            if filter_type == "all":
+                query = "SELECT * FROM item_database WHERE guild_id=$1 ORDER BY LOWER(item_name)"
+                rows = await conn.fetch(query, self.guild_id)
+            else:
+                query = f"""
+                    SELECT * FROM item_database
+                    WHERE guild_id=$1
+                      AND LOWER({filter_type}) LIKE $2
+                    ORDER BY LOWER(item_name)
+                """
+                rows = await conn.fetch(query, self.guild_id, f"%{chosen_value}%")
+
+        # Convert immutable asyncpg.Record -> dict
+        rows = [dict(r) for r in rows]
+
+        if not rows:
+            await interaction.response.edit_message(content="❌ No results found.", view=None)
+            return
+
+        for r in rows:
+            r["_db_pool"] = self.db_pool
+            r["_guild_id"] = self.guild_id
+
+       
+        view = PaginatedResultsView(
+            rows,
+            self.db_pool,
+            self.guild_id,
+            per_page=5,
+            author_id=interaction.user.id
+        )
+        embeds = view._build_embeds_for_current_page()
+        await interaction.response.edit_message(content=None, embeds=embeds, view=view)
+
+
+
+        await show_results(interaction, rows, self.db_pool, self.guild_id)
+
+
+# ---------- RESULTS DISPLAY ----------
+async def show_results(interaction, items, db_pool=None, guild_id=None):
+    """Safely show paginated embeds whether or not the interaction has already been responded to."""
+    view = PaginatedResultsView(
+        items,
+        db_pool,
+        guild_id,
+        per_page=5,
+        author_id=interaction.user.id
+    )
+
+    embeds = view._build_embeds_for_current_page()
+
+    # ✅ Check whether we already responded to this interaction
+    if not interaction.response.is_done():
+        # first response
+        await interaction.response.edit_message(content=None, embeds=embeds, view=view)
+    else:
+        # interaction already responded — edit the existing message instead
+        try:
+            msg = await interaction.original_response()
+            await msg.edit(content=None, embeds=embeds, view=view)
+        except Exception:
+            # fallback: send a follow-up message (usually shouldn't happen)
+            await interaction.followup.send(content=None, embeds=embeds, view=view)
+
+
+            
+
+@bot.tree.command(name="view_item_db", description="View the guild's item database with filters.")
+async def view_item_db(interaction: discord.Interaction):
+    # Ensure DB is connected
+    async with db_pool.acquire() as conn:
+        check = await conn.fetchval("SELECT COUNT(*) FROM item_database WHERE guild_id=$1", interaction.guild.id)
+
+    if check == 0:
+        await interaction.response.send_message("❌ No data found in the item database.", ephemeral=True)
+        return
+
+    # Start with the FIRST dropdown view (DatabaseView)
+    view = DatabaseView(db_pool, interaction.guild.id)
+    await interaction.response.send_message(
+        content="Select a filter type to begin:",
+        view=view,
+        ephemeral=False  # make visible only to the user, remove if you want public
+    )
+
+
+
+from discord import app_commands, Attachment
+
+@bot.tree.command(
+    name="edit_item_image",
+    description="Upload a new item and/or NPC image for an existing database entry."
+)
+@app_commands.describe(
+    item_name="The exact item name to update",
+    npc_name="The NPC associated with this item",
+    new_item_image="Upload a new image for the item (optional)",
+    new_npc_image="Upload a new image for the NPC (optional)",
+)
+async def edit_item_image(
+    interaction: discord.Interaction,
+    item_name: str,
+    npc_name: str,
+    new_item_image: discord.Attachment = None,
+    new_npc_image: discord.Attachment = None,
+):
+    guild = interaction.guild
+    guild_id = guild.id
+    updated_by = str(interaction.user)
+
+    # --- Validate ---
+    if not new_item_image and not new_npc_image:
+        await interaction.response.send_message(
+            "⚠️ You must upload at least one new image.",
+            ephemeral=True
+        )
+        return
+
+    async with db_pool.acquire() as conn:
+        # --- Fetch existing entry ---
+        existing = await conn.fetchrow(
+            """
+            SELECT item_msg_id, npc_msg_id, item_image, npc_image
+            FROM item_database
+            WHERE guild_id = $1
+              AND LOWER(item_name) = LOWER($2)
+              AND LOWER(npc_name) = LOWER($3)
+            """,
+            guild_id, item_name, npc_name
+        )
+
+        if not existing:
+            await interaction.response.send_message(
+                f"❌ No record found for `{item_name}` (NPC: `{npc_name}`).",
+                ephemeral=True
+            )
+            return
+
+        upload_channel = await ensure_upload_channel1(guild)
+
+        # --- Delete old messages if new replacements exist ---
+        if new_item_image and existing["item_msg_id"]:
+            try:
+                msg = await upload_channel.fetch_message(int(existing["item_msg_id"]))
+                await msg.delete()
+            except discord.NotFound:
+                pass
+            except Exception as e:
+                print(f"⚠️ Could not delete old item message: {e}")
+
+        if new_npc_image and existing["npc_msg_id"]:
+            try:
+                msg = await upload_channel.fetch_message(int(existing["npc_msg_id"]))
+                await msg.delete()
+            except discord.NotFound:
+                pass
+            except Exception as e:
+                print(f"⚠️ Could not delete old NPC message: {e}")
+
+        # --- Upload new images ---
+        new_item_image_url, new_npc_image_url = None, None
+        new_item_msg_id, new_npc_msg_id = None, None
+
+        try:
+            if new_item_image:
+                msg = await upload_channel.send(
+                    file=await new_item_image.to_file(),
+                    content=f"🧾 Updated item image for **{item_name}** by {interaction.user.mention}"
+                )
+                new_item_image_url = msg.attachments[0].url
+                new_item_msg_id = msg.id
+
+            if new_npc_image:
+                msg = await upload_channel.send(
+                    file=await new_npc_image.to_file(),
+                    content=f"👹 Updated NPC image for **{npc_name}** by {interaction.user.mention}"
+                )
+                new_npc_image_url = msg.attachments[0].url
+                new_npc_msg_id = msg.id
+
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ I don’t have permission to upload images.", ephemeral=True)
+            return
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Upload failed: {e}", ephemeral=True)
+            return
+
+        # --- Update database record ---
+        await conn.execute(
+            """
+            UPDATE item_database
+            SET
+                item_image = COALESCE($1, item_image),
+                npc_image = COALESCE($2, npc_image),
+                item_msg_id = COALESCE($3, item_msg_id),
+                npc_msg_id = COALESCE($4, npc_msg_id),
+                updated_by = $5,
+                updated_at = NOW()
+            WHERE guild_id = $6
+              AND LOWER(item_name) = LOWER($7)
+              AND LOWER(npc_name) = LOWER($8)
+            """,
+            new_item_image_url,
+            new_npc_image_url,
+            new_item_msg_id,
+            new_npc_msg_id,
+            updated_by,
+            guild_id,
+            item_name,
+            npc_name
+        )
+
+    # --- Confirmation embed ---
+    embed = discord.Embed(
+        title=f"🖼️ Updated Images for {item_name}",
+        description=f"NPC: **{npc_name}**\n👤 Updated by: {interaction.user.mention}",
+        color=discord.Color.green()
+    )
+
+    if new_item_image_url:
+        embed.add_field(name="📦 Item Image", value=f"[View Updated Item]({new_item_image_url})", inline=False)
+        embed.set_image(url=new_item_image_url)
+
+    if new_npc_image_url:
+        embed.add_field(name="👹 NPC Image", value=f"[View Updated NPC]({new_npc_image_url})", inline=False)
+        if not new_item_image_url:
+            embed.set_image(url=new_npc_image_url)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
